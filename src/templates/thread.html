@@ -1,0 +1,16 @@
+{% extends "layouts/default.html" %}
+{% block title %}やる夫Lisp板{% endblock %}
+{% block content %}
+<div id="main">
+    <h1>{{ title }}</h1>
+    {% for i in thread %}
+    <dl>
+        <dt>
+            {{ forloop.counter }} 名前：<font color="#008800"><b>{{ i.name }}</b>{{ i.trip }}</font>[{{ i.email }}] 投稿日：{{ i.date }}　ID:{{ i.id }}
+        </dt>
+        <dd id="thread">
+            {{ i.text | linebreaks | safe}}
+        </dd>
+    </dl>
+    {% endfor %}
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "layouts/default.html" %}
+{% block title %}やる夫Lisp板{% endblock %}
+{% block content %}
+<div id="main">
+    {{ here }}
+    <form action="/board" method="post">
+        <label for="title">スレッドタイトル</label>
+        <input name="title" type="text" value="" required/>
+        
+        <label for="name">名前:</label>
+        <input name="name" type="text" value="名無しさん" required/>
+
+        <label for="email">メールアドレス</label>
+        <input name="email" type="text" value=""/>
+        
+        <label for="text">本文:</label>
+        <textarea cols="30" id="" name="text" rows="10" required></textarea>
+        
+        <button type="submit">作成</button>
+    </form>
+    <table>
+        <tr>
+            <th>スレ名</th>
+            <th>作成日時</th>
+            <th>更新日時</th>
+            <th>レス数</th>
+        </tr>
+        <tr>
+            {% for thread in threads %}
+            <td><a href="/thread/{{ thread.unixtime }}">{{ thread.title }}</a></td>
+            <td>{{ thread.create-date }}</td>
+            <td>{{ thread.last-modified-date }}</td>
+            <td>{{ thread.res-count }}</td>
+            {% endfor %}
+        </tr>
+    </table>
+</div>
+{% endblock %}
