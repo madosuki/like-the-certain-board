@@ -3,20 +3,24 @@
 {% block content %}
 <div id="main">
     {{ here }}
-    <form action="/board" method="post">
-        <label for="title">スレッドタイトル</label>
-        <input name="title" type="text" value="" required/>
+    <form action="/test/bbs.cgi" method="post">
+        <label for="subject">スレッドタイトル</label>
+        <input name="subject" type="text" value="" required/>
         
-        <label for="name">名前:</label>
-        <input name="name" type="text" value="名無しさん" required/>
+        <label for="FROM">名前:</label>
+        <input name="FROM" type="text" value="名無しさん" required/>
 
-        <label for="email">メールアドレス</label>
-        <input name="email" type="text" value=""/>
+        <label for="mail">メールアドレス</label>
+        <input name="mail" type="text" value=""/>
         
-        <label for="text">本文:</label>
-        <textarea cols="30" id="" name="text" rows="10" required></textarea>
+        <label for="MESSAGE">本文:</label>
+        <textarea cols="30" id="" name="MESSAGE" rows="10" required></textarea>
+
+        <input name="bbs" type="hidden" value="{{ bbs }}"/>
+        <input name="time" type="hidden" value="{{ time }}"/>
+        <input name="submit" type="hidden" value="新規スレッド作成"/>
         
-        <button type="submit">作成</button>
+        <button type="submit">新規スレッド作成</button>
     </form>
     <table>
         <tr>
@@ -27,7 +31,7 @@
         </tr>
         <tr>
             {% for thread in threads %}
-            <td><a href="/thread/{{ thread.unixtime }}">{{ thread.title }}</a></td>
+            <td><a href="/test/read.cgi/{{ bbs }}/{{ thread.unixtime }}">{{ thread.title }}</a></td>
             <td>{{ thread.create-date }}</td>
             <td>{{ thread.last-modified-date }}</td>
             <td>{{ thread.res-count }}</td>

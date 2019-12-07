@@ -12,6 +12,7 @@
 (in-package :like-certain-board.web)
 
 (defvar *default-name* "名無しさん")
+(defvar *board-name* "yarufre")
 
 ;; for @route annotation
 (syntax:use-syntax :annot)
@@ -77,20 +78,35 @@
       (declare (ignore e))
       (init-threads-table))))
 
+(defmacro get-value-from-key (key target)
+  `(cdr (assoc ,key ,target :test #'string=)))
+
+(defmacro generate-dat-name (l)
+  `(concatenate 'string (write-to-string (cadr (member :unixtime ,l))) ".dat"))
+
+(defun create-dat (&key unixtime first-line)
+  (let* ((filename (concatenate 'string (write-to-string unixtime) ".dat"))
+         (path (concatenate 'string "dat/" filename)))
+    (with-open-file (i (make-pathname :name path)
+                       :direction :output
+                       :if-does-not-exist :create)
+      (write-string first-line i))))
+
+
 (defun create-res (&key name trip-key email date text ipaddr (first nil) (title ""))
-  (let* ((datetime (get-current-datetime date 0))
+  (let* ((datetime (replace-hyphen-to-slash (get-current-datetime date 0)))
          (id (generate-id :ipaddr ipaddr :date datetime))
          (trip (if (and (stringp trip-key) (string/= trip-key ""))
                    (generate-trip trip-key "utf8")
                    ""))
-         (final-text (replace-newline-to-br-tag text)))
+         (final-text (shape-text (replace-other-line-to-lf text))))
     (when (string/= trip "")
       (setq trip (concatenate 'string "</b>" (string #\BLACK_DIAMOND) trip "<b>")))
     (if first
         (format nil "~A~A<>~A<>~A ~A<>~A<>~A~%" name trip email datetime id final-text title)
         (format nil "~A~A<>~A<>~A ~A<>~A<>~%" name trip email datetime id final-text))))
 
-(defun create-thread (&key title create-date unixtime)
+(defun create-thread-in-db (&key title create-date unixtime)
   (let ((date (get-current-datetime create-date 0))
         (id (get-table-count "threads")))
     (with-connection (db)
@@ -104,6 +120,63 @@
                                   (1+ (cadr id))
                                   1)
                           :unixtime unixtime))))))
+
+(defun create-thread (&key _parsed date ipaddr)
+  (check-exists-table-and-create-table-when-does-not)
+  (let* ((title (get-value-from-key "subject" _parsed))
+         (name (get-value-from-key "FROM" _parsed))
+         (trip-key "")
+         (text (get-value-from-key "MESSAGE" _parsed))
+         (email (get-value-from-key "mail" _parsed))
+         (unixtime (get-unix-time date)))
+    (unless email
+      (setq email ""))
+    (unless text
+      (setq text ""))
+    (if (null (or (null title)
+                  (null name)))
+        (progn (let ((tmp (separate-trip-from-input name)))
+                 (when (> (length tmp) 1)
+                   (setq trip-key (cadr tmp)))
+                 (setq name (car tmp)))
+               (create-thread-in-db :title title :create-date date :unixtime unixtime)
+               (create-dat :unixtime unixtime
+                           :first-line (create-res :name name :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
+               200)
+        400)))
+
+(defun insert-res (_parsed ipaddr universal-time)
+  (let* ((bbs (get-value-from-key "bbs" _parsed))
+         (key (get-value-from-key "key" _parsed))
+         (time (get-value-from-key "time" _parsed))
+         (from (get-value-from-key "FROM" _parsed))
+         (mail (get-value-from-key "mail" _parsed))
+         (message (get-value-from-key "MESSAGE" _parsed))
+         (status 200))
+    (if (or (null bbs)
+            (null key)
+            (null time)
+            (null from)
+            (null mail)
+            (null message))
+        400
+        (progn (when (string= from "")
+                 (setq from *default-name*))
+               (when (and (string/= time "")
+                          (> (get-unix-time universal-time) (parse-integer time :radix 10)))
+                 (with-open-file (input (concatenate 'string "dat/" key ".dat")
+                                        :direction :output
+                                        :if-exists :append
+                                        :if-does-not-exist nil)
+                   (let* ((tmp (separate-trip-from-input from))
+                          (name (car tmp))
+                          (trip (if (> (length tmp) 1)
+                                    (cadr tmp)
+                                    ""))
+                          (res (create-res :name name :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
+                     (write-string res input))))
+               status))))
+
 
 ;; Model
 ;; (defmodel (threads
@@ -125,60 +198,27 @@
   (format t "~A~%" *response*)
   "{\"name\": \"Lain\"}")
 
-(defroute ("/board" :method :GET) ()
-  (check-exists-table-and-create-table-when-does-not)
-  (let ((result (get-thread-list)))
-    (dolist (x result)
-      (setf (getf x :create-date) (format-datetime (getf x :create-date)))
-      (setf (getf x :last-modified-date) (format-datetime (getf x :last-modified-date))))
-    (render #P"board.html" (list :here "sample dayo" :threads result))))
+(defroute ("/:board-name" :method :GET) (&key board-name)
+  ;; (maphash #'(lambda (key value) (format t "~%Key:~A, Value:~A~%" key value)) (request-headers *request*))
+  ;; (print (gethash "cookie" (request-headers *request*)))
+  (if (string= board-name *board-name*)
+      (progn
+        (check-exists-table-and-create-table-when-does-not)
+        (let ((result (get-thread-list)))
+          (dolist (x result)
+            (setf (getf x :create-date) (format-datetime (getf x :create-date)))
+            (setf (getf x :last-modified-date) (format-datetime (getf x :last-modified-date))))
+          (render #P"board.html" (list :here "sample dayo"
+                                       :bbs *board-name*
+                                       :time (get-unix-time (get-universal-time))
+                                       :threads result))))
+      (on-exception *web* 404)))
 
-(defmacro get-value-from-key (key target)
-  `(cdr (assoc ,key ,target :test #'string=)))
 
-(defun create-dat (&key unixtime first-line)
-  (let* ((filename (concatenate 'string (write-to-string unixtime) ".dat"))
-         (path (concatenate 'string "dat/" filename)))
-    (with-open-file (i (make-pathname :name path)
-                       :direction :output
-                       :if-does-not-exist :create)
-      (write-string first-line i))))
 
-(defroute ("/board" :method :POST) (&key _parsed)
-  (check-exists-table-and-create-table-when-does-not)
-  (let* ((title (get-value-from-key "title" _parsed))
-         (name (get-value-from-key "name" _parsed))
-         (trip-key "")
-         (text (get-value-from-key "text" _parsed))
-         (email (get-value-from-key "email" _parsed))
-         (date (get-universal-time))
-         (ipaddr (caveman2:request-remote-addr caveman2:*request*))
-         (unixtime (get-unix-time date)))
-    (unless email
-      (setq email ""))
-    (unless text
-      (setq text ""))
-    (if (null (or (null title)
-                  (null name)))
-        (progn (let ((tmp (separate-trip-from-input name)))
-                 (when (> (length tmp) 0)
-                   (setq trip-key (cadr tmp)))
-                 (setq name (car tmp)))
-               (create-thread :title title :create-date date :unixtime unixtime)
-               (create-dat :unixtime unixtime
-                           :first-line (create-res :name name :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
-               (setf (getf (response-headers *response*) :location) "http://localhost:8000/board")
-               (setf (response-status *response*) 301)
-               ;; (format t "~A~%~A~%" *response* (response-status *response*))
-               (next-route))
-        (progn
-          (setf (response-status *response*) 400)
-          (next-route)))))
 
-(defmacro generate-dat-name (l)
-  `(concatenate 'string (write-to-string (cadr (member :unixtime ,l))) ".dat"))
-
-(defroute ("/board/subject.txt" :method :GET) ()
+(defroute ("/:board-name/subject.txt" :method :GET) (&key board-name)
+  (declare (ignore board-name))
   (let* ((tmp (get-thread-list-when-create-subject-txt))
          (result (list nil)))
     (dolist (x tmp)
@@ -191,32 +231,87 @@
 (defroute "/ipinfo" ()
   (caveman2:request-remote-addr caveman2:*request*))
 
-(defroute ("/thread/:unixtime" :method :GET) (&key unixtime)
+(defroute ("/test/read.cgi/:board-name/:unixtime" :method :GET) (&key board-name unixtime)
+  (declare (ignore board-name))
   (let* ((filepath (concatenate 'string "dat/" unixtime ".dat"))
          (dat-list (dat-to-keyword-list filepath))
-         (title (cadr (member :title (car dat-list)))))
+         (title (cadr (member :title (car dat-list))))
+         (current-unix-time (get-unix-time (get-universal-time))))
     (if (probe-file filepath)
-        (render #P "thread.html" (list :title title :thread dat-list))
+        (render #P "thread.html" (list :title title :thread dat-list :bbs *board-name* :key unixtime :time current-unix-time))
         (on-exception *web* 404))))
 
+
+
+;; (setf (getf (response-headers *response*) :set-cookie) (concatenate 'string "PON=" ipaddr))
+
 (defroute ("/test/bbs.cgi" :method :POST) (&key _parsed)
-  (let ((bbs (get-value-from-key "bbs" _parsed))
-        (key (get-value-from-key "key" _parsed))
-        (submit (get-value-from-key "submit" _parsed))
-        (from (get-value-from-key "from" _parsed))
-        (mail (get-value-from-key "mail" _parsed))
-        (message (get-value-from-key "message" _parsed)))
-    (unless (or (null bbs)
-                (null key)
-                (null submit)
-                (null from)
-                (null mail)
-                (null message))
-      (when (string= from "")
-        (setq from *default-name*)))
-    (setf (getf (response-headers *response*) :location) (concatenate 'string "/thread/" key))
-    (setf (response-status *response*) 301)
+  (let* ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
+         (universal-time (get-universal-time))
+         (from (get-value-from-key "FROM" _parsed))
+         (mail (get-value-from-key "mail" _parsed))
+         (bbs (get-value-from-key "bbs" _parsed))
+         (key (get-value-from-key "key" _parsed))
+         (message (get-value-from-key "MESSAGE" _parsed))
+         (submit (get-value-from-key "submit" _parsed))
+         (cookie (gethash "cookie" (request-headers *request*)))
+         (splited-cookie (if (null cookie)
+                             nil
+                             (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
+                                     (cl-ppcre:split ";" cookie)))))
+    (cond ((string= submit "書き込む")
+           (let ((status (insert-res _parsed ipaddr universal-time)))
+             (if (= status 200)
+                 (progn
+                   (setf (getf (response-headers *response*) :location) (concatenate 'string "/test/read.cgi/" bbs "/" (get-value-from-key "key" _parsed)))
+                   (setf (response-status *response*) 301))
+                 (progn
+                   (setf (response-status *response*) status)))))
+          ((string= submit "新規スレッド作成")
+           (let ((status (create-thread :_parsed _parsed :date universal-time :ipaddr ipaddr)))
+             (if (= status 200)
+                 (progn (setf (getf (response-headers *response*) :location) (concatenate 'string "/" bbs))
+                        (setf (response-status *response*) 301))
+                 (setf (response-status *response*) status))))
+          (t
+           (setf (response-status *response*) 400)))
     (next-route)))
+
+(defun load-file-with-recursive (pathname start end)
+  (with-open-file (input pathname
+                         :direction :input
+                         :element-type '(unsigned-byte 8))
+    (let ((file-size (file-length input)))
+      (when (or (> 0 start) (< file-size end) (> 0 end))
+        (return-from load-file-with-recursive nil))
+      (let ((buf (make-array (if (= end 0)
+                                 file-size
+                                 end)
+                             :element-type '(unsigned-byte 8)
+                             :initial-element 0)))
+        (read-sequence buf input :start start :end end)
+        buf))))
+
+(defun load-dat (pathname start end)
+  (let ((tmp (load-file-with-recursive pathname 0 0)))
+    (if (null tmp)
+        (progn
+          (setf (response-status *response*) 404)
+          nil))
+    (handler-case (flexi-streams:octets-to-string tmp :external-format :utf-8)
+      (error (e)
+        (declare (ignore e))
+        (flexi-streams:octets-to-string tmp)))))
+
+(defroute ("/:board-name/dat/:unixtime.dat" :method :GET) (&key unixtime)
+  (declare (ignore board-name))
+  (let ((pathname (probe-file (concatenate 'string "dat/" unixtime ".dat"))))
+    (if (not (null pathname))
+        (progn
+          (setf (response-body *response*) pathname))
+        (progn
+          (setf (response-status *response*) 404)
+          ""))))
 
 ;;
 ;; Error pages

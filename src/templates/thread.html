@@ -6,11 +6,26 @@
     {% for i in thread %}
     <dl>
         <dt>
-            {{ forloop.counter }} 名前：<font color="#008800"><b>{{ i.name }}</b>{{ i.trip }}</font>[{{ i.email }}] 投稿日：{{ i.date }}　ID:{{ i.id }}
+            {{ forloop.counter }} 名前：<font color="#008800"><b>{{ i.name }}</b>{{ i.trip }}</font>[{{ i.email }}] 投稿日：{{ i.date }}(UTC+0)　ID:{{ i.id }}
         </dt>
         <dd id="thread">
-            {{ i.text | linebreaks | safe}}
+            {{ i.text | safe}}
         </dd>
     </dl>
     {% endfor %}
+
+    <form action="/test/bbs.cgi" method="post">
+        <label for="FROM">名前：</label>
+        <input name="FROM" type="text" value="名無しさん"/>
+        <label for="mail">メール：</label>
+        <input name="mail" type="text" value=""/>
+        <input name="bbs" type="hidden" value="{{ bbs }}"/>
+        <input name="key" type="hidden" value="{{ key }}"/>
+        <input name="time" type="hidden" value="{{ time }}"/>
+        <input name="submit" type="hidden" value="書き込む"/>
+        <label for="MESSAGE">本文：</label>
+        <textarea cols="30" name="MESSAGE" rows="10"></textarea>
+        <button type="submit">送信</button>
+    </form>
+</div>
 {% endblock %}
