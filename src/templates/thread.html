@@ -6,7 +6,7 @@
     {% for i in thread %}
     <dl>
         <dt>
-            {{ forloop.counter }} 名前：<font color="#008800"><b>{{ i.name }}</b>{{ i.trip }}</font>[{{ i.email }}] 投稿日：{{ i.date }}(UTC+0)　ID:{{ i.id }}
+            {{ forloop.counter }} 名前：<font color="#008800"><b>{{ i.name | safe}}</b>{{ i.trip }}</font>[{{ i.email }}] 投稿日：{{ i.date }}(UTC+0) {{ i.id }}
         </dt>
         <dd id="thread">
             {{ i.text | safe}}

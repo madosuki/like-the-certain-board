@@ -24,6 +24,9 @@
 (defvar *web* (make-instance '<web>))
 (clear-routing-rules *web*)
 
+(defmacro escape-string (text)
+  `(escape-sql-query (replace-not-available-char-when-cp932 ,text)))
+
 ;; Functions 
 (defun get-thread-list ()
   (with-connection (db)
@@ -89,22 +92,24 @@
          (path (concatenate 'string "dat/" filename)))
     (with-open-file (i (make-pathname :name path)
                        :direction :output
-                       :if-does-not-exist :create)
-      (write-string first-line i))))
+                       :if-does-not-exist :create
+                       :element-type '(unsigned-byte 8))
+      (let ((tmp (sb-ext:string-to-octets first-line :external-format :sjis)))
+        (write-sequence tmp i)))))
 
 
 (defun create-res (&key name trip-key email date text ipaddr (first nil) (title ""))
   (let* ((datetime (replace-hyphen-to-slash (get-current-datetime date 0)))
          (id (generate-id :ipaddr ipaddr :date datetime))
          (trip (if (and (stringp trip-key) (string/= trip-key ""))
-                   (generate-trip trip-key "utf8")
+                   (generate-trip (subseq trip-key 1 (length trip-key)) "utf8")
                    ""))
          (final-text (shape-text (replace-other-line-to-lf text))))
     (when (string/= trip "")
       (setq trip (concatenate 'string "</b>" (string #\BLACK_DIAMOND) trip "<b>")))
     (if first
-        (format nil "~A~A<>~A<>~A ~A<>~A<>~A~%" name trip email datetime id final-text title)
-        (format nil "~A~A<>~A<>~A ~A<>~A<>~%" name trip email datetime id final-text))))
+        (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" name trip email datetime id final-text title)
+        (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" name trip email datetime id final-text))))
 
 (defun create-thread-in-db (&key title create-date unixtime)
   (let ((date (get-current-datetime create-date 0))
@@ -124,10 +129,10 @@
 (defun create-thread (&key _parsed date ipaddr)
   (check-exists-table-and-create-table-when-does-not)
   (let* ((title (get-value-from-key "subject" _parsed))
-         (name (get-value-from-key "FROM" _parsed))
+         (name (escape-string (get-value-from-key "FROM" _parsed)))
          (trip-key "")
-         (text (get-value-from-key "MESSAGE" _parsed))
-         (email (get-value-from-key "mail" _parsed))
+         (text (escape-string (get-value-from-key "MESSAGE" _parsed)))
+         (email (escape-string (get-value-from-key "mail" _parsed)))
          (unixtime (get-unix-time date)))
     (unless email
       (setq email ""))
@@ -150,8 +155,8 @@
          (key (get-value-from-key "key" _parsed))
          (time (get-value-from-key "time" _parsed))
          (from (get-value-from-key "FROM" _parsed))
-         (mail (get-value-from-key "mail" _parsed))
-         (message (get-value-from-key "MESSAGE" _parsed))
+         (mail (escape-string (get-value-from-key "mail" _parsed)))
+         (message (escape-string (get-value-from-key "MESSAGE" _parsed)))
          (status 200))
     (if (or (null bbs)
             (null key)
@@ -167,15 +172,31 @@
                  (with-open-file (input (concatenate 'string "dat/" key ".dat")
                                         :direction :output
                                         :if-exists :append
-                                        :if-does-not-exist nil)
+                                        :if-does-not-exist nil
+                                        :element-type '(unsigned-byte 8)
+                                        :external-format :sjis)
                    (let* ((tmp (separate-trip-from-input from))
                           (name (car tmp))
                           (trip (if (> (length tmp) 1)
                                     (cadr tmp)
                                     ""))
-                          (res (create-res :name name :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
-                     (write-string res input))))
+                          (res (create-res :name (escape-string name) :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
+                     (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input))))
                status))))
+
+(defun put-thread-list (board-name)
+  (if (string= board-name *board-name*)
+      (progn
+        (check-exists-table-and-create-table-when-does-not)
+        (let ((result (get-thread-list)))
+          (dolist (x result)
+            (setf (getf x :create-date) (format-datetime (getf x :create-date)))
+            (setf (getf x :last-modified-date) (format-datetime (getf x :last-modified-date))))
+          (render #P"board.html" (list :here "sample dayo"
+                                       :bbs board-name
+                                       :time (get-unix-time (get-universal-time))
+                                       :threads result))))
+      (on-exception *web* 404)))
 
 
 ;; Model
@@ -198,24 +219,13 @@
   (format t "~A~%" *response*)
   "{\"name\": \"Lain\"}")
 
-(defroute ("/:board-name" :method :GET) (&key board-name)
+(defroute ("/:board-name/" :method :GET) (&key board-name)
   ;; (maphash #'(lambda (key value) (format t "~%Key:~A, Value:~A~%" key value)) (request-headers *request*))
   ;; (print (gethash "cookie" (request-headers *request*)))
-  (if (string= board-name *board-name*)
-      (progn
-        (check-exists-table-and-create-table-when-does-not)
-        (let ((result (get-thread-list)))
-          (dolist (x result)
-            (setf (getf x :create-date) (format-datetime (getf x :create-date)))
-            (setf (getf x :last-modified-date) (format-datetime (getf x :last-modified-date))))
-          (render #P"board.html" (list :here "sample dayo"
-                                       :bbs *board-name*
-                                       :time (get-unix-time (get-universal-time))
-                                       :threads result))))
-      (on-exception *web* 404)))
+  (put-thread-list board-name))
 
-
-
+(defroute ("/:board-name" :method :GET) (&key board-name)
+  (put-thread-list board-name))
 
 (defroute ("/:board-name/subject.txt" :method :GET) (&key board-name)
   (declare (ignore board-name))
@@ -242,7 +252,7 @@
         (on-exception *web* 404))))
 
 
-
+;; response-headers is slot of *response*. *response* are type of struct. example: respoinse-cookies.
 ;; (setf (getf (response-headers *response*) :set-cookie) (concatenate 'string "PON=" ipaddr))
 
 (defroute ("/test/bbs.cgi" :method :POST) (&key _parsed)
@@ -252,13 +262,18 @@
          (mail (get-value-from-key "mail" _parsed))
          (bbs (get-value-from-key "bbs" _parsed))
          (key (get-value-from-key "key" _parsed))
-         (message (get-value-from-key "MESSAGE" _parsed))
+         (message (replace-not-available-char-when-cp932 (get-value-from-key "MESSAGE" _parsed)))
          (submit (get-value-from-key "submit" _parsed))
          (cookie (gethash "cookie" (request-headers *request*)))
          (splited-cookie (if (null cookie)
                              nil
                              (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
                                      (cl-ppcre:split ";" cookie)))))
+    (print (request-cookies *request*))
+    (let* ((raw-body (request-raw-body *request*))
+           (buf (make-array 1024 :fill-pointer 0)))
+      (read-sequence buf raw-body)
+      (print buf))
     (cond ((string= submit "書き込む")
            (let ((status (insert-res _parsed ipaddr universal-time)))
              (if (= status 200)
@@ -303,15 +318,23 @@
         (declare (ignore e))
         (flexi-streams:octets-to-string tmp)))))
 
-(defroute ("/:board-name/dat/:unixtime.dat" :method :GET) (&key unixtime)
+(defroute ("/:board-name/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
   (declare (ignore board-name))
   (let ((pathname (probe-file (concatenate 'string "dat/" unixtime ".dat"))))
     (if (not (null pathname))
         (progn
+          (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
           (setf (response-body *response*) pathname))
         (progn
           (setf (response-status *response*) 404)
           ""))))
+
+(defroute ("/:board-name/SETTING.TXT" :method :GET) (&key board-name)
+  (if (string= board-name *board-name*)
+      (let ((pathname "SETTING.txt"))
+        (setf (getf (response-headers *response*) :content-type) "text/plain; charset=utf-8")
+        (setf (response-body *response*) (probe-file pathname)))
+      (on-exception *web* 404)))
 
 ;;
 ;; Error pages
