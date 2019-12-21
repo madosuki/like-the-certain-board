@@ -21,9 +21,9 @@
 
 (defconfig :common
     `(:databases ((:maindb :mysql
-                   :database-name ""
-                   :username ""
-                   :password ""))))
+                   :database-name "mysite"
+                   :username "lain"
+                   :password "ConnectWired_Success318"))))
 
 (defconfig |development|
   '())
