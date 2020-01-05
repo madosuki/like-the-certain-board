@@ -143,7 +143,7 @@
     (unless text
       (setq text ""))
     (unless name
-      (setq *default-name*))
+      (setq name *default-name*))
     (if (null (or (null title)
                   (null name)))
         (progn (let ((tmp (separate-trip-from-input name)))
@@ -282,6 +282,12 @@
         (otherwise
          nil)))))
 
+(defun check-exist-session (session-id ipaddr)
+  (let ((tmp (with-connection (db)
+               (retrieve-one
+                (select :session_id
+                        (from :session_data))))))
+    tmp))
 
 ;; response-headers is slot of *response*. *response* are type of struct. example: respoinse-cookies.
 ;; (setf (getf (response-headers *response*) :set-cookie) (concatenate 'string "PON=" ipaddr))
@@ -299,6 +305,7 @@
          (content-length (request-content-length *request*))
          (tmp-array (make-array content-length :adjustable t :fill-pointer content-length))
          (form (list nil)))
+    (print (request-headers *request*))
     (read-sequence tmp-array raw-body)
     (labels ((try-decode-bytes (arr &optional (encode :CP932) (error-count 0))
                (handler-case (sb-ext:octets-to-string arr :external-format encode)
@@ -332,14 +339,14 @@
                    (if (= status 200)
                        (progn
                          (setf (getf (response-headers *response*) :location) (concatenate 'string "/test/read.cgi/" bbs "/" key))
-                         (setf (response-status *response*) 200))
+                         (setf (response-status *response*) 302))
                        (progn
                          (setf (response-status *response*) status)))))
                 ((string= submit "新規スレッド作成")
                  (let ((status (create-thread :_parsed form :date universal-time :ipaddr ipaddr)))
                    (if (= status 200)
                        (progn (setf (getf (response-headers *response*) :location) (concatenate 'string "/" bbs))
-                              (setf (response-status *response*) 200))
+                              (setf (response-status *response*) 302))
                        (setf (response-status *response*) status))))
                 (t
                  (setf (response-status *response*) 400))))
