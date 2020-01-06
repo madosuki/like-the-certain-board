@@ -32,7 +32,8 @@
 (defun get-thread-list ()
   (with-connection (db)
     (retrieve-all
-     (select :* (from :threads)))))
+     (select :* (from :threads)
+             (order-by (:desc :last-modified-date))))))
 
 (defun get-thread-list-when-create-subject-txt ()
   (with-connection (db)
@@ -289,6 +290,20 @@
                         (from :session_data))))))
     tmp))
 
+(defun add-session-data (session-id ipaddr)
+  (with-connection (db)
+    (execute
+     (insert-into :session_data
+                  (set= :session_id session-id
+                        :ipaddr ipaddr)))))
+
+(defun update-last-modified-date-of-thread (&key date key)
+  (with-connection (db)
+    (execute
+     (update :threads
+             (set= :last-modified-date (get-current-datetime date 0))
+             (where (:like :unixtime key))))))
+
 ;; response-headers is slot of *response*. *response* are type of struct. example: respoinse-cookies.
 ;; (setf (getf (response-headers *response*) :set-cookie) (concatenate 'string "PON=" ipaddr))
 
@@ -305,7 +320,6 @@
          (content-length (request-content-length *request*))
          (tmp-array (make-array content-length :adjustable t :fill-pointer content-length))
          (form (list nil)))
-    (print (request-headers *request*))
     (read-sequence tmp-array raw-body)
     (labels ((try-decode-bytes (arr &optional (encode :CP932) (error-count 0))
                (handler-case (sb-ext:octets-to-string arr :external-format encode)
@@ -333,13 +347,13 @@
         (let ((bbs (get-value-from-key-on-list "bbs" form))
               (key (get-value-from-key-on-list "key" form))
               (submit (get-value-from-key-on-list "submit" form)))
-          (print parsed-param)
           (cond ((string= submit "書き込む")
                  (let ((status (insert-res form ipaddr universal-time)))
                    (if (= status 200)
                        (progn
                          (setf (getf (response-headers *response*) :location) (concatenate 'string "/test/read.cgi/" bbs "/" key))
-                         (setf (response-status *response*) 302))
+                         (setf (response-status *response*) 302)
+                         (update-last-modified-date-of-thread :date universal-time :key key))
                        (progn
                          (setf (response-status *response*) status)))))
                 ((string= submit "新規スレッド作成")
