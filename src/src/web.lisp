@@ -47,13 +47,21 @@
      (select :*
              (from (intern table-name))))))
 
+(defun check-exist-row (unixtime)
+  (let ((tmp (with-connection (db)
+               (retrieve-one
+                (select :*
+                        (from :threads)
+                        (where (:like :unixtime unixtime)))))))
+    (if tmp
+        t
+        nil)))
+
 (defun init-threads-table ()
   (with-connection (db)
     (execute
      (create-table (:threads :if-exists-not t)
-                   ((id :type 'integer
-                        :primary-key t)
-                    (title :type '(:varchar 255)
+                   ((title :type '(:varchar 255)
                            :not-null t)
                     (create-date :type 'datetime
                                  :not-null t)
@@ -63,7 +71,7 @@
                                :not-null t
                                :default 1)
                     (unixtime :type 'integer
-                              :not-null t))))))
+                              :primary-key t))))))
 
 (defun format-datetime (date)
   (multiple-value-bind (second minute hour date month year day summer timezone)
@@ -71,10 +79,10 @@
     (declare (ignore day summer timezone))
     (format nil "~A/~A/~A ~A:~A:~A" year month date hour minute second)))
 
-(defun get-table-count (table-name)
+(defun get-table-count (table-name column)
   (with-connection (db)
     (retrieve-one
-     (select (fields (:count :id))
+     (select (fields (:count (intern column)))
              (from (intern table-name))))))
 
 (defun check-exists-table-and-create-table-when-does-not ()
@@ -117,8 +125,7 @@
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" name trip email datetime id final-text))))
 
 (defun create-thread-in-db (&key title create-date unixtime)
-  (let ((date (get-current-datetime create-date 0))
-        (id (get-table-count "threads")))
+  (let ((date (get-current-datetime create-date 0)))
     (with-connection (db)
       (execute
        (insert-into :threads
@@ -126,9 +133,6 @@
                           :create-date date
                           :last-modified-date date
                           :res-count 1
-                          :id (if (numberp (cadr id))
-                                  (1+ (cadr id))
-                                  1)
                           :unixtime unixtime))))))
 
 (defun create-thread (&key _parsed date ipaddr)
@@ -151,10 +155,20 @@
                  (when (> (length tmp) 1)
                    (setq trip-key (cadr tmp)))
                  (setq name (car tmp)))
-               (create-thread-in-db :title title :create-date date :unixtime unixtime)
-               (create-dat :unixtime unixtime
-                           :first-line (create-res :name (escape-string name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
-               200)
+               (labels ((progress (&optional (count 0))
+                          (handler-case (funcall (lambda (title date unixtime ipaddr name text)
+                                                   (create-thread-in-db :title title :create-date date :unixtime unixtime)
+                                                   (create-dat :unixtime unixtime
+                                                               :first-line (create-res :name (escape-string name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
+                                                   200)
+                                                 title date unixtime ipaddr name text)
+                            (error (e)
+                              (declare (ignore e))
+                                (incf unixtime)
+                                (if (< count 10)
+                                    (progress (incf count))
+                                    (return-from create-thread 400))))))
+                 (progress)))
         400)))
 
 (defun insert-res (_parsed ipaddr universal-time)
@@ -281,7 +295,7 @@
         (2
          (try-url-decode x :ASCII 3))
         (otherwise
-         nil)))))
+         x)))))
 
 (defun check-exist-session (session-id ipaddr)
   (let ((tmp (with-connection (db)
@@ -304,6 +318,22 @@
              (set= :last-modified-date (get-current-datetime date 0))
              (where (:like :unixtime key))))))
 
+(defun get-res-count (&key key)
+  (with-connection (db)
+    (retrieve-one
+     (select :res-count
+             (from :threads)
+             (where (:like :unixtime key))))))
+
+(defun update-res-count-of-thread (&key key)
+  (let ((tmp (get-res-count :key key)))
+    (with-connection (db)
+      (execute
+       (update :threads
+               (set= :res-count (1+  (cadr tmp)))
+               (where (:like :unixtime key)))))))
+
+
 ;; response-headers is slot of *response*. *response* are type of struct. example: respoinse-cookies.
 ;; (setf (getf (response-headers *response*) :set-cookie) (concatenate 'string "PON=" ipaddr))
 
@@ -320,14 +350,15 @@
          (content-length (request-content-length *request*))
          (tmp-array (make-array content-length :adjustable t :fill-pointer content-length))
          (form (list nil)))
+    (print (gethash "user-agent" (request-headers *request*)))
     (read-sequence tmp-array raw-body)
-    (labels ((try-decode-bytes (arr &optional (encode :CP932) (error-count 0))
+    (labels ((try-decode-bytes (arr &optional (encode :UTF-8) (error-count 0))
                (handler-case (sb-ext:octets-to-string arr :external-format encode)
                  (error (e)
                    (declare (ignore))
                    (case error-count
                      (0
-                      (try-decode-bytes arr :UTF-8 1))
+                      (try-decode-bytes arr :CP932 1))
                      (1
                       (try-decode-bytes arr :EUC-JP 2))
                      (2
@@ -344,16 +375,20 @@
               (if (null value)
                   (setq form (nconc (list key nil) form))
                   (setq form (nconc (list key (try-url-decode value)) form))))))
+        (print form)
         (let ((bbs (get-value-from-key-on-list "bbs" form))
               (key (get-value-from-key-on-list "key" form))
               (submit (get-value-from-key-on-list "submit" form)))
           (cond ((string= submit "書き込む")
+                 (when (> (cadr (get-res-count :key key)) 999)
+                   503)
                  (let ((status (insert-res form ipaddr universal-time)))
                    (if (= status 200)
                        (progn
                          (setf (getf (response-headers *response*) :location) (concatenate 'string "/test/read.cgi/" bbs "/" key))
                          (setf (response-status *response*) 302)
-                         (update-last-modified-date-of-thread :date universal-time :key key))
+                         (update-last-modified-date-of-thread :date universal-time :key key)
+                         (update-res-count-of-thread :key key))
                        (progn
                          (setf (response-status *response*) status)))))
                 ((string= submit "新規スレッド作成")
