@@ -14,6 +14,8 @@
 
 (defvar *default-name* "名無しさん")
 (defvar *board-name* "yarufre")
+(defvar *default-max-length* 1000)
+(defvar *1001* "1001<><>Over Max Thread<> Reached max. Can't write to this thread. <>")
 
 ;; for @route annotation
 (syntax:use-syntax :annot)
@@ -189,7 +191,7 @@
         400
         (progn (when (string= from "")
                  (setq from *default-name*))
-               (when (and (string/= time "")
+               (when (and (string/= time "") (< (cadr (get-res-count :key key)) *default-max-length*)
                           (> (get-unix-time universal-time) (parse-integer time :radix 10)))
                  (with-open-file (input (concatenate 'string "dat/" key ".dat")
                                         :direction :output
@@ -203,7 +205,13 @@
                                     (cadr tmp)
                                     ""))
                           (res (create-res :name (escape-string name) :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
-                     (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input))))
+                     (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input)
+                     (update-last-modified-date-of-thread :date universal-time :key key)
+                     (update-res-count-of-thread :key key)
+                     (when (>= (cadr (get-res-count :key key)) *default-max-length*)
+                       (write-sequence (sb-ext:string-to-octets *1001* :external-format :sjis) input)
+                       (update-res-count-of-thread :key key)
+                       (update-last-modified-date-of-thread :date universal-time :key key)))))
                status))))
 
 (defun put-thread-list (board-name)
@@ -337,6 +345,48 @@
 ;; response-headers is slot of *response*. *response* are type of struct. example: respoinse-cookies.
 ;; (setf (getf (response-headers *response*) :set-cookie) (concatenate 'string "PON=" ipaddr))
 
+;; <form action="/test/bbs.cgi" method="post">
+;;     <label for="FROM">名前：</label>
+;;     <input name="FROM" type="text" value="名無しさん"/>
+;;     <label for="mail">メール：</label>
+;;     <input name="mail" type="text" value=""/>
+;;     <input name="bbs" type="hidden" value="{{ bbs }}"/>
+;;     <input name="key" type="hidden" value="{{ key }}"/>
+;;     <input name="time" type="hidden" value="{{ time }}"/>
+;;     <input name="submit" type="hidden" value="書き込む"/>
+;;     <label for="MESSAGE">本文：</label>
+;;     <textarea cols="30" name="MESSAGE" rows="10"></textarea>
+;;     <button type="submit">送信</button>
+;; </form>
+
+
+(defun generate-confirme-page (bbs key is-utf8 form)
+  (let* ((from (get-value-from-key-on-list "FROM" form))
+         (message (get-value-from-key-on-list "MESSAGE" form))
+         (mail (get-value-from-key-on-list "mail" form))
+         (time (get-unix-time (get-universal-time)))
+         (confirme-first "<!doctype html><head>")
+         (html-charset (if is-utf8 "<meta charset=\"utf-8\">" "<meta charset=\"sjis\">"))
+         (confirme-body "</head><body>")
+         (confirm-msg "<p>書き込みについて</p>")
+         (confirme-form (concatenate 'string 
+                         "<form action=\"/test/bbs.cgi\" method=\"post\">"
+                         "<input name=\"FROM\" type=\"hidden\" value=\"" from "\">"
+                         "<input name=\"mail\" type=\"hidden\" value=\"" (if (null mail) "" mail) "\">"
+                         "<input name=\"MESSAGE\" type=\"hidden\" value=\"" MESSAGE "\">"
+                         "<input name=\"bbs\" type=\"hidden\" value=\"" bbs "\">"
+                         "<input name=\"key\" type=\"hidden\" value=\"" key "\">"
+                         "<input name=\"time\" type=\"hidden\" value=\"" (write-to-string time) "\">"
+                         "<input name=\"submit\" type=\"hidden\" value=\"" "上記全てを承諾して書き込む\">"
+                         "<button type=\"submit\">上記全てを承諾して書き込む</button>"
+                         "</form>"
+                         ))
+         (confirme-end "</body></html>")
+         (confirm-html (concatenate 'string confirme-first html-charset confirme-body confirm-msg confirme-form confirme-end)))
+    (if is-utf8
+        confirm-html
+        (sb-ext:string-to-octets confirm-html :external-format :SJIS))))
+
 (defroute ("/test/bbs.cgi" :method :POST) (&key _parsed)
   (let* ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
          (universal-time (get-universal-time))
@@ -349,46 +399,50 @@
          (raw-body (request-raw-body *request*))
          (content-length (request-content-length *request*))
          (tmp-array (make-array content-length :adjustable t :fill-pointer content-length))
-         (form (list nil)))
-    (print (gethash "user-agent" (request-headers *request*)))
+         (form (list nil))
+         (is-utf8 t))
     (read-sequence tmp-array raw-body)
     (labels ((try-decode-bytes (arr &optional (encode :UTF-8) (error-count 0))
-               (handler-case (sb-ext:octets-to-string arr :external-format encode)
+               (handler-case (cons (sb-ext:octets-to-string arr :external-format encode) error-count)
                  (error (e)
                    (declare (ignore))
                    (case error-count
                      (0
                       (try-decode-bytes arr :CP932 1))
-                     (1
-                      (try-decode-bytes arr :EUC-JP 2))
-                     (2
-                      (try-decode-bytes arr :ASCII 3))
                      (otherwise
                       nil))))))
       (let* ((decoded-query (try-decode-bytes (coerce tmp-array '(vector (unsigned-byte 8)))))
              (parsed-param nil))
         (unless (null decoded-query)
+          (let ((decoded-query-left (car decoded-query))
+                (decoded-query-right (cdr decoded-query)))
+            (when (= decoded-query-right 0)
+              (setq is-utf8 t))
+            (setq decoded-query decoded-query-left))
           (setq parsed-param (get-param decoded-query))
+          (format t "~%~%~%~A~%~%~%" parsed-param)
           (dolist (x parsed-param)
             (let ((key (car x))
                   (value (cadr x)))
               (if (null value)
                   (setq form (nconc (list key nil) form))
                   (setq form (nconc (list key (try-url-decode value)) form))))))
-        (print form)
+        (format t "~%~%~%~A~%~%~%" form)
         (let ((bbs (get-value-from-key-on-list "bbs" form))
               (key (get-value-from-key-on-list "key" form))
               (submit (get-value-from-key-on-list "submit" form)))
           (cond ((string= submit "書き込む")
-                 (when (> (cadr (get-res-count :key key)) 999)
+                 (setf (getf (response-headers *response*) :set-cookie) "PON=Sample")
+                 (setf (response-body *response*) (generate-confirme-page bbs key is-utf8 form))
+                 (setf (response-status *response*) 200))
+                ((string= submit "上記全てを承諾して書き込む")
+                 (when (> (cadr (get-res-count :key key)) *default-max-length*)
                    503)
                  (let ((status (insert-res form ipaddr universal-time)))
                    (if (= status 200)
                        (progn
                          (setf (getf (response-headers *response*) :location) (concatenate 'string "/test/read.cgi/" bbs "/" key))
-                         (setf (response-status *response*) 302)
-                         (update-last-modified-date-of-thread :date universal-time :key key)
-                         (update-res-count-of-thread :key key))
+                         (setf (response-status *response*) 302))
                        (progn
                          (setf (response-status *response*) status)))))
                 ((string= submit "新規スレッド作成")
@@ -407,36 +461,7 @@
                          :element-type '(unsigned-byte 8))
     (let ((file-size (file-length input)))
       (when (or (> 0 start) (< file-size end) (> 0 end))
-        (return-from load-file-with-recursive nil))
-      (let ((buf (make-array (if (= end 0)
-                                 file-size
-                                 end)
-                             :element-type '(unsigned-byte 8)
-                             :initial-element 0)))
-        (read-sequence buf input :start start :end end)
-        buf))))
-
-(defun load-dat (pathname start end)
-  (let ((tmp (load-file-with-recursive pathname 0 0)))
-    (if (null tmp)
-        (progn
-          (setf (response-status *response*) 404)
-          nil))
-    (handler-case (flexi-streams:octets-to-string tmp :external-format :utf-8)
-      (error (e)
-        (declare (ignore e))
-        (flexi-streams:octets-to-string tmp)))))
-
-(defroute ("/:board-name/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
-  (declare (ignore board-name))
-  (let ((pathname (probe-file (concatenate 'string "dat/" unixtime ".dat"))))
-    (if (not (null pathname))
-        (progn
-          (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
-          (setf (response-body *response*) pathname))
-        (progn
-          (setf (response-status *response*) 404)
-          ""))))
+        (return-from load-file-with-recursive nil)))))
 
 (defroute ("/:board-name/SETTING.TXT" :method :GET) (&key board-name)
   (if (string= board-name *board-name*)
