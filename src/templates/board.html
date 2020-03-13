@@ -22,21 +22,21 @@
         
         <button type="submit">新規スレッド作成</button>
     </form>
-    <table>
+    <table id="thread-list">
         <tr>
             <th>スレ名</th>
             <th>作成日時</th>
             <th>更新日時</th>
             <th>レス数</th>
         </tr>
-        <tr>
-            {% for thread in threads %}
-            <td><a href="/test/read.cgi/{{ bbs }}/{{ thread.unixtime }}">{{ thread.title }}</a></td>
-            <td>{{ thread.create-date }}</td>
-            <td>{{ thread.last-modified-date }}</td>
-            <td>{{ thread.res-count }}</td>
-            {% endfor %}
-        </tr>
+        {% for thread in threads %}
+            <tr>
+                <td class="cell-spacing"><a href="/test/read.cgi/{{ bbs }}/{{ thread.unixtime }}">{{ thread.title }}</a></td>
+                <td class="cell-spacing">{{ thread.create-date }}</td>
+                <td class="cell-spacing">{{ thread.last-modified-date }}</td>
+                <td class="cell-spacing">{{ thread.res-count }}</td>
+            </tr>
+        {% endfor %}
     </table>
 </div>
 {% endblock %}
