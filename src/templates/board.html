@@ -3,25 +3,7 @@
 {% block content %}
 <div id="main">
     {{ here }}
-    <form action="/test/bbs.cgi" method="post">
-        <label for="subject">スレッドタイトル</label>
-        <input name="subject" type="text" value="" required/>
-        
-        <label for="FROM">名前:</label>
-        <input name="FROM" type="text" value="名無しさん" required/>
-
-        <label for="mail">メールアドレス</label>
-        <input name="mail" type="text" value=""/>
-        
-        <label for="MESSAGE">本文:</label>
-        <textarea cols="30" id="" name="MESSAGE" rows="10" required></textarea>
-
-        <input name="bbs" type="hidden" value="{{ bbs }}"/>
-        <input name="time" type="hidden" value="{{ time }}"/>
-        <input name="submit" type="hidden" value="新規スレッド作成"/>
-        
-        <button type="submit">新規スレッド作成</button>
-    </form>
+    <h4>スレッド一覧</h4>
     <table id="thread-list">
         <tr>
             <th>スレ名</th>
@@ -38,5 +20,34 @@
             </tr>
         {% endfor %}
     </table>
+    <h4 style="margin-top: 4em;">新規スレッド作成フォーム</h4>
+    <form action="/test/bbs.cgi" method="post">
+        <ul class="form">
+            <li class="form">
+                <label for="subject" class="form">スレッドタイトル</label>
+                <input name="subject" type="text" value="" class="form" required/>
+            </li>
+            <li class="form">
+                <label for="FROM" class="form">名前:</label>
+                <input name="FROM" type="text" value="名無しさん" class="form" required/>
+            </li>
+
+            <li class="form">
+                <label for="mail" class="form">メールアドレス</label>
+                <input name="mail" type="text" value="" class="form"/>
+            </li>
+            <li class="form">
+                <label for="MESSAGE" class="form">本文:</label>
+                <textarea cols="60" id="" name="MESSAGE" rows="10" class="form" required></textarea>
+            </li>
+            <li class="form">
+                <button type="submit">新規スレッド作成</button>
+            </li>
+        </ul>
+        <input name="bbs" type="hidden" value="{{ bbs }}"/>
+        <input name="time" type="hidden" value="{{ time }}"/>
+        <input name="submit" type="hidden" value="新規スレッド作成"/>
+    </form>
+
 </div>
 {% endblock %}

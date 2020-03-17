@@ -16,6 +16,16 @@
 (defvar *board-name* "yarufre")
 (defvar *default-max-length* 1000)
 (defvar *1001* "1001<><>Over Max Thread<> Reached max. Can't write to this thread. <>")
+(defvar *default-penalty-time* 60)
+(defvar *24-hour-seconds* 86400)
+(defvar *9-hour-seconds* (* 9 60 60))
+
+(defmacro caddddr (v)
+  `(caddr (cddr ,v)))
+
+(defmacro cadddddr (v)
+  `(caddr (cdddr ,v)))
+
 
 ;; for @route annotation
 (syntax:use-syntax :annot)
@@ -60,6 +70,82 @@
         t
         nil)))
 
+(defun get-posted-ipaddr-values (table-name ipaddr)
+  (with-connection (db)
+    (retrieve-one
+     (select (fields :count :appearance_date :is_penalty :wait_time)
+             (from (intern table-name))
+             (where (:like :ipaddr ipaddr))))))
+
+(defun set-posted-ipaddr-count-from-db (table-name ipaddr universal-time n
+                                        &optional (is-penalty nil)
+                                          (wait-time *default-penalty-time*))
+  (let ((date (get-current-datetime universal-time t 0)))
+    (with-connection (db)
+      (execute
+       (update (intern table-name)
+               (set= :count n
+                     :appearance_date date
+                     :is_penalty (if is-penalty 1 0)
+                     :wait_time wait-time)
+               (where (:like :ipaddr ipaddr)))))))
+
+(defun insert-posted-ipaddr-from-db (table-name ipaddr universal-time)
+  (let ((date (get-current-datetime universal-time t 0)))
+    (with-connection (db)
+      (execute
+       (insert-into (intern table-name)
+                    (set= :ipaddr ipaddr
+                          :appearance_date date
+                          :is_penalty 0
+                          :count 1
+                          :wait_time *default-penalty-time*))))))
+
+(defun get-detail-time-from-universal-time (time &optional (is-not-utc nil))
+  (multiple-value-bind (second minute hour date month year day summer timezone)
+      (if is-not-utc (decode-universal-time time 0) (decode-universal-time time))
+    (declare (ignore day summer timezone))
+    (list :year year :month month :date date :hour hour :minute minute :second second)))
+
+(defmacro hour-to-second (h)
+  `(* ,h 60 60))
+
+(defun check-abuse-post (ipaddr time)
+  (let* ((table-name "posted_ipaddr_table")
+         (fetch-result (get-posted-ipaddr-values table-name ipaddr))
+         (current-detail-date (get-detail-time-from-universal-time time t))
+         (current-second (getf current-detail-date :second))
+         (current-minute (getf current-detail-date :minute))
+         (current-hour (getf current-detail-date :hour))
+         (current-date (getf current-detail-date :date)))
+    (unless fetch-result
+      (insert-posted-ipaddr-from-db table-name ipaddr time)
+      (return-from check-abuse-post t))
+    (let* ((appearance-date (getf fetch-result :appearance-date))
+           (is-penalty (getf fetch-result :is-penalty))
+           (count (getf fetch-result :count))
+           (appearance-detail-date (get-detail-time-from-universal-time appearance-date))
+           (target-second (getf appearance-detail-date :second))
+           (target-minute (getf appearance-detail-date :minute))
+           (target-hour (getf appearance-detail-date :hour))
+           (target-date (getf appearance-detail-date :date))
+           (wait-time (getf fetch-result :wait-time))
+           (left  (+ current-second (hour-to-second current-hour) (* current-minute 60)))
+           (right (+ target-second (hour-to-second target-hour) (* target-minute 60)))
+           (diff (abs (- left right))))
+      (cond ((<= wait-time diff)
+             (setq is-penalty nil)
+             (set-posted-ipaddr-count-from-db table-name ipaddr time 0)
+             t)
+            ((> count 5)
+             (set-posted-ipaddr-count-from-db
+              table-name ipaddr time (1+ count) t
+              (if (< wait-time *24-hour-seconds*) (+ wait-time *default-penalty-time*) wait-time))
+             nil)
+            (t
+             (set-posted-ipaddr-count-from-db table-name ipaddr time (1+ count) nil wait-time)
+             nil)))))
+
 (defun init-threads-table ()
   (with-connection (db)
     (execute
@@ -78,11 +164,11 @@
 
 (defun format-datetime (date)
   (multiple-value-bind (second minute hour date month year day summer timezone)
-      (decode-universal-time date 0)
+      (decode-universal-time (+ date *9-hour-seconds*))
     (declare (ignore day summer timezone))
     (format nil "~A/~A/~A ~A:~A:~A" year month date hour minute second)))
 
-(defun get-table-count (table-name column)
+(defun get-table-column-count (table-name column)
   (with-connection (db)
     (retrieve-one
      (select (fields (:count (intern column)))
@@ -115,7 +201,7 @@
 
 
 (defun create-res (&key name trip-key email date text ipaddr (first nil) (title ""))
-  (let* ((datetime (replace-hyphen-to-slash (get-current-datetime date 0)))
+  (let* ((datetime (replace-hyphen-to-slash (get-current-datetime date)))
          (id (generate-id :ipaddr ipaddr :date datetime))
          (trip (if (and (stringp trip-key) (string/= trip-key ""))
                    (generate-trip (subseq trip-key 1 (length trip-key)) "utf8")
@@ -128,7 +214,7 @@
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" (apply-dice name t) trip email datetime id final-text))))
 
 (defun create-thread-in-db (&key title create-date unixtime)
-  (let ((date (get-current-datetime create-date 0)))
+  (let ((date (get-current-datetime create-date)))
     (with-connection (db)
       (execute
        (insert-into :threads
@@ -440,20 +526,28 @@
          (next-route))))))
 
 (defroute ("/test/bbs.cgi" :method :POST) (&key _parsed)
-  (let* ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
-         (universal-time (get-universal-time))
-         (message (replace-not-available-char-when-cp932 (get-value-from-key "MESSAGE" _parsed)))
-         (cookie (gethash "cookie" (request-headers *request*)))
-         (splited-cookie (if (null cookie)
-                             nil
-                             (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
-                                     (cl-ppcre:split ";" cookie))))
-         (raw-body (request-raw-body *request*))
-         (content-length (request-content-length *request*))
-         (tmp-array (make-array content-length :adjustable t :fill-pointer content-length))
-         (form (list nil)))
-    (read-sequence tmp-array raw-body)
-    (bbs-cgi-function tmp-array ipaddr universal-time)))
+  (let ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
+        (universal-time (get-universal-time)))
+    (if (check-abuse-post ipaddr universal-time)
+        (let* ((message (replace-not-available-char-when-cp932 (get-value-from-key "MESSAGE" _parsed)))
+               (cookie (gethash "cookie" (request-headers *request*)))
+               (splited-cookie (if (null cookie)
+                                   nil
+                                   (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
+                                           (cl-ppcre:split ";" cookie))))
+               (raw-body (request-raw-body *request*))
+               (content-length (request-content-length *request*))
+               (tmp-array (make-array content-length :adjustable t :fill-pointer content-length)))
+          (read-sequence tmp-array raw-body)
+          (bbs-cgi-function tmp-array ipaddr universal-time))
+        (progn (setf (response-status *response*) 429)
+               (render #P "time_restrict.html" (list :minute
+                                                     (/ (getf (get-posted-ipaddr-values "posted_ipaddr_table" ipaddr)
+                                                              :wait-time)
+                                                        60)
+                                                     
+                                                     :bbs (cdr (assoc "bbs" _parsed :test #'string=))
+                                                     :key (cdr (assoc "key" _parsed :test #'string=))))))))
 
 (defun load-file-with-recursive (pathname start end)
   (with-open-file (input pathname

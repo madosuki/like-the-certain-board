@@ -1,0 +1,13 @@
+{% extends "layouts/default.html" %}
+{% block title %}連投規制{% endblock %}
+{% block content %}
+<div id="main">
+    <h1>{{ minute }}分経つまで投稿できません．</h1>
+    <footer id="time-restrict">
+        <nav>
+            <a href="/test/read.cgi/{{ bbs }}/{{ key }}" class="nav-item-in-footer">スレッドに戻る</a>
+            <a href="/{{ bbs }}" class="nav-item-in-footer">板に戻る</a>
+        </nav>
+    </footer>
+</div>
+{% endblock %}
