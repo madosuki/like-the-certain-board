@@ -132,7 +132,7 @@
            (wait-time (getf fetch-result :wait-time))
            (left  (+ current-second (hour-to-second current-hour) (* current-minute 60)))
            (right (+ target-second (hour-to-second target-hour) (* target-minute 60)))
-           (diff (abs (- left right))))
+           (diff (abs (- (if (< target-date current-date) (+ left *24-hour-seconds*) left) right))))
       (cond ((<= wait-time diff)
              (setq is-penalty nil)
              (set-posted-ipaddr-count-from-db table-name ipaddr time 0)
@@ -296,7 +296,8 @@
                      (update-last-modified-date-of-thread :date universal-time :key key)
                      (update-res-count-of-thread :key key)
                      (when (>= (cadr (get-res-count :key key)) *default-max-length*)
-                       (write-sequence (sb-ext:string-to-octets *1001* :external-format :sjis) input)
+                       (write-sequence
+                        (sb-ext:string-to-octets *1001* :external-format :sjis) input)
                        (update-res-count-of-thread :key key)
                        (update-last-modified-date-of-thread :date universal-time :key key)))))
                status))))

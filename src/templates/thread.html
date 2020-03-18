@@ -4,9 +4,9 @@
 <div id="main">
     <h1 style="margin-bottom: 2rem;">{{ title }}</h1>
     {% for i in thread %}
-    <dl>
+    <dl id="{{ forloop.counter }}">
         <dt>
-            {{ forloop.counter }} 名前：<font color="#008800"><b>{{ i.name | safe}}</b>{{ i.trip }}</font>[{{ i.email }}] 投稿日：{{ i.date }}(UTC+0) {{ i.id }}
+            {{ forloop.counter }} 名前：<font color="#008800"><b>{{ i.name | safe}}</b>{{ i.trip }}</font>[{{ i.email }}] 投稿日：{{ i.date }} {{ i.id }}
         </dt>
         <dd id="thread">
             {{ i.text | safe}}
