@@ -2,7 +2,14 @@
 {% block title %}連投規制{% endblock %}
 {% block content %}
 <div id="main">
-    <h1>{{ minute }}分経つまで投稿できません．</h1>
+    <h1 id="alart-title">投稿規制</h1>
+    <p>Your IP Address: {{ ipaddr }}</p>
+    {% if minute <= 1440 %}
+    <p>{{ minute }}分経つまで投稿できません．</p>
+    {% else %}
+    <p>BANされました．</p>
+    <p>admin@yarufre.comかTwitter公式アカウントにIPアドレスを記載した解除申請してくだされば対応します．但し，悪質な場合は永久BANとなり解除申請に応じられませんのであしからず．</p>
+    {% endif %}
     <footer id="time-restrict">
         <nav>
             <a href="/test/read.cgi/{{ bbs }}/{{ key }}" class="nav-item-in-footer">スレッドに戻る</a>

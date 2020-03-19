@@ -22,8 +22,6 @@
 
                "alexandria"
 
-               "inquisitor"
-               
                "generate-like-certain-board-strings")
   :components ((:module "src"
                 :components

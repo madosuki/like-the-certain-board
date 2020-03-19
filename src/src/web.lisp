@@ -133,6 +133,8 @@
            (left  (+ current-second (hour-to-second current-hour) (* current-minute 60)))
            (right (+ target-second (hour-to-second target-hour) (* target-minute 60)))
            (diff (abs (- (if (< target-date current-date) (+ left *24-hour-seconds*) left) right))))
+      (when (>= wait-time *24-hour-seconds*)
+        (return-from check-abuse-post nil))
       (cond ((<= wait-time diff)
              (setq is-penalty nil)
              (set-posted-ipaddr-count-from-db table-name ipaddr time 0)
@@ -542,13 +544,15 @@
           (read-sequence tmp-array raw-body)
           (bbs-cgi-function tmp-array ipaddr universal-time))
         (progn (setf (response-status *response*) 429)
-               (render #P "time_restrict.html" (list :minute
-                                                     (/ (getf (get-posted-ipaddr-values "posted_ipaddr_table" ipaddr)
-                                                              :wait-time)
-                                                        60)
+               (render #P "time_restrict.html" (list
+                                                :ipaddr ipaddr
+                                                :minute
+                                                (/ (getf (get-posted-ipaddr-values "posted_ipaddr_table" ipaddr)
+                                                         :wait-time)
+                                                   60)
                                                      
-                                                     :bbs (cdr (assoc "bbs" _parsed :test #'string=))
-                                                     :key (cdr (assoc "key" _parsed :test #'string=))))))))
+                                                :bbs (cdr (assoc "bbs" _parsed :test #'string=))
+                                                :key (cdr (assoc "key" _parsed :test #'string=))))))))
 
 (defun load-file-with-recursive (pathname start end)
   (with-open-file (input pathname

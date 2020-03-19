@@ -9,26 +9,49 @@ body {
     font-family: 'Myriad Pro', Calibri, Helvetica, Arial, sans-serif;
 }
 
+h1#alart-title {
+    margin-bottom: 2rem;
+}
+
+h4#thread-content-title {
+    margin-top: 2rem;
+    margin-left: 1rem;
+}
+
 #time-restrict {
     margin-top: 1rem;
+}
+
+#footer {
+    margin-top: 2rem;
+    margin-left: 1rem;
+    margin-bottom: 1rem;
+}
+
+footer#footer nav ul {
+    list-style: none;
 }
 
 .nav-item-in-footer {
     margin-right: 1rem;
 }
 
+dl {
+    margin-left: 1rem;
+}
+
 dd#thread {
     font-family: Mona, Monapo, IPAMonaPGothic, "MS PGothic", sans-serif;
     font-size: 16px;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 a:link {
-  color: #005585;
-  text-decoration: none;
+  color: blue;
+  /*text-decoration: none;*/
 }
 a:visited {
-  color: #485270;
+  color: red;
 }
 a:hover {
   color: #b83800;
