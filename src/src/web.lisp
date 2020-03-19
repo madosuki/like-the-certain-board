@@ -272,37 +272,38 @@
          (status 200))
     (unless from
       (setq from *default-name*))
-    (if (or (null bbs)
+    (when (or (null bbs)
             (null key)
             (null time)
             (null mail)
             (null message))
-        400
-        (progn (when (string= from "")
-                 (setq from *default-name*))
-               (when (and (string/= time "") (< (cadr (get-res-count :key key)) *default-max-length*)
-                          (> (get-unix-time universal-time) (parse-integer time :radix 10)))
-                 (with-open-file (input (concatenate 'string "dat/" key ".dat")
-                                        :direction :output
-                                        :if-exists :append
-                                        :if-does-not-exist nil
-                                        :element-type '(unsigned-byte 8)
-                                        :external-format :sjis)
-                   (let* ((tmp (separate-trip-from-input from))
-                          (name (car tmp))
-                          (trip (if (> (length tmp) 1)
-                                    (cadr tmp)
-                                    ""))
-                          (res (create-res :name (escape-string name) :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
-                     (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input)
-                     (update-last-modified-date-of-thread :date universal-time :key key)
-                     (update-res-count-of-thread :key key)
-                     (when (>= (cadr (get-res-count :key key)) *default-max-length*)
-                       (write-sequence
-                        (sb-ext:string-to-octets *1001* :external-format :sjis) input)
-                       (update-res-count-of-thread :key key)
-                       (update-last-modified-date-of-thread :date universal-time :key key)))))
-               status))))
+      (return-from insert-res 400))
+    (when (string= from "")
+      (setq from *default-name*))
+    (when (and (string/= time "") (< (cadr (get-res-count :key key)) *default-max-length*)
+               (> (get-unix-time universal-time) (parse-integer time :radix 10)))
+      (with-open-file (input (concatenate 'string "dat/" key ".dat")
+                             :direction :output
+                             :if-exists :append
+                             :if-does-not-exist nil
+                             :element-type '(unsigned-byte 8)
+                             :external-format :sjis)
+        (let* ((tmp (separate-trip-from-input from))
+               (name (car tmp))
+               (trip (if (> (length tmp) 1)
+                         (cadr tmp)
+                         ""))
+               (res (create-res :name (escape-string name) :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
+          (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input)
+          (update-last-modified-date-of-thread :date universal-time :key key)
+          (update-res-count-of-thread :key key)
+          (when (>= (cadr (get-res-count :key key)) *default-max-length*)
+            (write-sequence
+             (sb-ext:string-to-octets *1001* :external-format :sjis) input)
+            (update-res-count-of-thread :key key)
+            (update-last-modified-date-of-thread :date universal-time :key key))
+          (format t "~%~%insert!~%~%"))))
+    status))
 
 (defun put-thread-list (board-name)
   (if (string= board-name *board-name*)
@@ -565,7 +566,7 @@
                                  file-size
                                  end)
                              :element-type '(unsigned-byte 8)
-                             :initial-element 0)))
+p                             :initial-element 0)))
         (read-sequence buf input :start start :end end)
         buf))))
 
