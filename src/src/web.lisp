@@ -313,7 +313,7 @@
           (dolist (x result)
             (setf (getf x :create-date) (format-datetime (getf x :create-date)))
             (setf (getf x :last-modified-date) (format-datetime (getf x :last-modified-date))))
-          (render #P"board.html" (list :here "sample dayo"
+          (render #P"board.html" (list :board-name "やる夫の試験運用板"
                                        :bbs board-name
                                        :time (get-unix-time (get-universal-time))
                                        :threads result))))
@@ -351,7 +351,7 @@
 (defroute ("/:board-name/subject.txt" :method :GET) (&key board-name)
   (declare (ignore board-name))
   (let* ((tmp (get-thread-list-when-create-subject-txt))
-         (result (list nil)))
+         (result nil))
     (if tmp
         (progn
           (dolist (x tmp)
@@ -359,7 +359,7 @@
                   (title (cadr (member :title x)))
                   (res-count (cadr (member :res-count x))))
               (push (format nil "~A<>~A (~A)~%" dat-name title res-count) result)))
-          (let* ((final (apply #'concatenate 'string (cdr (reverse result))))
+          (let* ((final (apply #'concatenate 'string (nreverse result)))
                  (oct (sb-ext:string-to-octets final :external-format :sjis))
                  (content-length (length oct)))
             `(200 (:content-type "text/plain" :content-length ,content-length) ,oct)))
@@ -382,10 +382,10 @@
 
 (defun get-param (body)
   (let ((tmp (cl-ppcre:split "&" body))
-        (result (list nil)))
+        (result nil))
     (dolist (x tmp)
       (push (cl-ppcre:split "=" x) result))
-    (cdr (reverse result))))
+    (nreverse result)))
 
 (defun try-url-decode (x &optional (encode :UTF-8) (error-count 0))
   (format t "~%url-encode: ~A~%" x)
@@ -494,7 +494,7 @@
   (let* ((decoded-query (sb-ext:octets-to-string (coerce body-text '(vector (unsigned-byte 8)))
                                                  :external-format :UTF-8))
          (parsed-param nil)
-         (form (list nil)))
+         (form nil))
     (unless (null decoded-query)
       (setq parsed-param (get-param decoded-query))
       (dolist (x parsed-param)

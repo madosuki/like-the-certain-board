@@ -38,6 +38,7 @@ footer#footer nav ul {
 
 dl {
     margin-left: 1rem;
+    white-space: nowrap;
 }
 
 dd#thread {
@@ -78,6 +79,7 @@ tr.row-border {
 table {
     margin-left: 1em;
     margin-top: 1em;
+    margin-right: 1em;
 }
 
 table th, table td {
@@ -90,6 +92,7 @@ table#thread-list {
 
 form {
     margin-top: 1rem;
+    margin-right: 1rem;
 }
 
 ul.form li.form {
