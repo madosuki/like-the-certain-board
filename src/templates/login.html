@@ -1,0 +1,29 @@
+{% extends "layouts/default.html" %}
+{% block title %}やる夫Lisp板{% endblock %}
+{% block content %}
+<div id="main">
+    <form action="/api/login" method="post">
+        <ul class="form">
+            <li class="form">
+                <label for="username" class="form">User Name:</label>
+                <input name="username" type="text" pattern="^[a-zA-Z0-9]+" class="form"/>
+            </li>
+            <li class="form">
+                <label for="password" class="form">Your Password:</label>
+                <input name="password" type="password" pattern="^[a-zA-Z0-9]+" class="form"/>
+            </li>
+            <li class="form">
+                <button type="submit">送信</button>
+            </li>
+        </ul>
+    </form>
+
+    <footer id="footer">
+        <nav>
+            <ul>
+                <li><a href="/{{ bbs }}">板に戻る</a></li>
+            </ul>
+        </nav>
+    </footer>
+</div>
+{% endblock %}

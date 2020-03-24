@@ -22,6 +22,8 @@
 
                "alexandria"
 
+               "ironclad"
+
                "generate-like-certain-board-strings")
   :components ((:module "src"
                 :components
