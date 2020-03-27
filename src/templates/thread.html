@@ -5,6 +5,13 @@
     <h1 style="margin-bottom: 2rem;">{{ title }}</h1>
     {% for i in thread %}
     <dl id="{{ forloop.counter }}">
+        {% if is-login %}
+        <form action="/{{ bbs }}/api/line" method="post">
+            <input name="line" type="hidden" value="{{ forloop.counter }}"/>
+            <input name="key" type="hidden" value="{{ key }}"/>
+            <button name="submit" type="submit">{{ forloop.counter }}番目の行を削除</button>
+        </form>
+        {% endif %}
         <dt>
             {{ forloop.counter }} 名前：<font color="#008800"><b>{{ i.name | safe}}</b>{{ i.trip }}</font>[{{ i.email }}] 投稿日：{{ i.date }} {{ i.id }}
         </dt>

@@ -20,6 +20,7 @@
 (defvar *24-hour-seconds* 86400)
 (defvar *9-hour-seconds* (* 9 60 60))
 (defvar *delete-message* "削除されました<><>削除されました<> 削除されました <>")
+(defvar *session-login-key* "logged-in")
 
 ;; this solt is sample. don't use production.
 (defvar *solt* "wqk0SZoDaZioQbuYzCM3mRBDFbj8FD9sx3ZX34wwhnMjtdAIM2tqonirJ7o8NuDpPkFIFbAacZYTsBRHzjmagGpZZb6aAZVvk5AcWJXWGRdTZlpo7vuXF3zvg1xp9yp0")
@@ -62,20 +63,23 @@
     (with-open-file (out outpath
                          :direction :output
                          :if-exists :supersede
-                         :external-format :CP932)
-      (format out result))))
+                         :element-type '(unsigned-byte 8))
+      (write-sequence (sb-ext:string-to-octets result :external-format :CP932) out))))
 
 (defun delete-line-in-dat (key line-number)
   (let* ((path (concatenate 'string (namestring (truename "./")) "dat/" key ".dat"))
-         (outpath (concatenate 'string path ".out")))
+         (outpath (concatenate 'string path ".out"))
+         (is-not-error nil))
     (handler-case (change-line-in-dat path outpath *delete-message* line-number)
       (error (e)
-        (format t "~%~%~%~A~%~%~%" e)
-        nil)
+        ;; (declare (ignore e))
+        (format t "~%~A~%" e)
+        )
       (:no-error (c)
         (declare (ignore c))
         (rename-file outpath path)
-        t))))
+        (setq is-not-error t)))
+    is-not-error))
 
 (defun get-thread-list ()
   (with-connection (db)
@@ -202,14 +206,19 @@
 
 (defvar *user-login-table-postero-string* "_login_table")
 (defun create-user-login-table (user-name)
-  (with-connection (db)
-    (execute
-     (create-table ((intern (concatenate 'string user-name *user-login-table-postero-string*))
-                    :if-exists-not t)
-                   ((login-date :type 'datetime
-                                :not-null t)
-                    (ip-address '(:varchar 43)
-                                :not-null t))))))
+  (let ((table-name (intern (concatenate 'string user-name *user-login-table-postero-string*)
+                            "KEYWORD")))
+    (with-connection (db)
+      (execute
+       (create-table (table-name
+                      :if-exists-not t)
+                     ((id :type 'integer
+                          :primary-key t
+                          :auto-increment t)
+                      (login-date :type 'datetime
+                                  :not-null t)
+                      (ip-address :type '(:varchar 43)
+                                  :not-null t)))))))
 
 (defun insert-user-login-table (user-name ipaddr date)
   (with-connection (db)
@@ -227,10 +236,30 @@
              (order-by (:desc :login-date))))))
 
 (defun get-user-table (board-name user-name)
+  (format t "~%~A ~A~%" board-name user-name)
   (with-connection (db)
     (retrieve-one
      (select :*
              (from :user_table)
+             (where (:and (:like :user user-name) (:like :board_name board-name)))))))
+
+(defun insert-user-table (board-name user-name hash date ipaddr)
+  (with-connection (db)
+    (execute
+     (insert-into :user_table
+                  (set=
+                   :board_name board-name
+                   :user user-name
+                   :hash hash
+                   :create_date date
+                   :latest_date date
+                   :ipaddr ipaddr)))))
+
+(defun update-user-table (board-name user-name date)
+  (with-connection (db)
+    (execute
+     (update :user_table
+             (set= :latest_date date)
              (where (:and (:like :user user-name) (:like :board_name board-name)))))))
 
 (defun insert-session-login-table (session is-login)
@@ -248,6 +277,7 @@
              (from :session_login_table)
              (where (:like :session session))))))
 
+
 (defun format-datetime (date)
   (multiple-value-bind (second minute hour date month year day summer timezone)
       (decode-universal-time (+ date *9-hour-seconds*))
@@ -260,7 +290,7 @@
      (select (fields (:count (intern column)))
              (from (intern table-name))))))
 
-(defun check-exists-table-and-create-table-when-does-not ()
+(defun check-exists-threads-table-and-create-table-when-does-not ()
   (handler-case (check-exists-table "threads")
     (error (e)
       (declare (ignore e))
@@ -311,7 +341,7 @@
                           :unixtime unixtime))))))
 
 (defun create-thread (&key _parsed date ipaddr)
-  (check-exists-table-and-create-table-when-does-not)
+  (check-exists-threads-table-and-create-table-when-does-not)
   (let* ((title (get-value-from-key-on-list "subject" _parsed))
          (name (escape-string (get-value-from-key-on-list "FROM" _parsed)))
          (trip-key "")
@@ -392,77 +422,18 @@
 (defun put-thread-list (board-name)
   (if (string= board-name *board-name*)
       (progn
-        (check-exists-table-and-create-table-when-does-not)
-        (let ((result (get-thread-list)))
+        (check-exists-threads-table-and-create-table-when-does-not)
+        (let ((result (get-thread-list))
+              (is-login (gethash *session-login-key* *session*)))
           (dolist (x result)
             (setf (getf x :create-date) (format-datetime (getf x :create-date)))
             (setf (getf x :last-modified-date) (format-datetime (getf x :last-modified-date))))
           (render #P"board.html" (list :board-name "やる夫の試験運用板"
                                        :bbs board-name
                                        :time (get-unix-time (get-universal-time))
-                                       :threads result))))
+                                       :threads result
+                                       :is-login is-login))))
       (on-exception *web* 404)))
-
-
-;; Model
-;; (defmodel (threads
-;;            (:inflate created-date update-date #'datetime-to-timestamp))
-;;   id
-;;   title
-;;   res-count
-;;   created-date
-;;   update-date)
-
-;;
-;; Routing rules
-
-(defroute "/" ()
-  (render #P"index.html"))
-
-(defroute "/*.json" ()
-  (setf (getf (response-headers *response*) :content-type) "application/json")
-  (format t "~A~%" *response*)
-  "{\"name\": \"Lain\"}")
-
-(defroute ("/:board-name/" :method :GET) (&key board-name)
-  ;; (maphash #'(lambda (key value) (format t "~%Key:~A, Value:~A~%" key value)) (request-headers *request*))
-  ;; (print (gethash "cookie" (request-headers *request*)))
-  (put-thread-list board-name))
-
-(defroute ("/:board-name" :method :GET) (&key board-name)
-  (put-thread-list board-name))
-
-(defroute ("/:board-name/subject.txt" :method :GET) (&key board-name)
-  (declare (ignore board-name))
-  (let* ((tmp (get-thread-list-when-create-subject-txt))
-         (result nil))
-    (if tmp
-        (progn
-          (dolist (x tmp)
-            (let ((dat-name (generate-dat-name x))
-                  (title (cadr (member :title x)))
-                  (res-count (cadr (member :res-count x))))
-              (push (format nil "~A<>~A (~A)~%" dat-name title res-count) result)))
-          (let* ((final (apply #'concatenate 'string (nreverse result)))
-                 (oct (sb-ext:string-to-octets final :external-format :sjis))
-                 (content-length (length oct)))
-            `(200 (:content-type "text/plain" :content-length ,content-length) ,oct)))
-        (let* ((empty (sb-ext:string-to-octets "" :external-format :sjis))
-               (content-length (length empty)))
-          `(200 (:content-type "text/plain" :content-length ,content-length) ,empty)))))
-
-(defroute "/ipinfo" ()
-  (caveman2:request-remote-addr caveman2:*request*))
-
-(defroute ("/test/read.cgi/:board-name/:unixtime" :method :GET) (&key board-name unixtime)
-  (declare (ignore board-name))
-  (let* ((filepath (concatenate 'string "dat/" unixtime ".dat"))
-         (dat-list (dat-to-keyword-list filepath))
-         (title (cadr (member :title (car dat-list))))
-         (current-unix-time (get-unix-time (get-universal-time))))
-    (if (probe-file filepath)
-        (render #P "thread.html" (list :title title :thread dat-list :bbs *board-name* :key unixtime :time current-unix-time))
-        (on-exception *web* 404))))
 
 (defun get-param (body)
   (let ((tmp (cl-ppcre:split "&" body))
@@ -599,32 +570,6 @@
          (setf (response-status *response*) 400)
          (next-route))))))
 
-(defroute ("/test/bbs.cgi" :method :POST) (&key _parsed)
-  (let ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
-        (universal-time (get-universal-time)))
-    (if (check-abuse-post ipaddr universal-time)
-        (let* ((message (replace-not-available-char-when-cp932 (get-value-from-key "MESSAGE" _parsed)))
-               (cookie (gethash "cookie" (request-headers *request*)))
-               (splited-cookie (if (null cookie)
-                                   nil
-                                   (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
-                                           (cl-ppcre:split ";" cookie))))
-               (raw-body (request-raw-body *request*))
-               (content-length (request-content-length *request*))
-               (tmp-array (make-array content-length :adjustable t :fill-pointer content-length)))
-          (read-sequence tmp-array raw-body)
-          (bbs-cgi-function tmp-array ipaddr universal-time))
-        (progn (setf (response-status *response*) 429)
-               (render #P "time_restrict.html" (list
-                                                :ipaddr ipaddr
-                                                :minute
-                                                (/ (getf (get-posted-ipaddr-values "posted_ipaddr_table" ipaddr)
-                                                         :wait-time)
-                                                   60)
-                                                     
-                                                :bbs (cdr (assoc "bbs" _parsed :test #'string=))
-                                                :key (cdr (assoc "key" _parsed :test #'string=))))))))
-
 (defun load-file-with-recursive (pathname start end)
   (with-open-file (input pathname
                          :direction :input
@@ -651,6 +596,150 @@ p                             :initial-element 0)))
         (declare (ignore e))
         (flexi-streams:octets-to-string tmp)))))
 
+
+(defun check-time-over-logged-in (board-name user-name universal-time)
+  (let ((db-data (get-user-table board-name user-name)))
+    (unless db-data
+      (return-from check-time-over-logged-in 'not-found))
+    (let ((latest-date (getf db-data :latest-date))
+          (is-logged-in (getf db-data :is-logged-in))
+          (utc-current (- universal-time (* 9 60 60))))
+      (if (and (= is-logged-in 1) (> (abs (- utc-current latest-date)) (* 1 60 60)))
+          'time-over
+          nil))))
+
+(defun check-login-possible (board-name user-name &optional (hash-string ""))
+  (let ((data (get-user-table board-name user-name))
+        (session-is-login (gethash *session-login-key* *session*)))
+    (unless data
+      (return-from check-login-possible nil))
+    (when session-is-login
+      (return-from check-login-possible 'logged-in))
+    (let ((db-hash-string (getf data :hash)))
+      (string= hash-string db-hash-string))))
+
+(defun login (board-name user-name password ipaddr universal-time)
+  (when (or (null user-name) (null password))
+    (return-from login nil))
+  (let* ((hash (sha256 (concatenate 'string *solt* password)))
+         (is-login nil)
+         (checked (check-login-possible board-name user-name hash))
+         (date (get-current-datetime universal-time t)))
+    (cond ((eq checked 'logged-in)
+           'logged-in)
+          ((eql checked t)
+           (setf (gethash *session-login-key* *session*) t)
+           (update-user-table board-name user-name date)
+           t)
+          (t
+           nil))))
+
+(defun create-user (board-name user-name password ipaddr date)
+  (unless (or user-name password)
+    (return-from create-user nil))
+  (when (get-user-table board-name user-name)
+    (return-from create-user 'exist-user))
+  (let ((hash (sha256 (concatenate 'string *solt* password)))
+        (date (get-current-datetime date t)))
+    (handler-case (insert-user-table board-name user-name hash date ipaddr)
+      (error (e)
+        (format t "~%~A~%" e)
+        'create-failed)
+      (:no-error (c)
+        (declare (ignore c))
+        t))))
+
+
+
+;; Model
+;; (defmodel (threads
+;;            (:inflate created-date update-date #'datetime-to-timestamp))
+;;   id
+;;   title
+;;   res-count
+;;   created-date
+;;   update-date)
+
+;;
+;; Routing rules
+
+(defroute "/" ()
+  (render #P"index.html"))
+
+(defroute "/*.json" ()
+  (setf (getf (response-headers *response*) :content-type) "application/json")
+  (format t "~A~%" *response*)
+  "{\"name\": \"Lain\"}")
+
+(defroute ("/:board-name/" :method :GET) (&key board-name)
+  ;; (maphash #'(lambda (key value) (format t "~%Key:~A, Value:~A~%" key value)) (request-headers *request*))
+  ;; (print (gethash "cookie" (request-headers *request*)))
+  (put-thread-list board-name))
+
+(defroute ("/:board-name" :method :GET) (&key board-name)
+  (put-thread-list board-name))
+
+(defroute ("/:board-name/subject.txt" :method :GET) (&key board-name)
+  (declare (ignore board-name))
+  (let* ((tmp (get-thread-list-when-create-subject-txt))
+         (result nil))
+    (if tmp
+        (progn
+          (dolist (x tmp)
+            (let ((dat-name (generate-dat-name x))
+                  (title (cadr (member :title x)))
+                  (res-count (cadr (member :res-count x))))
+              (push (format nil "~A<>~A (~A)~%" dat-name title res-count) result)))
+          (let* ((final (apply #'concatenate 'string (nreverse result)))
+                 (oct (sb-ext:string-to-octets final :external-format :sjis))
+                 (content-length (length oct)))
+            `(200 (:content-type "text/plain" :content-length ,content-length) ,oct)))
+        (let* ((empty (sb-ext:string-to-octets "" :external-format :sjis))
+               (content-length (length empty)))
+          `(200 (:content-type "text/plain" :content-length ,content-length) ,empty)))))
+
+(defroute "/ipinfo" ()
+  (caveman2:request-remote-addr caveman2:*request*))
+
+(defroute ("/test/read.cgi/:board-name/:unixtime" :method :GET) (&key board-name unixtime)
+  (declare (ignore board-name))
+  (let* ((filepath (concatenate 'string "dat/" unixtime ".dat"))
+         (dat-list (dat-to-keyword-list filepath))
+         (title (cadr (member :title (car dat-list))))
+         (current-unix-time (get-unix-time (get-universal-time)))
+         (is-login (gethash *session-login-key* *session*)))
+    (if (probe-file filepath)
+        (render #P "thread.html" (list :title title :thread dat-list :bbs *board-name* :key unixtime :time current-unix-time :is-login is-login))
+        (on-exception *web* 404))))
+
+
+(defroute ("/test/bbs.cgi" :method :POST) (&key _parsed)
+  (let ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
+        (universal-time (get-universal-time)))
+    (if (check-abuse-post ipaddr universal-time)
+        (let* ((message (replace-not-available-char-when-cp932 (get-value-from-key "MESSAGE" _parsed)))
+               (cookie (gethash "cookie" (request-headers *request*)))
+               (splited-cookie (if (null cookie)
+                                   nil
+                                   (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
+                                           (cl-ppcre:split ";" cookie))))
+               (raw-body (request-raw-body *request*))
+               (content-length (request-content-length *request*))
+               (tmp-array (make-array content-length :adjustable t :fill-pointer content-length)))
+          (read-sequence tmp-array raw-body)
+          (bbs-cgi-function tmp-array ipaddr universal-time))
+        (progn (setf (response-status *response*) 429)
+               (render #P "time_restrict.html" (list
+                                                :ipaddr ipaddr
+                                                :minute
+                                                (/ (getf (get-posted-ipaddr-values "posted_ipaddr_table" ipaddr)
+                                                         :wait-time)
+                                                   60)
+                                                     
+                                                :bbs (cdr (assoc "bbs" _parsed :test #'string=))
+                                                :key (cdr (assoc "key" _parsed :test #'string=))))))))
+
+
 (defroute ("/:board-name/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
   (declare (ignore board-name))
   (let ((pathname (probe-file (concatenate 'string "dat/" unixtime ".dat"))))
@@ -670,29 +759,13 @@ p                             :initial-element 0)))
         (setf (response-body *response*) (probe-file pathname)))
       (on-exception *web* 404)))
 
-(defun check-login-possible (board-name user-name hash-string)
-  (let ((data (get-user-table board-name user-name)))
-    (unless data
-      (return-from check-login-possible nil))
-    (let ((db-hash-string (getf data :hash)))
-      (string= hash-string db-hash-string))))
+(defroute ("/:board-name/login" :method :GET) (&key board-name)
+  (render #P "login.html" (list :bbs board-name
+                                :is-login (if (gethash *session-login-key* *session*)
+                                              "logged-in"
+                                              ""))))
 
-(defun login (board-name user-name password ipaddr)
-  (unless (or user-name password)
-    (return-from login nil))
-  (let ((hash (sha256 (concatenate 'string *solt* password)))
-        (is-login nil))
-    (when (check-login-possible board-name user-name hash)
-      (let ((date (get-current-datetime (get-universal-time) t)))
-        (handler-case (insert-user-login-table user-name ipaddr date)
-          (error (e)
-            (format t "~%~A~%" e)
-            (return-from login nil)))
-        (setq is-login t)))
-    is-login))
-
-
-(defroute ("/:board-name/api/login" :method :POST) (&key board-name _parsed)
+(defroute ("/:board-name/api/user" :method :GET) (&key board-name _parsed)
   (let* ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
          (is-login nil)
          (user-name (get-value-from-key "user_name" _parsed))
@@ -701,24 +774,49 @@ p                             :initial-element 0)))
          (splited-cookie (if (null cookie)
                              nil
                              (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
-                                     (cl-ppcre:split ";" cookie)))))
-    (if (login board-name user-name password ipaddr)
-        "Success"
-        "Failed")))
+                                     (cl-ppcre:split ";" cookie))))
+         (login-check (login board-name user-name password ipaddr (get-universal-time))))
+    (cond ((eq login-check 'logged-in)
+              (render #P "login.html" (list :bbs board-name :is-login "logged-in")))
+          ((eql login-check t)
+           (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
+           (setf (response-status *response*) 302)
+           (next-route))
+          (t
+           (render #P "login.html" (list :bbs board-name :is-login "failed"))))))
 
-(defroute ("/:board-name/api/ban-line" :method :DELETE) (&key board-name _parsed)
+
+(defroute ("/:board-name/api/user" :method :POST) (&key board-name _parsed)
+  (let ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
+        (user-name (get-value-from-key "user_name" _parsed))
+        (password (get-value-from-key "password" _parsed)))
+    (let ((result (create-user board-name user-name password ipaddr (get-universal-time))))
+      (cond ((eq result 'exist-user)
+             "This User Name is existed.")
+            ((eq result 'create-failed)
+             "Error, failed create account.")
+            ((eql result t)
+             "Finish Create that Account.")
+            (t
+             "that is invalid parameter.")))))
+
+(defroute ("/:board-name/api/line" :method :POST) (&key board-name _parsed)
   (let* ((key (get-value-from-key "key" _parsed))
          (line (get-value-from-key "line" _parsed))
-         (line-number (parse-integer (if (stringp line) line "") :junk-allowed t)))
-    (if (and (numberp line-number) (string= board-name *board-name*))
-        (if (delete-line-in-dat key line-number)
-            (format nil "finish delete line that: ~A" line)
-            (format nil "failed delete line that: ~A" line))
-        (on-exception *web* 404))))
+         (line-number (parse-integer (if (stringp line) line "") :junk-allowed t))
+         (is-login (gethash *session-login-key* *session*)))
+    (cond ((null is-login)
+           "not was logged-in")
+          ((or (null line) (null key))
+           "invalid param")
+          ((and (numberp line-number) (string= board-name *board-name*))
+           (if (delete-line-in-dat key line-number)
+               (format nil "finish delete line that: ~A" line)
+               (format nil "failed delete line that: ~A" line)))
+          (t
+           (on-exception *web* 404)))))
 
 
-(defroute ("/:board-name/login" :method :GET) (&key board-name)
-  (render #P "login.html" (list :bbs board-name)))
 
 ;;
 ;; Error pages

@@ -12,7 +12,10 @@
   (:import-from :like-certain-board.config
                 :config
                 :productionp
-                :*static-directory*))
+   :*static-directory*)
+  (:import-from :like-certain-board.db
+                :connection-settings))
+
 (in-package :like-certain-board.app)
 
 (builder
@@ -30,6 +33,10 @@
        :output ,(getf (config) :error-log))
      nil)
  :session
+ ;; (:session
+ ;;  :store (lack.session.store.dbi:make-dbi-store :connector (lambda ()
+ ;;                                      (apply #'dbi:connect
+ ;;                                             (like-certain-board.db:connection-settings)))))
  (if (productionp)
      nil
      (lambda (app)

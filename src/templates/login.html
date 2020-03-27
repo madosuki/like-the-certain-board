@@ -2,11 +2,23 @@
 {% block title %}やる夫Lisp板{% endblock %}
 {% block content %}
 <div id="main">
-    <form action="/api/login" method="post">
+
+    <h1>ログインページ</h1>
+
+    {% if is-login %}
+    {% if is-login == "logged-in" %}
+    <h1>ログイン済みです</h1>
+    {% endif %}
+    {% if is-login == "failed" %}
+    <h1>ログインに失敗しました</h1>
+    {% endif %}
+    {% endif %}
+    
+    <form action="/{{ bbs }}/api/user" method="get">
         <ul class="form">
             <li class="form">
-                <label for="username" class="form">User Name:</label>
-                <input name="username" type="text" pattern="^[a-zA-Z0-9]+" class="form"/>
+                <label for="user_name" class="form">User Name:</label>
+                <input name="user_name" type="text" pattern="^[a-zA-Z0-9]+" class="form"/>
             </li>
             <li class="form">
                 <label for="password" class="form">Your Password:</label>

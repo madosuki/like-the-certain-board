@@ -24,6 +24,8 @@
 
                "ironclad"
 
+               "lack-session-store-dbi"
+
                "generate-like-certain-board-strings")
   :components ((:module "src"
                 :components
