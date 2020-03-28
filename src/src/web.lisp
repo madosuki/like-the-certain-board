@@ -21,6 +21,15 @@
 (defvar *9-hour-seconds* (* 9 60 60))
 (defvar *delete-message* "削除されました<><>削除されました<> 削除されました <>")
 (defvar *session-login-key* "logged-in")
+(defvar *max-thread-list* 10000)
+
+(defstruct user-table-struct
+  (board-name "" :type string)
+  (user-name "" :type string)
+  (hash "" :type string)
+  (create-date "" :type string)
+  (latest-date "" :type string)
+  (ipaddr "" :type string))
 
 ;; this solt is sample. don't use production.
 (defvar *solt* "wqk0SZoDaZioQbuYzCM3mRBDFbj8FD9sx3ZX34wwhnMjtdAIM2tqonirJ7o8NuDpPkFIFbAacZYTsBRHzjmagGpZZb6aAZVvk5AcWJXWGRdTZlpo7vuXF3zvg1xp9yp0")
@@ -72,9 +81,7 @@
          (is-not-error nil))
     (handler-case (change-line-in-dat path outpath *delete-message* line-number)
       (error (e)
-        ;; (declare (ignore e))
-        (format t "~%~A~%" e)
-        )
+        (format t "~%~A~%" e))
       (:no-error (c)
         (declare (ignore c))
         (rename-file outpath path)
@@ -85,7 +92,8 @@
   (with-connection (db)
     (retrieve-all
      (select :* (from :threads)
-             (order-by (:desc :last-modified-date))))))
+             (order-by (:desc :last-modified-date))
+             (limit *max-thread-list*)))))
 
 (defun get-thread-list-when-create-subject-txt ()
   (with-connection (db)
@@ -202,11 +210,16 @@
                                :not-null t
                                :default 1)
                     (unixtime :type 'integer
-                              :primary-key t))))))
+                              :primary-key t)
+                    (ipaddr :type 'text
+                            :not-null t)
+                    (max :type 'integer
+                         :default 1000
+                         :not-null t))))))
 
 (defvar *user-login-table-postero-string* "_login_table")
 (defun create-user-login-table (user-name)
-  (let ((table-name (intern (concatenate 'string user-name *user-login-table-postero-string*)
+  (let ((table-name (intern (concatenate 'string (string-downcase user-name) *user-login-table-postero-string*)
                             "KEYWORD")))
     (with-connection (db)
       (execute
@@ -236,47 +249,36 @@
              (order-by (:desc :login-date))))))
 
 (defun get-user-table (board-name user-name)
-  (format t "~%~A ~A~%" board-name user-name)
   (with-connection (db)
     (retrieve-one
      (select :*
              (from :user_table)
-             (where (:and (:like :user user-name) (:like :board_name board-name)))))))
+             (where (:and (:like :user_name user-name) (:like :board_name board-name)))))))
 
-(defun insert-user-table (board-name user-name hash date ipaddr)
-  (with-connection (db)
-    (execute
-     (insert-into :user_table
-                  (set=
-                   :board_name board-name
-                   :user user-name
-                   :hash hash
-                   :create_date date
-                   :latest_date date
-                   :ipaddr ipaddr)))))
+(defun insert-user-table (user-data)
+  (let ((user-name (user-table-struct-user-name user-data))
+        (board-name (user-table-struct-board-name user-data))
+        (hash (user-table-struct-hash user-data))
+        (create-date (user-table-struct-create-date user-data))
+        (latest-date (user-table-struct-latest-date user-data))
+        (ipaddr (user-table-struct-ipaddr user-data)))
+    (with-connection (db)
+      (execute
+       (insert-into :user_table
+                    (set=
+                     :board_name board-name
+                     :user_name user-name
+                     :hash hash
+                     :create_date create-date
+                     :latest_date latest-date
+                     :ipaddr ipaddr))))))
 
 (defun update-user-table (board-name user-name date)
   (with-connection (db)
     (execute
      (update :user_table
              (set= :latest_date date)
-             (where (:and (:like :user user-name) (:like :board_name board-name)))))))
-
-(defun insert-session-login-table (session is-login)
-  (with-connection (db)
-    (execute
-     (insert-into :session_login_table
-                  (set=
-                   :session session
-                   :is_login is-login)))))
-
-(defun get-session-login-table (session)
-  (with-connection (db)
-    (retrieve-one
-     (select :*
-             (from :session_login_table)
-             (where (:like :session session))))))
-
+             (where (:and (:like :user_name user-name) (:like :board_name board-name)))))))
 
 (defun format-datetime (date)
   (multiple-value-bind (second minute hour date month year day summer timezone)
@@ -329,7 +331,7 @@
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" (apply-dice name t) trip email datetime id final-text title)
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" (apply-dice name t) trip email datetime id final-text))))
 
-(defun create-thread-in-db (&key title create-date unixtime)
+(defun create-thread-in-db (&key title create-date unixtime ipaddr)
   (let ((date (get-current-datetime create-date t)))
     (with-connection (db)
       (execute
@@ -338,7 +340,15 @@
                           :create-date date
                           :last-modified-date date
                           :res-count 1
-                          :unixtime unixtime))))))
+                          :unixtime unixtime
+                          :ipaddr ipaddr))))))
+
+(defun change-max-of-thread-in-db (unixtime)
+  (with-connection (db)
+    (execute
+     (update :thread
+             (set= :max 10000)
+             (where (:like :unixtime unixtime))))))
 
 (defun create-thread (&key _parsed date ipaddr)
   (check-exists-threads-table-and-create-table-when-does-not)
@@ -362,7 +372,10 @@
                  (setq name (car tmp)))
                (labels ((progress (&optional (count 0))
                           (handler-case (funcall (lambda (title date unixtime ipaddr name text)
-                                                   (create-thread-in-db :title title :create-date date :unixtime unixtime)
+                                                   (create-thread-in-db :title title
+                                                                        :create-date date
+                                                                        :unixtime unixtime
+                                                                        :ipaddr ipaddr)
                                                    (create-dat :unixtime unixtime
                                                                :first-line (create-res :name (escape-string name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
                                                    200)
@@ -639,15 +652,15 @@ p                             :initial-element 0)))
     (return-from create-user nil))
   (when (get-user-table board-name user-name)
     (return-from create-user 'exist-user))
-  (let ((hash (sha256 (concatenate 'string *solt* password)))
-        (date (get-current-datetime date t)))
-    (handler-case (insert-user-table board-name user-name hash date ipaddr)
+  (let* ((hash (sha256 (concatenate 'string *solt* password)))
+         (date (get-current-datetime date t))
+         (return-status t)
+         (user-data (make-user-table-struct :user-name user-name :hash hash :board-name board-name :create-date date :latest-date date :ipaddr ipaddr)))
+    (handler-case (insert-user-table user-data)
       (error (e)
-        (format t "~%~A~%" e)
-        'create-failed)
-      (:no-error (c)
-        (declare (ignore c))
-        t))))
+        (format t "~%Error: ~A~%" e)
+        (setq return-status 'create-failed)))
+    return-status))
 
 
 
@@ -787,10 +800,11 @@ p                             :initial-element 0)))
 
 
 (defroute ("/:board-name/api/user" :method :POST) (&key board-name _parsed)
-  (let ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
-        (user-name (get-value-from-key "user_name" _parsed))
-        (password (get-value-from-key "password" _parsed)))
-    (let ((result (create-user board-name user-name password ipaddr (get-universal-time))))
+  (let* ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
+         (user-name (get-value-from-key "user_name" _parsed))
+         (password (get-value-from-key "password" _parsed))
+         (date (get-universal-time)))
+    (let ((result (create-user board-name user-name password ipaddr date)))
       (cond ((eq result 'exist-user)
              "This User Name is existed.")
             ((eq result 'create-failed)
@@ -811,8 +825,13 @@ p                             :initial-element 0)))
            "invalid param")
           ((and (numberp line-number) (string= board-name *board-name*))
            (if (delete-line-in-dat key line-number)
-               (format nil "finish delete line that: ~A" line)
-               (format nil "failed delete line that: ~A" line)))
+                 (let* ((filepath (concatenate 'string "dat/" key ".dat"))
+                        (dat-list (dat-to-keyword-list filepath))
+                        (title (cadr (member :title (car dat-list))))
+                        (current-unix-time (get-unix-time (get-universal-time)))
+                        (is-login (gethash *session-login-key* *session*)))
+                   (render #P "thread.html" (list :title title :thread dat-list :bbs board-name :key key :time current-unix-time :is-login is-login)))
+                 "faild delete."))
           (t
            (on-exception *web* 404)))))
 

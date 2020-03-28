@@ -1,1 +1,1 @@
-create table mysite.user_table (board_name varchar(255) primary key, user varchar(255) not null, hash char(64) binary not null, create_date datetime not null, latest_date datetime null, ipaddr varchar(43) not null, latest_session text);
+create table mysite.user_table (id int primary key auto_increment, board_name varchar(255) not null, user_name varchar(255) not null, hash char(64) binary not null, create_date datetime not null, latest_date datetime null, ipaddr varchar(43) not null);
