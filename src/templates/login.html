@@ -14,7 +14,7 @@
     {% endif %}
     {% endif %}
     
-    <form action="/{{ bbs }}/api/user" method="get">
+    <form action="/{{ bbs }}/api/user" method="post">
         <ul class="form">
             <li class="form">
                 <label for="user_name" class="form">User Name:</label>
@@ -24,6 +24,7 @@
                 <label for="password" class="form">Your Password:</label>
                 <input name="password" type="password" pattern="^[a-zA-Z0-9]+" class="form"/>
             </li>
+            <input name="is_login" type="hidden" value="true"/>
             <li class="form">
                 <button type="submit">送信</button>
             </li>
