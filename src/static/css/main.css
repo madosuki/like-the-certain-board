@@ -41,7 +41,7 @@ dl {
     white-space: nowrap;
 }
 
-dd#thread_text {
+dd.thread_text {
     font-family: Mona, Monapo, IPAMonaPGothic, "MS PGothic", sans-serif;
     font-size: 16px;
     margin-bottom: 1.5rem;
