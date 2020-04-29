@@ -19,6 +19,7 @@
                ;; for DB
                "datafly"
                "sxql"
+               "cl-dbi"
 
                "alexandria"
 

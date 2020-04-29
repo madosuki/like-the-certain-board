@@ -21,7 +21,13 @@
 (defvar *9-hour-seconds* (* 9 60 60))
 (defvar *delete-message* "削除されました<><>削除されました<> 削除されました <>")
 (defvar *session-login-key* "logged-in")
+(defvar *session-admin-key* "is-admin")
+(defvar *session-cap-text-key* "cap-text")
 (defvar *max-thread-list* 10000)
+(defvar *admin-ipaddr* "127.0.0.1")
+
+(deftype bool ()
+  '(member true false))
 
 (defstruct user-table-struct
   (board-name "" :type string)
@@ -29,7 +35,18 @@
   (hash "" :type string)
   (create-date "" :type string)
   (latest-date "" :type string)
-  (ipaddr "" :type string))
+  (ipaddr "" :type string)
+  (is-admin nil :type integer)
+  (cap-text "" :type string))
+
+(defstruct thread-table-struct
+  (title "" :type string)
+  (create-date "" :type string)
+  (last-modified-date "" :type string)
+  (res-count 1 :type integer)
+  (unixtime 0 :type intger)
+  (ipaddr "" :type string)
+  (max 1000 :type integer))
 
 ;; this solt is sample. don't use production.
 (defvar *solt* "wqk0SZoDaZioQbuYzCM3mRBDFbj8FD9sx3ZX34wwhnMjtdAIM2tqonirJ7o8NuDpPkFIFbAacZYTsBRHzjmagGpZZb6aAZVvk5AcWJXWGRdTZlpo7vuXF3zvg1xp9yp0")
@@ -218,20 +235,19 @@
                          :not-null t))))))
 
 (defvar *user-login-table-postero-string* "_login_table")
+(defun create-user-login-table-name (s)
+  (concatenate 'string (string-downcase s) *user-login-table-postero-string*))
 (defun create-user-login-table (user-name)
-  (let ((table-name (intern (concatenate 'string (string-downcase user-name) *user-login-table-postero-string*)
-                            "KEYWORD")))
-    (with-connection (db)
-      (execute
-       (create-table (table-name
-                      :if-exists-not t)
-                     ((id :type 'integer
-                          :primary-key t
-                          :auto-increment t)
-                      (login-date :type 'datetime
-                                  :not-null t)
-                      (ip-address :type '(:varchar 43)
-                                  :not-null t)))))))
+  (with-connection (db)
+    (execute
+     (create-table (list (create-user-login-table-name user-name) :if-exists-not t)
+                   ((id :type 'integer
+                        :primary-key t
+                        :auto-increment t)
+                    (login-date :type 'datetime
+                                :not-null t)
+                    (ip-address :type '(:varchar 43)
+                                :not-null t))))))
 
 (defun insert-user-login-table (user-name ipaddr date)
   (with-connection (db)
@@ -261,7 +277,9 @@
         (hash (user-table-struct-hash user-data))
         (create-date (user-table-struct-create-date user-data))
         (latest-date (user-table-struct-latest-date user-data))
-        (ipaddr (user-table-struct-ipaddr user-data)))
+        (ipaddr (user-table-struct-ipaddr user-data))
+        (is-admin (user-table-struct-is-admin user-data))
+        (cap-text (user-table-struct-cap-text user-data)))
     (with-connection (db)
       (execute
        (insert-into :user_table
@@ -271,7 +289,9 @@
                      :hash hash
                      :create_date create-date
                      :latest_date latest-date
-                     :ipaddr ipaddr))))))
+                     :ipaddr ipaddr
+                     :is_admin is-admin
+                     :cap_text cap-text))))))
 
 (defun update-user-table (board-name user-name date)
   (with-connection (db)
@@ -357,7 +377,10 @@
          (trip-key "")
          (text (escape-string (get-value-from-key-on-list "MESSAGE" _parsed)))
          (email (escape-string (get-value-from-key-on-list "mail" _parsed)))
-         (unixtime (get-unix-time date)))
+         (unixtime (get-unix-time date))
+         (is-cap nil))
+    (when (and (gethash *session-login-key* *session*) (gethash *session-cap-text-key* *session*))
+      (setq is-cap t))
     (unless email
       (setq email ""))
     (unless text
@@ -377,7 +400,7 @@
                                                                         :unixtime unixtime
                                                                         :ipaddr ipaddr)
                                                    (create-dat :unixtime unixtime
-                                                               :first-line (create-res :name (escape-string name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
+                                                               :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) (escape-string name)) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
                                                    200)
                                                  title date unixtime ipaddr name text)
                             (error (e)
@@ -396,7 +419,10 @@
          (from (get-value-from-key-on-list "FROM" _parsed))
          (mail (escape-string (get-value-from-key-on-list "mail" _parsed)))
          (message (escape-string (get-value-from-key-on-list "MESSAGE" _parsed)))
-         (status 200))
+         (status 200)
+         (is-cap nil))
+    (when (and (gethash *session-login-key* *session*) (gethash *session-cap-text-key* *session*))
+      (setq is-cap t))
     (unless from
       (setq from *default-name*))
     (when (or (null bbs)
@@ -419,17 +445,17 @@
                (name (car tmp))
                (trip (if (> (length tmp) 1)
                          (cadr tmp)
-                         ""))
-               (res (create-res :name (escape-string name) :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
-          (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input)
-          (update-last-modified-date-of-thread :date universal-time :key key)
-          (update-res-count-of-thread :key key)
-          (when (>= (cadr (get-res-count :key key)) *default-max-length*)
-            (write-sequence
-             (sb-ext:string-to-octets *1001* :external-format :sjis) input)
+                         "")))
+          (let ((res (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) (escape-string name)) :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
+            (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input)
+            (update-last-modified-date-of-thread :date universal-time :key key)
             (update-res-count-of-thread :key key)
-            (update-last-modified-date-of-thread :date universal-time :key key))
-          (format t "~%~%insert!~%~%"))))
+            (when (>= (cadr (get-res-count :key key)) *default-max-length*)
+              (write-sequence
+               (sb-ext:string-to-octets *1001* :external-format :sjis) input)
+              (update-res-count-of-thread :key key)
+              (update-last-modified-date-of-thread :date universal-time :key key))
+            (format t "~%~%insert!~%~%")))))
     status))
 
 (defun put-thread-list (board-name)
@@ -641,13 +667,19 @@ p                             :initial-element 0)))
     (cond ((eq checked 'logged-in)
            'logged-in)
           ((eql checked t)
+           (let* ((db-data (get-user-table board-name user-name))
+                  (is-admin (getf db-data :is-admin))
+                  (cap-text (getf db-data :cap-text)))
+             (when is-admin (setf (gethash *session-admin-key* *session*) t))
+             (when (and (not (null cap-text)) (string/= cap-text ""))
+               (setf (gethash *session-cap-text-key* *session*) cap-text)))
            (setf (gethash *session-login-key* *session*) t)
            (update-user-table board-name user-name date)
            t)
           (t
            nil))))
 
-(defun create-user (board-name user-name password ipaddr date)
+(defun create-user (board-name user-name password ipaddr date &optional (is-admin nil) (cap-text nil))
   (unless (or user-name password)
     (return-from create-user nil))
   (when (get-user-table board-name user-name)
@@ -655,7 +687,15 @@ p                             :initial-element 0)))
   (let* ((hash (sha256 (concatenate 'string *solt* password)))
          (date (get-current-datetime date t))
          (return-status t)
-         (user-data (make-user-table-struct :user-name user-name :hash hash :board-name board-name :create-date date :latest-date date :ipaddr ipaddr)))
+         (user-data (make-user-table-struct
+                     :user-name user-name
+                     :hash hash
+                     :board-name board-name
+                     :create-date date
+                     :latest-date date
+                     :ipaddr ipaddr
+                     :is-admin (if is-admin 1 0)
+                     :cap-text (if cap-text cap-text ""))))
     (handler-case (insert-user-table user-data)
       (error (e)
         (format t "~%Error: ~A~%" e)
@@ -783,6 +823,8 @@ p                             :initial-element 0)))
          (is-login (get-value-from-key "is_login" _parsed))
          (user-name (get-value-from-key "user_name" _parsed))
          (password (get-value-from-key "password" _parsed))
+         (is-admin (get-value-from-key "is_admin" _parsed))
+         (cap-text (get-value-from-key "cap_text" _parsed))
          (cookie (gethash "cookie" (request-headers *request*)))
          (splited-cookie (if (null cookie)
                              nil
@@ -799,31 +841,19 @@ p                             :initial-element 0)))
                  (next-route))
                 (t
                  (render #P "login.html" (list :bbs board-name :is-login "failed")))))
-        (let ((create-result (create-user board-name user-name password ipaddr date)))
-          (cond ((eq create-result 'exist-user)
-                 "This User Name is existed.")
-                ((eq create-result 'create-failed)
-                 "Error, failed create account.")
-                ((eql create-result t)
-                 "Finish Create that Account.")
-                (t
-                 "that is invalid parameter."))))))
+        (if (string= ipaddr *admin-ipaddr*)
+            (let ((create-result (create-user board-name user-name password ipaddr date is-admin cap-text)))
+              (cond ((eq create-result 'exist-user)
+                     "This User Name is existed.")
+                    ((eq create-result 'create-failed)
+                     "Error, failed create account.")
+                    ((eql create-result t)
+                     ;; (create-user-login-table user-name)
+                     "Finish Create that Account.")
+                    (t
+                     "that is invalid parameter.")))
+            "This ip aadress is don't trust."))))
 
-
-;; (defroute ("/:board-name/api/user" :method :POST) (&key board-name _parsed)
-;;   (let* ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
-;;          (user-name (get-value-from-key "user_name" _parsed))
-;;          (password (get-value-from-key "password" _parsed))
-;;          (date (get-universal-time)))
-;;     (let ((result (create-user board-name user-name password ipaddr date)))
-;;       (cond ((eq result 'exist-user)
-;;              "This User Name is existed.")
-;;             ((eq result 'create-failed)
-;;              "Error, failed create account.")
-;;             ((eql result t)
-;;              "Finish Create that Account.")
-;;             (t
-;;              "that is invalid parameter.")))))
 
 (defroute ("/:board-name/api/line" :method :POST) (&key board-name _parsed)
   (let* ((key (get-value-from-key "key" _parsed))
@@ -845,8 +875,6 @@ p                             :initial-element 0)))
                  "faild delete."))
           (t
            (on-exception *web* 404)))))
-
-
 
 ;;
 ;; Error pages
