@@ -26,8 +26,10 @@
 (defvar *max-thread-list* 10000)
 (defvar *admin-ipaddr* "127.0.0.1")
 
-(deftype bool ()
-  '(member true false))
+(deftype mysql-true-type (n) `(= n 1))
+(deftype mysql-false-type (n) `(= n 0))
+(defvar *mysql-true* 1)
+(defvar *mysql-false* 0)
 
 (defstruct user-table-struct
   (board-name "" :type string)
@@ -110,7 +112,8 @@
     (retrieve-all
      (select :* (from :threads)
              (order-by (:desc :last-modified-date))
-             (limit *max-thread-list*)))))
+             (limit *max-thread-list*)
+             (where (:like :is-deleted *mysql-false*))))))
 
 (defun get-thread-list-when-create-subject-txt ()
   (with-connection (db)
@@ -232,7 +235,9 @@
                             :not-null t)
                     (max-line :type 'integer
                               :default *default-max-length*
-                              :not-null t))))))
+                              :not-null t)
+                    (is-deleted :type 'integer
+                                :default *mysql-false*))))))
 
 (defvar *user-login-table-postero-string* "_login_table")
 (defun create-user-login-table-name (s)
@@ -409,7 +414,7 @@
                  (setq max-line (decode-max-line-string email)))
                (when (stringp max-line)
                  (setq max-line (parse-integer max-line :junk-allowed t)))
-               (when max-line
+               (when (and (numberp max-line) (> max-line *default-max-length*))
                  (setq email "Expand maximum line done!"))
                (labels ((progress (&optional (count 0))
                           (handler-case (funcall (lambda (title date unixtime ipaddr name text)
