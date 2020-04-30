@@ -230,9 +230,9 @@
                               :primary-key t)
                     (ipaddr :type 'text
                             :not-null t)
-                    (max :type 'integer
-                         :default 1000
-                         :not-null t))))))
+                    (max-line :type 'integer
+                              :default *default-max-length*
+                              :not-null t))))))
 
 (defvar *user-login-table-postero-string* "_login_table")
 (defun create-user-login-table-name (s)
@@ -351,7 +351,7 @@
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" (apply-dice name t) trip email datetime id final-text title)
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" (apply-dice name t) trip email datetime id final-text))))
 
-(defun create-thread-in-db (&key title create-date unixtime ipaddr)
+(defun create-thread-in-db (&key title create-date unixtime ipaddr max-line)
   (let ((date (get-current-datetime create-date t)))
     (with-connection (db)
       (execute
@@ -361,7 +361,10 @@
                           :last-modified-date date
                           :res-count 1
                           :unixtime unixtime
-                          :ipaddr ipaddr))))))
+                          :ipaddr ipaddr
+                          :max-line (if (or (null max-line) (< max-line *default-max-length*))
+                                        *default-max-length*
+                                        max-line)))))))
 
 (defun change-max-of-thread-in-db (unixtime)
   (with-connection (db)
@@ -370,6 +373,14 @@
              (set= :max 10000)
              (where (:like :unixtime unixtime))))))
 
+(defun decode-max-line-string (s)
+  (let ((regex-str "!max_line=[\\d+]$"))
+    (cl-ppcre:register-groups-bind (number)
+                                   (regex-str s)
+                                   (if number
+                                       (parse-integer number :junk-allowed t)
+                                       nil))))
+
 (defun create-thread (&key _parsed date ipaddr)
   (check-exists-threads-table-and-create-table-when-does-not)
   (let* ((title (get-value-from-key-on-list "subject" _parsed))
@@ -377,6 +388,7 @@
          (trip-key "")
          (text (escape-string (get-value-from-key-on-list "MESSAGE" _parsed)))
          (email (escape-string (get-value-from-key-on-list "mail" _parsed)))
+         (max-line (escape-string (get-value-from-key-on-list "max_line" _parsed)))
          (unixtime (get-unix-time date))
          (is-cap nil))
     (when (and (gethash *session-login-key* *session*) (gethash *session-cap-text-key* *session*))
@@ -393,12 +405,19 @@
                  (when (> (length tmp) 1)
                    (setq trip-key (cadr tmp)))
                  (setq name (car tmp)))
+               (when (string/= email "")
+                 (setq max-line (decode-max-line-string email)))
+               (when (stringp max-line)
+                 (setq max-line (parse-integer max-line :junk-allowed t)))
+               (when max-line
+                 (setq email "Expand maximum line done!"))
                (labels ((progress (&optional (count 0))
                           (handler-case (funcall (lambda (title date unixtime ipaddr name text)
                                                    (create-thread-in-db :title title
                                                                         :create-date date
                                                                         :unixtime unixtime
-                                                                        :ipaddr ipaddr)
+                                                                        :ipaddr ipaddr
+                                                                        :max-line max-line)
                                                    (create-dat :unixtime unixtime
                                                                :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) (escape-string name)) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
                                                    200)
@@ -433,7 +452,7 @@
       (return-from insert-res 400))
     (when (string= from "")
       (setq from *default-name*))
-    (when (and (string/= time "") (< (cadr (get-res-count :key key)) *default-max-length*)
+    (when (and (string/= time "") (< (cadr (get-res-count :key key)) (cadr (get-max-line :key key)))
                (> (get-unix-time universal-time) (parse-integer time :radix 10)))
       (with-open-file (input (concatenate 'string "dat/" key ".dat")
                              :direction :output
@@ -450,7 +469,7 @@
             (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input)
             (update-last-modified-date-of-thread :date universal-time :key key)
             (update-res-count-of-thread :key key)
-            (when (>= (cadr (get-res-count :key key)) *default-max-length*)
+            (when (>= (cadr (get-res-count :key key)) (cadr (get-max-line :key key)))
               (write-sequence
                (sb-ext:string-to-octets *1001* :external-format :sjis) input)
               (update-res-count-of-thread :key key)
@@ -513,6 +532,13 @@
   (with-connection (db)
     (retrieve-one
      (select :res-count
+             (from :threads)
+             (where (:like :unixtime key))))))
+
+(defun get-max-line (&key key)
+  (with-connection (db)
+    (retrieve-one
+     (select :max-line
              (from :threads)
              (where (:like :unixtime key))))))
 

@@ -40,6 +40,10 @@
                 <input name="mail" type="text" value="" class="form"/>
             </li>
             <li class="form">
+                <label for="max_line" class="form">最大行指定（＊1001〜10000まで有効．それより下を指定した場合，1000になり，超えた場合は10000として扱います．）</label>
+                <input name="max_line" type="number" value="1000" class="form"/>
+            </li>            
+            <li class="form">
                 <label for="MESSAGE" class="form">本文:</label>
                 <textarea cols="60" id="" name="MESSAGE" rows="10" class="form" required></textarea>
             </li>
