@@ -383,7 +383,9 @@
     (cl-ppcre:register-groups-bind (number)
                                    (regex-str s)
                                    (if number
-                                       (parse-integer number :junk-allowed t)
+                                       (if (< (length number) 6)
+                                           (parse-integer number :junk-allowed t)
+                                           10000)
                                        nil))))
 
 (defun create-thread (&key _parsed date ipaddr)
