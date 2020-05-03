@@ -13,7 +13,9 @@
 (defun end-server ()
   (clack:stop *server*))
 
-(defun main (&rest argv)
-  (let ((tmp (car argv)))
-    (run tmp))
-  )
+;; (defun main (&rest argv)
+;;   (let ((tmp (car argv)))
+;;     (run tmp)))
+
+(defun main ()
+  (run "/root/.roswell/local-projects/like-the-certain-board/app.lisp"))
