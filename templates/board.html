@@ -13,6 +13,7 @@
             <th>作成日時</th>
             <th>更新日時</th>
             <th>レス数</th>
+            <th>最大行</th>
         </tr>
         {% for thread in threads %}
             <tr>
@@ -20,6 +21,7 @@
                 <td class="cell-spacing">{{ thread.create-date }}</td>
                 <td class="cell-spacing">{{ thread.last-modified-date }}</td>
                 <td class="cell-spacing">{{ thread.res-count }}</td>
+                <td class="cell-spacing">{{ thread.max-line }}</td>
             </tr>
         {% endfor %}
     </table>
