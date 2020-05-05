@@ -10,7 +10,7 @@
 (in-package :like-certain-board)
 
 (defvar *appfile-path*
-  (asdf:system-relative-pathname :like-certain-board #P"app.lisp"))
+  (asdf:system-relative-pathname :like-certain-board #P"../app.lisp"))
 
 (defvar *handler* nil)
 
