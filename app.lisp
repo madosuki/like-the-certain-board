@@ -33,10 +33,6 @@
        :output ,(getf (config) :error-log))
      nil)
  :session
- ;; (:session
- ;;  :store (lack.session.store.dbi:make-dbi-store :connector (lambda ()
- ;;                                      (apply #'dbi:connect
- ;;                                             (like-certain-board.db:connection-settings)))))
  (if (productionp)
      nil
      (lambda (app)

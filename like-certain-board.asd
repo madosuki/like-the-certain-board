@@ -21,12 +21,16 @@
                "sxql"
                "cl-dbi"
 
+               ;; otherwise
                "alexandria"
 
+               ;; hash and crypt algorithm
                "ironclad"
 
+               ;; session
                "lack-session-store-dbi"
 
+               ;; board string generator
                "generate-like-certain-board-strings")
   :components ((:module "src"
                 :components
