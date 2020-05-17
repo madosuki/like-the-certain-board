@@ -12,7 +12,7 @@
     {% endif %}
     <footer id="time-restrict">
         <nav>
-            <a href="/test/read.cgi/{{ bbs }}/{{ key }}" class="nav-item-in-footer">スレッドに戻る</a>
+           {% if key %} <a href="/test/read.cgi/{{ bbs }}/{{ key }}" class="nav-item-in-footer">スレッドに戻る</a> {% endif %}
             <a href="/{{ bbs }}" class="nav-item-in-footer">板に戻る</a>
         </nav>
     </footer>

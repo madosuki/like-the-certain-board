@@ -389,9 +389,9 @@
                       (regex-str s)
                       (cond ((null number)
                              nil)
-                            (and (< 3 (length number)) (< (length number) 6)
+                            ((= (length number) 4)
                              (parse-integer number :junk-allowed t))
-                            ((<= 6 (length number))
+                            ((<= 5 (length number))
                              *max-thread-list*)
                             (t
                              1000)))))
@@ -425,8 +425,15 @@
                  (setq max-line (decode-max-line-string email)))
                (when (stringp max-line)
                  (setq max-line (parse-integer max-line :junk-allowed t)))
-               (when (and (numberp max-line) (> max-line *default-max-length*))
-                 (setq email "Expand maximum line done!"))
+               (if (numberp max-line)
+                   (cond ((< *max-thread-list* max-line)
+                          (setq max-line *max-thread-list*)
+                          (setq email "Expand maximum line done!"))
+                         ((and (< *default-max-length* max-line) (<= max-line *max-thread-list*))
+                          (setq email "Expand maximum line done!"))
+                         (t
+                          (setq max-line *default-max-length*)))
+                   (setq max-line *default-max-length*))
                (labels ((progress (&optional (count 0))
                           (handler-case (funcall (lambda (title date unixtime ipaddr name text)
                                                    (create-thread-in-db :title title
@@ -823,16 +830,18 @@ p                             :initial-element 0)))
                (tmp-array (make-array content-length :adjustable t :fill-pointer content-length)))
           (read-sequence tmp-array raw-body)
           (bbs-cgi-function tmp-array ipaddr universal-time))
-        (progn (setf (response-status *response*) 429)
-               (render #P "time_restrict.html" (list
-                                                :ipaddr ipaddr
-                                                :minute
-                                                (/ (getf (get-posted-ipaddr-values "posted_ipaddr_table" ipaddr)
-                                                         :wait-time)
-                                                   60)
+        (let ((bbs (cdr (assoc "bbs" _parsed :test #'string=)))
+              (key (cdr (assoc "key" _parsed :test #'string=))))
+          (setf (response-status *response*) 429)
+          (render #P "time_restrict.html" (list
+                                           :ipaddr ipaddr
+                                           :minute
+                                           (/ (getf (get-posted-ipaddr-values "posted_ipaddr_table" ipaddr)
+                                                    :wait-time)
+                                              60)
                                                      
-                                                :bbs (cdr (assoc "bbs" _parsed :test #'string=))
-                                                :key (cdr (assoc "key" _parsed :test #'string=))))))))
+                                           :bbs bbs
+                                           :key (if key key nil)))))))
 
 
 (defroute ("/:board-name/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
