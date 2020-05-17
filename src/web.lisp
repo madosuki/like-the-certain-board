@@ -59,6 +59,13 @@
 (defmacro cadddddr (v)
   `(caddr (cdddr ,v)))
 
+(defmacro regex-group-bind (var-list regex-string target-string &body body)
+  `(cl-ppcre:register-groups-bind (,@var-list)
+                                  (,regex-string ,target-string)
+                                  ,@body))
+(defmacro escape-string (text)
+  `(escape-sql-query (replace-not-available-char-when-cp932 ,text)))
+
 
 ;; for @route annotation
 (syntax:use-syntax :annot)
@@ -70,8 +77,6 @@
 (defvar *web* (make-instance '<web>))
 (clear-routing-rules *web*)
 
-(defmacro escape-string (text)
-  `(escape-sql-query (replace-not-available-char-when-cp932 ,text)))
 
 ;; Functions
 
@@ -380,13 +385,17 @@
 
 (defun decode-max-line-string (s)
   (let ((regex-str "!max_line=[\\d+]$"))
-    (cl-ppcre:register-groups-bind (number)
-                                   (regex-str s)
-                                   (if number
-                                       (if (< (length number) 6)
-                                           (parse-integer number :junk-allowed t)
-                                           10000)
-                                       nil))))
+    (regex-group-bind (number)
+                      (regex-str s)
+                      (cond ((null number)
+                             nil)
+                            (and (< 3 (length number)) (< (length number) 6)
+                             (parse-integer number :junk-allowed t))
+                            ((<= 6 (length number))
+                             *max-thread-list*)
+                            (t
+                             1000)))))
+
 
 (defun create-thread (&key _parsed date ipaddr)
   (check-exists-threads-table-and-create-table-when-does-not)
