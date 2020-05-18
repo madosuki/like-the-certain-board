@@ -7,6 +7,7 @@
     {% endif %}
     <h1 style="text-align: center;">{{ board-name }}</h1>
     <h4 id="thread-content-title">スレッド一覧</h4>
+
     <table id="thread-list">
         <tr>
             <th>スレ名</th>
@@ -14,6 +15,7 @@
             <th>更新日時</th>
             <th>レス数</th>
             <th>最大行</th>
+            {% if is-login %} <th>削除ボタン</th> {% endif %}
         </tr>
         {% for thread in threads %}
             <tr>
@@ -22,6 +24,14 @@
                 <td class="cell-spacing">{{ thread.last-modified-date }}</td>
                 <td class="cell-spacing">{{ thread.res-count }}</td>
                 <td class="cell-spacing">{{ thread.max-line }}</td>
+                {%if is-login %}
+                <td class="cell-spacing">
+                    <form action="/{{ bbs }}/api/thread" method="post">
+                        <input name="key" type="hidden" value="{{ thread.unixtime }}"/>
+                        <button name="submit" type="submit">削除</button>
+                    </form>
+                </td>
+                {% endif %}
             </tr>
         {% endfor %}
     </table>

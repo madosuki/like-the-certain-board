@@ -127,6 +127,13 @@
              (from :threads)
              (order-by (:desc :last-modified-date))))))
 
+(defun delete-thread (key)
+  (with-connection (db)
+    (execute
+     (delete-from :threads
+                  (where (:= :unixtime key))
+                  (limit 1)))))
+
 (defun check-exists-table (table-name)
   (with-connection (db)
     (retrieve-one
@@ -910,9 +917,12 @@ p                             :initial-element 0)))
   (let* ((key (get-value-from-key "key" _parsed))
          (line (get-value-from-key "line" _parsed))
          (line-number (parse-integer (if (stringp line) line "") :junk-allowed t))
-         (is-login (gethash *session-login-key* *session*)))
+         (is-login (gethash *session-login-key* *session*))
+         (is-admin (gethash *session-admin-key* *session*)))
     (cond ((null is-login)
            "not was logged-in")
+          ((null is-admin)
+           "you are not admin")
           ((or (null line) (null key))
            "invalid param")
           ((and (numberp line-number) (string= board-name *board-name*))
@@ -926,6 +936,22 @@ p                             :initial-element 0)))
                  "faild delete."))
           (t
            (on-exception *web* 404)))))
+
+(defroute ("/:board-name/api/thread" :method :POST) (&key board-name _parsed)
+  (let ((key (get-value-from-key "key" _parsed))
+        (is-login (gethash *session-login-key* *session*))
+        (is-admin (gethash *session-admin-key* *session*)))
+    (cond ((or (null key) (null is-login) (null is-admin))
+           (setf (response-status *response*) 400)
+           "invalid")
+          (t
+           (delete-thread (parse-integer key))
+           (let ((filepath (concatenate 'string "dat/" key ".dat")))
+             (when (probe-file filepath)
+               (delete-file filepath)))
+           (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
+           (setf (response-status *response*) 302)
+           (next-route)))))
 
 ;;
 ;; Error pages
