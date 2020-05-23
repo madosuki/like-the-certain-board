@@ -13,10 +13,10 @@
         </form>
         {% endif %}
         <dt>
-            {{ forloop.counter }} 名前：<font color="#008800"><b>{{ i.name | safe}}</b>{{ i.trip }}</font>[{{ i.email }}] 投稿日：{{ i.date }} {{ i.id }}
+            {{ forloop.counter }} 名前：<font color="#008800"><b>{{ i.name | safe }}</b>{{ i.trip }}</font>[{{ i.email }}] 投稿日：{{ i.date }} {{ i.id }}
         </dt>
         <dd class="thread_text">
-            {{ i.text | safe}}
+            {{ i.text | safe }}
         </dd>
     </dl>
     {% endfor %}
