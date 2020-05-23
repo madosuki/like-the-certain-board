@@ -347,6 +347,10 @@
 (defmacro generate-dat-name (l)
   `(concatenate 'string (write-to-string (cadr (member :unixtime ,l))) ".dat"))
 
+(defmacro create-safety-strings (s)
+  `(replace-not-available-char-when-cp932 (escape-sql-query ,s)))
+
+
 (defun create-dat (&key unixtime first-line)
   (let* ((filename (concatenate 'string (write-to-string unixtime) ".dat"))
          (path (concatenate 'string "dat/" filename)))
@@ -357,26 +361,29 @@
       (let ((tmp (sb-ext:string-to-octets first-line :external-format :sjis)))
         (write-sequence tmp i)))))
 
-
 (defun create-res (&key name trip-key email date text ipaddr (first nil) (title ""))
   (let* ((datetime (replace-hyphen-to-slash (get-current-datetime date)))
          (id (generate-id :ipaddr ipaddr :date datetime :solt *solt*))
          (trip (if (and (stringp trip-key) (string/= trip-key ""))
                    (generate-trip (subseq trip-key 1 (length trip-key)) "utf8")
                    ""))
-         (final-text (apply-dice (replace-not-available-char-when-cp932 (shape-text (replace-other-line-to-lf text))))))
+         (final-text
+           (apply-dice
+            (create-safety-strings
+             (shape-text
+              (replace-other-line-to-lf text))))))
     (when (string/= trip "")
       (setq trip (concatenate 'string "</b>" (string #\BLACK_DIAMOND) trip "<b>")))
     (if first
-        (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" (apply-dice name t) trip email datetime id final-text title)
-        (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" (apply-dice name t) trip email datetime id final-text))))
+        (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" (apply-dice (create-safety-strings name) t) trip (create-safety-strings email) datetime id final-text title)
+        (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" (apply-dice (create-safety-strings name) t) trip (create-safety-strings email) datetime id final-text))))
 
 (defun create-thread-in-db (&key title create-date unixtime ipaddr max-line)
   (let ((date (get-current-datetime create-date t)))
     (with-connection (db)
       (execute
        (insert-into :threads
-                    (set= :title (escape-string title)
+                    (set= :title title
                           :create-date date
                           :last-modified-date date
                           :res-count 1
@@ -409,8 +416,10 @@
 
 (defun create-thread (&key _parsed date ipaddr)
   (check-exists-threads-table-and-create-table-when-does-not)
-  (let* ((title (get-value-from-key-on-list "subject" _parsed))
-         (name (escape-string (get-value-from-key-on-list "FROM" _parsed)))
+  (let* ((title (replace-not-available-char-when-cp932
+                 (escape-string
+                  (get-value-from-key-on-list "subject" _parsed))))
+         (name (get-value-from-key-on-list "FROM" _parsed))
          (trip-key "")
          (text (get-value-from-key-on-list "MESSAGE" _parsed))
          (email (get-value-from-key-on-list "mail" _parsed))
@@ -419,14 +428,14 @@
          (is-cap nil))
     (when (and (gethash *session-login-key* *session*) (gethash *session-cap-text-key* *session*))
       (setq is-cap t))
-    (unless email
+    (when (eq email 'no-data)
       (setq email ""))
-    (unless text
+    (unless (eq text 'no-data)
       (setq text ""))
-    (unless name
+    (unless (eq name 'no-data)
       (setq name *default-name*))
-    (setq email (replace-not-available-char-when-cp932 email))
-    (setq name (replace-not-available-char-when-cp932 email))
+    ;; (setq email (replace-not-available-char-when-cp932 email))
+    ;; (setq name (replace-not-available-char-when-cp932 email))
     (if (stringp title)
         (progn (let ((tmp (separate-trip-from-input name)))
                  (when (> (length tmp) 1)
@@ -453,7 +462,7 @@
                                                                         :ipaddr ipaddr
                                                                         :max-line max-line)
                                                    (create-dat :unixtime unixtime
-                                                               :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) (escape-string name)) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
+                                                               :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
                                                    200)
                                                  title date unixtime ipaddr name text)
                             (error (e)
@@ -467,22 +476,23 @@
 
 (defun insert-res (_parsed ipaddr universal-time)
   (let* ((bbs (get-value-from-key-on-list "bbs" _parsed))
-         (key (get-value-from-key-on-list "key" _parsed))
-         (time (get-value-from-key-on-list "time" _parsed))
-         (from (get-value-from-key-on-list "FROM" _parsed))
-         (mail (escape-string (get-value-from-key-on-list "mail" _parsed)))
-         (message (escape-string (get-value-from-key-on-list "MESSAGE" _parsed)))
+         (key (get-value-from-key-on-list "key" _parsed)) ;; unix time
+         (time (get-value-from-key-on-list "time" _parsed)) ;; same above
+         (from (get-value-from-key-on-list "FROM" _parsed)) ;; name
+         (mail (get-value-from-key-on-list "mail" _parsed))
+         (message (get-value-from-key-on-list "MESSAGE" _parsed))
          (status 200)
          (is-cap nil))
     (when (and (gethash *session-login-key* *session*) (gethash *session-cap-text-key* *session*))
       (setq is-cap t))
-    (unless from
+    (when (eq from 'no-data)
       (setq from *default-name*))
-    (when (or (null bbs)
-            (null key)
-            (null time)
-            (null mail)
-            (null message))
+    (when (eq mail 'no-data)
+      (setq mail ""))
+    (when (or (eq bbs 'no-data)
+              (eq key 'no-data)
+              (eq time 'no-data)
+              (eq message 'no-data))
       (return-from insert-res 400))
     (when (string= from "")
       (setq from *default-name*))
@@ -499,7 +509,7 @@
                (trip (if (> (length tmp) 1)
                          (cadr tmp)
                          "")))
-          (let ((res (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) (escape-string name)) :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
+          (let ((res (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
             (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input)
             (update-last-modified-date-of-thread :date universal-time :key key)
             (update-res-count-of-thread :key key)
@@ -584,25 +594,6 @@
                (set= :res-count (1+  (cadr tmp)))
                (where (:like :unixtime key)))))))
 
-
-;; response-headers is slot of *response*. *response* are type of struct. example: respoinse-cookies.
-;; (setf (getf (response-headers *response*) :set-cookie) (concatenate 'string "PON=" ipaddr))
-
-;; <form action="/test/bbs.cgi" method="post">
-;;     <label for="FROM">名前：</label>
-;;     <input name="FROM" type="text" value="名無しさん"/>
-;;     <label for="mail">メール：</label>
-;;     <input name="mail" type="text" value=""/>
-;;     <input name="bbs" type="hidden" value="{{ bbs }}"/>
-;;     <input name="key" type="hidden" value="{{ key }}"/>
-;;     <input name="time" type="hidden" value="{{ time }}"/>
-;;     <input name="submit" type="hidden" value="書き込む"/>
-;;     <label for="MESSAGE">本文：</label>
-;;     <textarea cols="30" name="MESSAGE" rows="10"></textarea>
-;;     <button type="submit">送信</button>
-;; </form>
-
-
 (defun generate-confirme-page (bbs key is-utf8 form)
   (let* ((from (get-value-from-key-on-list "FROM" form))
          (message (get-value-from-key-on-list "MESSAGE" form))
@@ -633,47 +624,49 @@
 (defun bbs-cgi-function (body-text ipaddr universal-time &optional (error-count 0))
   (let* ((decoded-query (sb-ext:octets-to-string (coerce body-text '(vector (unsigned-byte 8)))
                                                  :external-format :UTF-8))
-         (parsed-param nil)
          (form nil))
-    (unless (null decoded-query)
-      (setq parsed-param (get-param decoded-query))
-      (dolist (x parsed-param)
-        (let ((key (car x))
-              (value (cadr x)))
-          (if (null value)
-              (setq form (nconc (list key nil) form))
-              (setq form (nconc (list key (try-url-decode value)) form))))))
-    (let ((bbs (get-value-from-key-on-list "bbs" form))
-          (key (get-value-from-key-on-list "key" form))
-          (submit (get-value-from-key-on-list "submit" form)))
-      (cond
-        ((string= submit "書き込む")
-         (when (> (cadr (get-res-count :key key)) *default-max-length*)
-           503)
-         (let ((status (insert-res form ipaddr universal-time)))
-           (if (= status 200)
-               (progn
-                 (setf (getf (response-headers *response*) :location) (concatenate 'string "/test/read.cgi/" bbs "/" key))
-                 (set-response-status 302)
-                 )
-               (progn
-                 ;; (setf (response-status *response*) status)
-                 (set-response-status status)
-                 )))
-         (next-route))
-        ((string= submit "新規スレッド作成")
-         (let ((status (create-thread :_parsed form :date universal-time :ipaddr ipaddr)))
-           (if (= status 200)
-               (progn (setf (getf (response-headers *response*) :location) (concatenate 'string "/" bbs))
-                      ;; (setf (response-status *response*) 302)
-                      (set-response-status 302)
-                      )
-               (set-response-status status)
-               ))
-         (next-route))
-        (t
-         (set-response-status 400)
-         (next-route))))))
+    (if decoded-query
+        (let ((parsed-param (get-param decoded-query)))
+          (dolist (x parsed-param)
+            (let ((key (car x))
+                  (value (cadr x)))
+              (if (null value)
+                  (setq form (nconc (list key 'no-data) form))
+                  (setq form (nconc (list key (try-url-decode value)) form)))))
+          (let ((bbs (get-value-from-key-on-list "bbs" form))
+                (key (get-value-from-key-on-list "key" form))
+                (submit (get-value-from-key-on-list "submit" form)))
+            (cond
+              ((string= submit "書き込む")
+               (when (> (cadr (get-res-count :key key)) *default-max-length*)
+                 503)
+               (let ((status (insert-res form ipaddr universal-time)))
+                 (if (= status 200)
+                     (progn
+                       (setf (getf (response-headers *response*) :location) (concatenate 'string "/test/read.cgi/" bbs "/" key))
+                       (set-response-status 302)
+                       )
+                     (progn
+                       ;; (setf (response-status *response*) status)
+                       (set-response-status status)
+                       )))
+               (next-route))
+              ((string= submit "新規スレッド作成")
+               (let ((status (create-thread :_parsed form :date universal-time :ipaddr ipaddr)))
+                 (if (= status 200)
+                     (progn (setf (getf (response-headers *response*) :location) (concatenate 'string "/" bbs))
+                            ;; (setf (response-status *response*) 302)
+                            (set-response-status 302)
+                            )
+                     (set-response-status status)
+                     ))
+               (next-route))
+              (t
+               (set-response-status 400)
+               (next-route)))))
+        (progn
+          (set-response-status 400)
+          (next-route)))))
 
 (defun load-file-with-recursive (pathname start end)
   (with-open-file (input pathname
@@ -835,8 +828,7 @@ p                             :initial-element 0)))
 (defroute ("/test/bbs.cgi" :method :POST) (&key _parsed)
   (let ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
         (universal-time (get-universal-time)))
-    (if ;; (check-abuse-post ipaddr universal-time)
-        t
+    (if (check-abuse-post ipaddr universal-time)
         (let* ((message (get-value-from-key "MESSAGE" _parsed))
                (cookie (gethash "cookie" (request-headers *request*)))
                (splited-cookie (if (null cookie)
