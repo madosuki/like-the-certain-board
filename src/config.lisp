@@ -1,6 +1,6 @@
 (in-package :cl-user)
 (defpackage like-certain-board.config
-  (:use :cl)
+  (:use :cl :cffi)
   (:import-from :envy
                 :config-env-var
                 :defconfig)
@@ -19,9 +19,12 @@
 (defparameter *static-directory*   (merge-pathnames #P"static/" *application-root*))
 (defparameter *template-directory* (merge-pathnames #P"templates/" *application-root*))
 
+(pushnew #P"/usr/lib" cffi:*foreign-library-directories*)
+
 (defparameter *user-name-in-db* "")
 (defparameter *user-password-in-db* "")
 (defparameter *site-db-name* "")
+(defparameter *db-hostname* "127.0.0.1")
 
 (defun set-db-settings ()
   (with-open-file (input "db.txt"
@@ -29,19 +32,21 @@
                          :if-does-not-exist nil)
     (loop for line = (read-line input nil)
           for count from 1
-          while (< count 4)
+          while (< count 5)
           do (case count
                  (1
                   (setq *site-db-name* line))
                  (2
                   (setq *user-name-in-db* line))
                  (3
-                  (setq *user-password-in-db* line))))))
+                  (setq *user-password-in-db* line))
+                 (4
+                  (setq *db-hostname* line))))))
 (set-db-settings)
 
 (defconfig :common
     `(:databases ((:maindb :mysql
-                   :host "127.0.0.1"
+                   :host "db"
                    :port 3306
                    :database-name ,*site-db-name*
                    :username ,*user-name-in-db*

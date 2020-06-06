@@ -9,10 +9,7 @@
 (defun run (name)
     (let ((application name))
     (if (cl-fad:file-exists-p application)
-        (progn
-          (unwind-protect
-               (setq *server* (clack:clackup application :port 8080))
-            (end-server)))
+        (setq *server* (clack:clackup application :port 8080))
         (format t "not found this file."))))
 
 ;; (defun main (&rest argv)

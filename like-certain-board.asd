@@ -10,6 +10,8 @@
                "uiop"
                "quri"
 
+               "cffi"
+
                ;; for @route annotation
                "cl-syntax-annot"
 

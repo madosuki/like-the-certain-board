@@ -163,7 +163,7 @@
 (defun set-posted-ipaddr-count-from-db (table-name ipaddr universal-time n
                                         &optional (is-penalty nil)
                                           (wait-time *default-penalty-time*))
-  (let ((date (get-current-datetime universal-time t 0)))
+  (let ((date (get-current-datetime universal-time)))
     (with-connection (db)
       (execute
        (update (intern table-name)
@@ -174,7 +174,7 @@
                (where (:like :ipaddr ipaddr)))))))
 
 (defun insert-posted-ipaddr-from-db (table-name ipaddr universal-time)
-  (let ((date (get-current-datetime universal-time t 0)))
+  (let ((date (get-current-datetime universal-time)))
     (with-connection (db)
       (execute
        (insert-into (intern table-name)
@@ -184,9 +184,9 @@
                           :count 1
                           :wait_time *default-penalty-time*))))))
 
-(defun get-detail-time-from-universal-time (time &optional (is-not-utc nil))
+(defun get-detail-time-from-universal-time (time &optional (is-utc t))
   (multiple-value-bind (second minute hour date month year day summer timezone)
-      (if is-not-utc (decode-universal-time time 0) (decode-universal-time time))
+      (if is-utc (decode-universal-time time) (decode-universal-time time 9))
     (declare (ignore day summer timezone))
     (list :year year :month month :date date :hour hour :minute minute :second second)))
 
@@ -196,7 +196,7 @@
 (defun check-abuse-post (ipaddr time)
   (let* ((table-name "posted_ipaddr_table")
          (fetch-result (get-posted-ipaddr-values table-name ipaddr))
-         (current-detail-date (get-detail-time-from-universal-time time t))
+         (current-detail-date (get-detail-time-from-universal-time time))
          (current-second (getf current-detail-date :second))
          (current-minute (getf current-detail-date :minute))
          (current-hour (getf current-detail-date :hour))
@@ -324,7 +324,7 @@
   (multiple-value-bind (second minute hour date month year day summer timezone)
       (decode-universal-time (+ date *9-hour-seconds*))
     (declare (ignore day summer timezone))
-    (format nil "~A/~A/~A ~A:~A:~A" year month date hour minute second)))
+    (format nil "~A/~2,'0d/~2,'0d ~2,'0d:~2,'0d:~2,'0d" year month date hour minute second)))
 
 (defun get-table-column-count (table-name column)
   (with-connection (db)
@@ -362,7 +362,7 @@
         (write-sequence tmp i)))))
 
 (defun create-res (&key name trip-key email date text ipaddr (first nil) (title ""))
-  (let* ((datetime (replace-hyphen-to-slash (get-current-datetime date)))
+  (let* ((datetime (replace-hyphen-to-slash (get-current-datetime date t -9)))
          (id (generate-id :ipaddr ipaddr :date datetime :solt *solt*))
          (trip (if (and (stringp trip-key) (string/= trip-key ""))
                    (generate-trip (subseq trip-key 1 (length trip-key)) "utf8")
@@ -379,7 +379,7 @@
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" (apply-dice (create-safety-strings name) t) trip (create-safety-strings email) datetime id final-text))))
 
 (defun create-thread-in-db (&key title create-date unixtime ipaddr max-line)
-  (let ((date (get-current-datetime create-date t)))
+  (let ((date (get-current-datetime create-date)))
     (with-connection (db)
       (execute
        (insert-into :threads
@@ -569,7 +569,7 @@
   (with-connection (db)
     (execute
      (update :threads
-             (set= :last-modified-date (get-current-datetime date 0))
+             (set= :last-modified-date (get-current-datetime date))
              (where (:like :unixtime key))))))
 
 (defun get-res-count (&key key)
@@ -722,7 +722,7 @@ p                             :initial-element 0)))
   (let* ((hash (sha256 (concatenate 'string *solt* password)))
          (is-login nil)
          (checked (check-login-possible board-name user-name hash))
-         (date (get-current-datetime universal-time t)))
+         (date (get-current-datetime universal-time)))
     (cond ((eq checked 'logged-in)
            'logged-in)
           ((eql checked t)
@@ -744,7 +744,7 @@ p                             :initial-element 0)))
   (when (get-user-table board-name user-name)
     (return-from create-user 'exist-user))
   (let* ((hash (sha256 (concatenate 'string *solt* password)))
-         (date (get-current-datetime date t))
+         (date (get-current-datetime date))
          (return-status t)
          (user-data (make-user-table-struct
                      :user-name user-name
@@ -828,8 +828,7 @@ p                             :initial-element 0)))
 (defroute ("/test/bbs.cgi" :method :POST) (&key _parsed)
   (let ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
         (universal-time (get-universal-time)))
-    (if ;; (check-abuse-post ipaddr universal-time)
-     t
+    (if (check-abuse-post ipaddr universal-time)
         (let* ((message (get-value-from-key "MESSAGE" _parsed))
                (cookie (gethash "cookie" (request-headers *request*)))
                (splited-cookie (if (null cookie)
