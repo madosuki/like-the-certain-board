@@ -1,5 +1,5 @@
 # What's this
-This program is like certain board(2ちゃん) program.
+This program is like 2ちゃん program.
 
 
 ## Dependent
