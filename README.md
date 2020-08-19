@@ -16,4 +16,8 @@ do before run
 ros install madosuki/generate-like-certain-board-strings
 ros install clack
 ```
+
+then
+```
 ./run.sh
+```
