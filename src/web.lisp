@@ -8,6 +8,7 @@
         :datafly
         :sxql
         :quri
+        :cl-fad
         :generate-like-certain-board-strings)
   (:export :*web*))
 (in-package :like-certain-board.web)
@@ -25,6 +26,7 @@
 (defvar *session-cap-text-key* "cap-text")
 (defvar *max-thread-list* 10000)
 (defvar *admin-ipaddr* "127.0.0.1")
+(defvar *dat-path* "dat/")
 
 (deftype mysql-true-type (n) `(= n 1))
 (deftype mysql-false-type (n) `(= n 0))
@@ -353,7 +355,9 @@
 
 (defun create-dat (&key unixtime first-line)
   (let* ((filename (concatenate 'string (write-to-string unixtime) ".dat"))
-         (path (concatenate 'string "dat/" filename)))
+         (path (concatenate 'string *dat-path* filename)))
+    (unless (cl-fad:directory-exists-p *dat-path*)
+      (ensure-directories-exist *dat-path*))
     (with-open-file (i (make-pathname :name path)
                        :direction :output
                        :if-does-not-exist :create
@@ -466,7 +470,7 @@
                                               200)
                                             title date unixtime ipaddr name text)
                        (error (e)
-                         (declare (ignore e))
+                         (format t "~%Error in create-thread-function: ~A~%" e)
                          (incf unixtime)
                          (if (< count 10)
                              (progress (incf count))
@@ -644,8 +648,7 @@
                  (if (= status 200)
                      (progn
                        (setf (getf (response-headers *response*) :location) (concatenate 'string "/test/read.cgi/" bbs "/" key))
-                       (set-response-status 302)
-                       )
+                       (set-response-status 302))
                      (progn
                        ;; (setf (response-status *response*) status)
                        (set-response-status status)
@@ -655,9 +658,7 @@
                (let ((status (create-thread :_parsed form :date universal-time :ipaddr ipaddr)))
                  (if (= status 200)
                      (progn (setf (getf (response-headers *response*) :location) (concatenate 'string "/" bbs))
-                            ;; (setf (response-status *response*) 302)
-                            (set-response-status 302)
-                            )
+                            (set-response-status 302))
                      (set-response-status status)
                      ))
                (next-route))

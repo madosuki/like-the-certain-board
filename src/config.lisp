@@ -46,7 +46,7 @@
 
 (defconfig :common
     `(:databases ((:maindb :mysql
-                   :host "db"
+                   :host ,*db-hostname*
                    :port 3306
                    :database-name ,*site-db-name*
                    :username ,*user-name-in-db*

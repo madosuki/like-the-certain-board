@@ -32,6 +32,9 @@
                ;; session
                "lack-session-store-dbi"
 
+               ;; utility
+               "cl-fad"
+
                ;; board string generator
                "generate-like-certain-board-strings")
   :components ((:module "src"
