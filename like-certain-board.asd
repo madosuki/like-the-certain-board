@@ -36,7 +36,11 @@
                "cl-fad"
 
                ;; board string generator
-               "generate-like-certain-board-strings")
+               "generate-like-certain-board-strings"
+
+               "trivial-shell"
+
+               )
   :components ((:module "src"
                 :components
                 ((:file "main" :depends-on ("config" "view" "db"))

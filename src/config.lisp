@@ -1,6 +1,6 @@
 (in-package :cl-user)
 (defpackage like-certain-board.config
-  (:use :cl :cffi)
+  (:use :cl :cffi :trivial-shell)
   (:import-from :envy
                 :config-env-var
                 :defconfig)
@@ -41,7 +41,10 @@
                  (3
                   (setq *user-password-in-db* line))
                  (4
-                  (setq *db-hostname* line))))))
+                  (setq *db-hostname* line)))))
+  (when (find #\a (trivial-shell:shell-command "if [ -e /etc/alpine-release ]; then echo alpine; fi"))
+    (setq *db-hostname* "db")))
+
 (set-db-settings)
 
 (defconfig :common
