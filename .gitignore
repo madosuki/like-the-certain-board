@@ -18,3 +18,5 @@
 
 *.dat
 db.txt
+
+docker/mysql/Log
