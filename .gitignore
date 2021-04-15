@@ -17,7 +17,7 @@
 *.wx32fsl
 
 *.dat
-db.txt
-db.json
+settings.json
+
 
 docker/mysql/Log
