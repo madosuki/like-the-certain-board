@@ -25,6 +25,7 @@ ENV PATH /root/.roswell/bin:${PATH}
 
 RUN ros install fukamachi/caveman && \
     ros install fukamachi/ningle && \
+    ros install fukamachi/clack && \
     ros install cl-dbi && \
     ros install envy & \
     ros install datafly && \
@@ -33,8 +34,7 @@ RUN ros install fukamachi/caveman && \
     ros install optima && \
     ros install sxql && \
     ros install trivial-utf-8 && \
-    ros install madosuki/generate-like-certain-board-strings && \
-    ros install madosuki/clack
+    ros install madosuki/generate-like-certain-board-strings
 
 COPY ./roswell/init.lisp /root/.roswell/
 

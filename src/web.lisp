@@ -680,7 +680,7 @@
                                  file-size
                                  end)
                              :element-type '(unsigned-byte 8)
-p                             :initial-element 0)))
+                             :initial-element 0)))
         (read-sequence buf input :start start :end end)
         buf))))
 
