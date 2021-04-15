@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM debian:bullseye-slim
 
 WORKDIR /roswell
 
@@ -12,7 +12,7 @@ RUN apt-get clean && apt-get update
 RUN apt-get install -y tzdata
 ENV TZ=Asia/Tokyo
 
-RUN apt-get install -y git build-essential automake autoconf make gcc libcurl4-openssl-dev curl libglib2.0-dev libmysqlclient-dev  && \
+RUN apt-get install -y git build-essential automake autoconf make gcc libcurl4-openssl-dev curl libglib2.0-dev default-libmysqlclient-dev libmariadb-dev-compat libfcgi-dev && \
     cd ${work_dir} && \
     git clone --depth=1 -b release https://github.com/roswell/roswell.git && \
     cd roswell && \
@@ -24,12 +24,11 @@ RUN apt-get install -y git build-essential automake autoconf make gcc libcurl4-o
     rm -rf roswell && \
     ros run -q
 
-RUN cd /usr/lib/x86_64-gnu-linux && ln -s libmysqlclient.so.21 libmysqlclient_r.so && cd /roswell
+# RUN cd /usr/lib/x86_64-gnu-linux && ln -s libmysqlclient.so.21 libmysqlclient_r.so && cd /roswell
 
 ENV PATH /root/.roswell/bin:${PATH}
 
-RUN ros install fukamachi/clack && \
-    ros install fukamachi/caveman && \
+RUN ros install fukamachi/caveman && \
     ros install fukamachi/ningle && \
     ros install cl-dbi && \
     ros install envy & \
@@ -39,7 +38,11 @@ RUN ros install fukamachi/clack && \
     ros install optima && \
     ros install sxql && \
     ros install trivial-utf-8 && \
-    ros install madosuki/generate-like-certain-board-strings
+    ros install madosuki/generate-like-certain-board-strings && \
+    ros install madosuki/clack
+
+
+COPY ./roswell/init.lisp /root/.roswell/
 
 # EXPOSE 8080
 

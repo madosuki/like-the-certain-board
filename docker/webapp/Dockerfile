@@ -1,4 +1,4 @@
-FROM frolvlad/alpine-glibc:alpine-3.12
+FROM debian:bullseye-slim
 
 WORKDIR /roswell
 
@@ -7,9 +7,12 @@ RUN mkdir -p /root/.roswell/local-projects/like-the-certain-board
 
 # postgresql-client postgresql-dev postgresql-contrib
 
-# mariadb-dev
+RUN apt-get clean && apt-get update
 
-RUN apk add --no-cache git automake autoconf make gcc build-base curl-dev curl glib-dev libressl-dev ncurses-dev sqlite libev-dev su-exec libpq mariadb-connector-c-dev fcgi-dev && \
+RUN apt-get install -y tzdata
+ENV TZ=Asia/Tokyo
+
+RUN apt-get install -y git build-essential automake autoconf make gcc libcurl4-openssl-dev curl libglib2.0-dev default-libmysqlclient-dev libmariadb-dev-compat libfcgi-dev && \
     cd ${work_dir} && \
     git clone --depth=1 -b release https://github.com/roswell/roswell.git && \
     cd roswell && \
@@ -20,6 +23,8 @@ RUN apk add --no-cache git automake autoconf make gcc build-base curl-dev curl g
     cd .. && \
     rm -rf roswell && \
     ros run -q
+
+# RUN cd /usr/lib/x86_64-gnu-linux && ln -s libmysqlclient.so.21 libmysqlclient_r.so && cd /roswell
 
 ENV PATH /root/.roswell/bin:${PATH}
 
@@ -35,6 +40,7 @@ RUN ros install fukamachi/caveman && \
     ros install trivial-utf-8 && \
     ros install madosuki/generate-like-certain-board-strings && \
     ros install madosuki/clack
+
 
 COPY ./roswell/init.lisp /root/.roswell/
 
