@@ -25,6 +25,7 @@ then
 ```
 
 ## setting file path
-setting file path is according to BOARD_DB_PATH shell variable. When no set to that variable, to reference to src/db.txt .  
-setting file path sample is db-info-sample.txt in this repo root.  
+setting file path is according to BOARD_DB_PATH shell variable. When no set to that variable, to reference to project_dir/settings.json .  
+setting file path sample is settings_sample.json in this repo root.  
+When use that file, should rename settings_sample.json to settings.json.  
 
