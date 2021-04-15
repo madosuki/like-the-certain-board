@@ -1,6 +1,6 @@
 (in-package :cl-user)
 (defpackage like-certain-board.config
-  (:use :cl :cffi :trivial-shell :uiop)
+  (:use :cl :cffi :trivial-shell :uiop :cl-json)
   (:import-from :envy
                 :config-env-var
                 :defconfig)
@@ -33,26 +33,26 @@
 
 (defun set-db-settings ()
   (with-open-file (input (if *db-path*
-                             *db-path*
-                             "db.txt")
+                             (concatenate 'string *db-path* "/db.json")
+                             "db.json")
                          :direction :input
                          :if-does-not-exist nil)
-    (loop for line = (read-line input nil)
-          for count from 1
-          while (< count 5)
-          do (case count
-                 (1
-                  (setq *site-db-name* line))
-                 (2
-                  (setq *user-name-in-db* line))
-                 (3
-                  (setq *user-password-in-db* line))
-                 (4
-                  (setq *db-hostname* line))
-                 (5
-                  (setq *solt* line)))))
-  (when (find #\a (trivial-shell:shell-command "if [ -e /etc/alpine-release ]; then echo alpine; fi"))
-    (setq *db-hostname* *docked-db-container-name*)))
+    (let ((parsed (json:decode-json input)))
+      (let ((site-db-name (cdr (assoc :site-db-name parsed)))
+            (user-name-in-db (cdr (assoc :user-name-in-db parsed)))
+            (user-password-in-db (cdr (assoc :user-password-in-db parsed)))
+            (db-hostname (cdr (assoc :db-hostname parsed)))
+            (solt (cdr (assoc :solt parsed))))
+        (when site-db-name
+          (setq *site-db-name* site-db-name))
+        (when user-name-in-db
+          (setq *user-name-in-db* user-name-in-db))
+        (when user-password-in-db
+          (setq *user-password-in-db* user-password-in-db))
+        (when db-hostname
+          (setq *db-hostname* db-hostname))
+        (when solt
+          (setq *solt* solt))))))
 
 (set-db-settings)
 

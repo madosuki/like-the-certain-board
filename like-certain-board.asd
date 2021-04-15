@@ -12,6 +12,8 @@
 
                "cffi"
 
+               "cl-json"
+
                ;; for @route annotation
                "cl-syntax-annot"
 
