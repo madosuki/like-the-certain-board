@@ -360,12 +360,14 @@
            (apply-dice
             (create-safety-strings
              (shape-text
-              (replace-other-line-to-lf text))))))
+              (replace-other-line-to-lf text)))))
+         (mail (create-safety-strings (convert-html-special-chars email)))
+         (final-name (create-safety-strings (convert-html-special-chars name))))
     (when (string/= trip "")
       (setq trip (concatenate 'string "</b>" (string #\BLACK_DIAMOND) trip "<b>")))
     (if first
-        (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" (apply-dice (create-safety-strings name) t) trip (create-safety-strings email) datetime id final-text title)
-        (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" (apply-dice (create-safety-strings name) t) trip (create-safety-strings email) datetime id final-text))))
+        (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" (apply-dice final-name t) trip mail datetime id final-text title)
+        (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" (apply-dice final-name t) trip mail datetime id final-text))))
 
 (defun create-thread-in-db (&key title create-date unixtime ipaddr max-line)
   (let ((date (get-current-datetime create-date)))
