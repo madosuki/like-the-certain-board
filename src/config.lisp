@@ -1,6 +1,6 @@
 (in-package :cl-user)
 (defpackage like-certain-board.config
-  (:use :cl :cffi :trivial-shell)
+  (:use :cl :cffi :trivial-shell :uiop)
   (:import-from :envy
                 :config-env-var
                 :defconfig)
@@ -25,9 +25,15 @@
 (defparameter *user-password-in-db* "")
 (defparameter *site-db-name* "")
 (defparameter *db-hostname* "127.0.0.1")
+(defparameter *docked-db-container-name* "db")
+(defparameter *solt* "")
+
+(defparameter *db-path* (uiop:getenv "BOARD_DB_PATH"))
 
 (defun set-db-settings ()
-  (with-open-file (input "db.txt"
+  (with-open-file (input (if *db-path*
+                             *db-path*
+                             "db.txt")
                          :direction :input
                          :if-does-not-exist nil)
     (loop for line = (read-line input nil)
@@ -41,9 +47,11 @@
                  (3
                   (setq *user-password-in-db* line))
                  (4
-                  (setq *db-hostname* line)))))
+                  (setq *db-hostname* line))
+                 (5
+                  (setq *solt* line)))))
   (when (find #\a (trivial-shell:shell-command "if [ -e /etc/alpine-release ]; then echo alpine; fi"))
-    (setq *db-hostname* "db")))
+    (setq *db-hostname* *docked-db-container-name*)))
 
 (set-db-settings)
 

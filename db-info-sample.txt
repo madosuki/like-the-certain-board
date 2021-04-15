@@ -2,3 +2,4 @@ sample-board
 db-username
 db-password
 db-hostname
+solt

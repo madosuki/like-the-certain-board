@@ -23,3 +23,8 @@ then
 ```
 ./run.sh
 ```
+
+## setting file path
+setting file path is according to BOARD_DB_PATH shell variable. When no set to that variable, to reference to src/db.txt .  
+setting file path sample is db-info-sample.txt in this repo root.  
+

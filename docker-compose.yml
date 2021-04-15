@@ -10,14 +10,12 @@ services:
     # tty: true
     restart: "no"
     entrypoint: "/root/.roswell/local-projects/like-the-certain-board/dockerRun.sh"
-    # command: "/root/.roswell/bin/clackup --port 8080 /root/.roswell/local-projects/like-the-certain-board/app.lisp"
     depends_on:
       - db
     expose:
       - 8888
     volumes:
       - ./:/root/.roswell/local-projects/like-the-certain-board/
-    # above line means is mount caveman2 project directory.
 
   db:
     image: mysql:latest
