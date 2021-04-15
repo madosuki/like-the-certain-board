@@ -8,6 +8,7 @@
            :*application-root*
            :*static-directory*
            :*template-directory*
+           :*solt*
            :appenv
            :developmentp
            :productionp))
