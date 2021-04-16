@@ -1,11 +1,12 @@
 {
-    "board-name": "testboard",
-    "default-name": "名無しさん",
-    "1001-message": "1001<><>Over Max Thread<> Reached max. Can't write to this thread. <>",
-    "delete-message": "削除されました<><>削除されました<> 削除されました <>",
-    "site-db-name": "mysite",
-    "user-name-in-db": "user",
-    "user-password-in-db": "user_pass",
-    "db-hostname": "db",
-    "solt": "a"
+  "board-title": "テスト",
+  "board-name": "testboard",
+  "default-name": "名無しさん",
+  "1001-message": "1001<><>Over Max Thread<> Reached max. Can't write to this thread. <>",
+  "delete-message": "削除されました<><>削除されました<> 削除されました <>",
+  "site-db-name": "mysite",
+  "user-name-in-db": "user",
+  "user-password-in-db": "user_pass",
+  "db-hostname": "db",
+  "solt": "a"
 }
