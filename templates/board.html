@@ -1,5 +1,5 @@
 {% extends "layouts/default.html" %}
-{% block title %}やる夫Lisp板{% endblock %}
+{% block title %}{{ board-name }}{% endblock %}
 {% block content %}
 <div id="main">
     {% if is-login %}
@@ -28,6 +28,7 @@
                 <td class="cell-spacing">
                     <form action="/{{ bbs }}/api/thread" method="post">
                         <input name="key" type="hidden" value="{{ thread.unixtime }}"/>
+                        <input name="mode" type="hidden" value="delete"/>
                         <button name="submit" type="submit">削除</button>
                     </form>
                 </td>

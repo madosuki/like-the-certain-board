@@ -767,19 +767,9 @@
     (write-line html stream)))
 
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
-(defun to-kakolog (unixtime)
-  (declare (type 'string unixtime))
-  (let ((parsed (parse-integer unixtime)))
-    (if (check-exist-row parsed)
-        (progn
-          (delete-thread parsed)
-          (let ((filepath (concatenate 'string *dat-path* unixtime ".dat")))
-            (if (probe-file filepath)
-                (let ((html (dat-to-html filepath)))
-                  (save-html html)
-                  (delete-file filepath))
-                nil)))
-        nil)))
+(defun to-kakolog (unixtime dat-file-path)
+  (let ((html (dat-to-html dat-file-path)))
+    (save-html unixtime html)))
 
 ;; Model
 ;; (defmodel (threads
@@ -974,16 +964,21 @@
 
 (defroute ("/:board-name/api/thread" :method :POST) (&key board-name _parsed)
   (let ((key (get-value-from-key "key" _parsed))
+        (mode (get-value-from-key "mode" _parsed))
         (is-login (gethash *session-login-key* *session*))
         (is-admin (gethash *session-admin-key* *session*)))
-    (cond ((or (null key) (null is-login) (null is-admin))
+    (cond ((or (null key) (null mode) (null is-login) (null is-admin))
            (set-response-status 403)
            "invalid params")
           ((check-exist-row (parse-integer key))
            (delete-thread (parse-integer key))
            (let ((filepath (concatenate 'string *dat-path* key ".dat")))
              (when (probe-file filepath)
-               (delete-file filepath)))
+               (cond ((string= mode "delete")
+                      (delete-file filepath))
+                     ((string= mode "log")
+                      (to-kakolog key)
+                      (delete-file filepath)))))
            (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
            ;; (setf (response-status *response*) 302)
            (set-response-status 302)
