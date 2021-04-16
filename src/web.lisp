@@ -767,30 +767,19 @@
     (write-line html stream)))
 
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
-;; (defun to-kakolog (unixtime)
-;;   (declare (type 'string unixtime))
-;;   (let ((parsed (parse-integer unixtime)))
-;;     (if (check-exist-row parsed)
-;;         (progn
-;;           (delete-thread parsed)
-;;           (let ((filepath (concatenate 'string *dat-path* unixtime ".dat")))
-;;             (if (probe-file filepath)
-;;                 (let ((html (dat-to-html filepath)))
-;;                   (save-html html)
-;;                   (delete-file filepath))
-;;                 nil)))
-;;         nil)))
-
 (defun to-kakolog (unixtime)
+  (declare (type 'string unixtime))
   (let ((parsed (parse-integer unixtime)))
-    (let ((filepath (concatenate 'string *dat-path* unixtime ".dat")))
-      (if (probe-file filepath)
-          (let ((html (dat-to-html filepath)))
-            (save-html unixtime html))
-          nil))
-    nil))
-
-
+    (if (check-exist-row parsed)
+        (progn
+          (delete-thread parsed)
+          (let ((filepath (concatenate 'string *dat-path* unixtime ".dat")))
+            (if (probe-file filepath)
+                (let ((html (dat-to-html filepath)))
+                  (save-html html)
+                  (delete-file filepath))
+                nil)))
+        nil)))
 
 ;; Model
 ;; (defmodel (threads
@@ -844,7 +833,6 @@
          (title (cadr (member :title (car dat-list))))
          (current-unix-time (get-unix-time (get-universal-time)))
          (is-login (gethash *session-login-key* *session*)))
-    (to-kakolog unixtime)
     (if (probe-file filepath)
         (render #P "thread.html" (list :title title :thread dat-list :bbs *board-name* :key unixtime :time current-unix-time :is-login is-login))
         (on-exception *web* 404))))
