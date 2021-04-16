@@ -223,7 +223,7 @@
   (with-connection (db)
     (execute
      (create-table (:threads :if-exists-not t)
-                   ((title :type '(:varchar 255)
+                   ((title :type 'text
                            :not-null t)
                     (create-date :type 'datetime
                                  :not-null t)
@@ -242,35 +242,39 @@
                     (is-deleted :type 'integer
                                 :default *mysql-false*))))))
 
-(defvar *user-login-table-postero-string* "_login_table")
-(defun create-user-login-table-name (s)
-  (concatenate 'string (string-downcase s) *user-login-table-postero-string*))
-(defun create-user-login-table (user-name)
-  (with-connection (db)
-    (execute
-     (create-table (list (create-user-login-table-name user-name) :if-exists-not t)
-                   ((id :type 'integer
-                        :primary-key t
-                        :auto-increment t)
-                    (login-date :type 'datetime
-                                :not-null t)
-                    (ip-address :type '(:varchar 43)
-                                :not-null t))))))
+;; (defvar *user-login-table* "user_login_table")
+;; (defun create-user-login-table ()
+;;   (with-connection (db)
+;;     (execute
+;;      (create-table (list (create-user-login-table-name user-name) :if-exists-not t)
+;;                    ((id :type 'integer
+;;                         :primary-key t
+;;                         :auto-increment t)
+;;                     (user-name :type 'text
+;;                                :not-null t)
+;;                     (login-date :type 'datetime
+;;                                 :not-null t)
+;;                     (ip-address :type '(:varchar 43)
+;;                                 :not-null t)
+;;                     (session :type 'text))))))
 
-(defun insert-user-login-table (user-name ipaddr date)
-  (with-connection (db)
-    (execute
-     (insert-into (intern (concatenate 'string user-name *user-login-table-postero-string*))
-                  (set=
-                   :login-date date
-                   :ip-address ipaddr)))))
+;; (defun insert-user-login-table (user-name ipaddr date session)
+;;   (with-connection (db)
+;;     (execute
+;;      (insert-into :user-login-table
+;;                   (set=
+;;                    :user-name user-name
+;;                    :login-date date
+;;                    :ip-address ipaddr
+;;                    :session session)))))
 
-(defun get-latest-login-data-from-user-login-table (user-name)
-  (with-connection (db)
-    (retrieve-one
-     (select :*
-             (from (intern (concatenate 'string user-name *user-login-table-postero-string*)))
-             (order-by (:desc :login-date))))))
+;; (defun get-latest-login-data-from-user-login-table (user-name)
+;;   (with-connection (db)
+;;     (retrieve-one
+;;      (select :*
+;;              (from :user-login-table)
+;;              (where (:= :user-name user-name))
+;;              (order-by (:desc :login-date))))))
 
 (defun get-user-table (board-name user-name)
   (with-connection (db)
