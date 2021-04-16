@@ -314,7 +314,7 @@
 
 (defun format-datetime (date)
   (multiple-value-bind (second minute hour date month year day summer timezone)
-      (decode-universal-time (+ date *9-hour-seconds*))
+      (decode-universal-time date)
     (declare (ignore day summer timezone))
     (format nil "~A/~2,'0d/~2,'0d ~2,'0d:~2,'0d:~2,'0d" year month date hour minute second)))
 
@@ -450,7 +450,7 @@
                     (t
                      (setq max-line *default-max-length*)))
               (setq max-line *default-max-length*))
-          (labels ((progress (&optional (count 0))
+          (labels ((progress (title date unixtime ipaddr name text &optional (count 0))
                      (handler-case (funcall (lambda (title date unixtime ipaddr name text)
                                               (create-thread-in-db :title title
                                                                    :create-date date
@@ -465,9 +465,9 @@
                          (format t "~%Error in create-thread-function: ~A~%" e)
                          (incf unixtime)
                          (if (< count 10)
-                             (progress (incf count))
+                             (progress title date unixtime ipaddr name text (incf count))
                              (return-from create-thread 400))))))
-            (progress)))
+            (progress title date unixtime ipaddr name text)))
         400)))
 
 (defun insert-res (_parsed ipaddr universal-time)
