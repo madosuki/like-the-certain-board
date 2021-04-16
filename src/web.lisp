@@ -356,7 +356,7 @@
         (write-sequence tmp i)))))
 
 (defun create-res (&key name trip-key email date text ipaddr (first nil) (title ""))
-  (let* ((datetime (replace-hyphen-to-slash (get-current-datetime date t -9)))
+  (let* ((datetime (replace-hyphen-to-slash (get-current-datetime date)))
          (id (generate-id :ipaddr ipaddr :date datetime :solt *solt*))
          (trip (if (and (stringp trip-key) (string/= trip-key ""))
                    (generate-trip (subseq trip-key 1 (length trip-key)) "utf8")
