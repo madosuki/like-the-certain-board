@@ -24,8 +24,9 @@ then
 ./run.sh
 ```
 
-## setting file path
-setting file path is according to BOARD_DB_PATH shell variable. When no set to that variable, to reference to project_dir/settings.json .  
-setting file path sample is settings_sample.json in this repo root.  
-When use that file, should rename settings_sample.json to settings.json.  
+## settings file path
+setting file path is according to BOARD_DB_PATH shell variable.   
+DAT file path is according to DAT_DIR_PATH shell variable.   
+output HTML from dat when outdate path is according to KAKOLOG_HTML_DIR_PATH shell variable.   
+above shell variables is must set.  
 
