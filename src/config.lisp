@@ -9,6 +9,7 @@
            :*static-directory*
            :*template-directory*
            :*solt*
+           :*board-title*
            :*board-name*
            :*default-name*
            :*default-max-length*
@@ -45,6 +46,7 @@
 
 (defparameter *settings-path* (uiop:getenv "BOARD_SETTINGS_PATH"))
 
+(defvar *board-title* "")
 (defvar *default-name* "名無しさん")
 (defvar *board-name* "testboard")
 (defvar *default-max-length* 1000)
@@ -58,8 +60,8 @@
 (defvar *session-cap-text-key* "cap-text")
 (defvar *max-thread-list* 10000)
 (defvar *admin-ipaddr* "127.0.0.1")
-(defvar *dat-path* "dat/")
-
+(defvar *dat-path* (uiop:getenv "DAT_DIR_PATH"))
+(defvar *kakolog-html-path* (uiop:getenv "KAKOLOG_HTML_DIR_PATH"))
 
 (defun set-settings ()
   (with-open-file (input (if *settings-path*
@@ -74,7 +76,8 @@
             (db-hostname (cdr (assoc :db-hostname parsed)))
             (solt (cdr (assoc :solt parsed)))
             (default-name (cdr (assoc :default-name parsed)))
-            (board-name (cdr (assoc :board-name parsed))))
+            (board-name (cdr (assoc :board-name parsed)))
+            (board-title (cdr (assoc :board-title parsed))))
         (when site-db-name
           (setq *site-db-name* site-db-name))
         (when user-name-in-db
@@ -88,7 +91,9 @@
         (when default-name
           (setq *default-name* default-name))
         (when board-name
-          (setq *board-name* board-name))))))
+          (setq *board-name* board-name))
+        (when board-title
+          (setq *board-title* board-title))))))
 
 (set-settings)
 

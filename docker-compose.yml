@@ -16,6 +16,9 @@ services:
       - 8888
     volumes:
       - ./:/root/.roswell/local-projects/like-the-certain-board/
+      - ../dat/:/roswell/dat/
+      - ../html/:/roswell/html/
+      - ../settings/:/roswell/settings/
 
   db:
     image: mysql:latest

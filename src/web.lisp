@@ -90,7 +90,7 @@
       (write-sequence (sb-ext:string-to-octets result :external-format :CP932) out))))
 
 (defun delete-line-in-dat (key line-number)
-  (let* ((path (concatenate 'string (namestring (truename "./")) "dat/" key ".dat"))
+  (let* ((path (concatenate 'string *dat-path* key ".dat"))
          (outpath (concatenate 'string path ".out"))
          (is-not-error nil))
     (handler-case (change-line-in-dat path outpath *delete-message* line-number)
@@ -343,7 +343,7 @@
          (path (concatenate 'string *dat-path* filename)))
     (unless (cl-fad:directory-exists-p *dat-path*)
       (ensure-directories-exist *dat-path*))
-    (with-open-file (i (make-pathname :name path)
+    (with-open-file (i path
                        :direction :output
                        :if-does-not-exist :create
                        :element-type '(unsigned-byte 8))
@@ -489,7 +489,7 @@
       (setq from *default-name*))
     (when (and (string/= time "") (< (cadr (get-res-count :key key)) (cadr (get-max-line :key key)))
                (> (get-unix-time universal-time) (parse-integer time :radix 10)))
-      (with-open-file (input (concatenate 'string "dat/" key ".dat")
+      (with-open-file (input (concatenate 'string *dat-path* key ".dat")
                              :direction :output
                              :if-exists :append
                              :if-does-not-exist nil
@@ -521,7 +521,7 @@
           (dolist (x result)
             (setf (getf x :create-date) (format-datetime (getf x :create-date)))
             (setf (getf x :last-modified-date) (format-datetime (getf x :last-modified-date))))
-          (render #P"board.html" (list :board-name "やる夫の試験運用板"
+          (render #P"board.html" (list :board-name *board-title*
                                        :bbs board-name
                                        :time (get-unix-time (get-universal-time))
                                        :threads result
@@ -760,7 +760,7 @@
           collect line)))
 
 (defun save-html (unixtime html)
-  (with-open-file (stream (concatenate 'string "html/" unixtime ".html")
+  (with-open-file (stream (concatenate 'string *kakolog-html-path* unixtime ".html")
                           :direction :output
                           :if-does-not-exist :create
                           :if-exists :supersede)
@@ -828,7 +828,7 @@
 
 (defroute ("/test/read.cgi/:board-name/:unixtime" :method :GET) (&key board-name unixtime)
   (declare (ignore board-name))
-  (let* ((filepath (concatenate 'string "dat/" unixtime ".dat"))
+  (let* ((filepath (concatenate 'string *dat-path* unixtime ".dat"))
          (dat-list (dat-to-keyword-list filepath))
          (title (cadr (member :title (car dat-list))))
          (current-unix-time (get-unix-time (get-universal-time)))
@@ -870,7 +870,7 @@
 
 (defroute ("/:board-name/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
   (declare (ignore board-name))
-  (let ((pathname (probe-file (concatenate 'string "dat/" unixtime ".dat"))))
+  (let ((pathname (probe-file (concatenate 'string *dat-path* unixtime ".dat"))))
     (if (not (null pathname))
         (progn
           (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
@@ -962,7 +962,7 @@
            "invalid param")
           ((and (numberp line-number) (string= board-name *board-name*))
            (if (delete-line-in-dat key line-number)
-                 (let* ((filepath (concatenate 'string "dat/" key ".dat"))
+                 (let* ((filepath (concatenate 'string *dat-path* key ".dat"))
                         (dat-list (dat-to-keyword-list filepath))
                         (title (cadr (member :title (car dat-list))))
                         (current-unix-time (get-unix-time (get-universal-time)))
@@ -981,7 +981,7 @@
            "invalid params")
           ((check-exist-row (parse-integer key))
            (delete-thread (parse-integer key))
-           (let ((filepath (concatenate 'string "dat/" key ".dat")))
+           (let ((filepath (concatenate 'string *dat-path* key ".dat")))
              (when (probe-file filepath)
                (delete-file filepath)))
            (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))

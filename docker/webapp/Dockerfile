@@ -3,6 +3,9 @@ FROM debian:bullseye-slim
 WORKDIR /roswell
 
 RUN mkdir -p /root/.roswell/local-projects/like-the-certain-board
+RUN mkdir -p /roswell/dat
+RUN mkdir -p /roswell/html
+RUN mkdir -p /roswell/settings
 # COPY ./run.sh ${WORKDIR}
 
 # postgresql-client postgresql-dev postgresql-contrib
