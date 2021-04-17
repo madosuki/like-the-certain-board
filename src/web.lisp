@@ -201,6 +201,14 @@
                           :count 1
                           :wait_time *default-penalty-time*))))))
 
+(defun delete-posted-from-db (session)
+  (with-connection (db)
+    (execute
+     (delete-from :posted-table
+                  (where (:= :session_data session))
+                  (limit 1)))))
+
+
 (defun get-detail-time-from-universal-time (time &optional (is-utc t))
   (multiple-value-bind (second minute hour date month year day summer timezone)
       (if is-utc (decode-universal-time time) (decode-universal-time time 9))
