@@ -34,6 +34,8 @@ services:
       MYSQL_PASSWORD: user_pass
     expose:
       - 3306
+    ports:
+      - 3306:3306
     volumes:
       - ./docker/mysql/sql:/docker-entrypoint-initdb.d
       - ./docker/mysql/conf:/etc/mysql/conf.d
