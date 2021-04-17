@@ -69,24 +69,31 @@
 
 ;; Functions
 
-(defun flatten (a &optional (result nil))
+(defun flatten (a &optional (result (list nil)))
   (if a
-      (let ((l (caar a))
-            (r (cadar a)))
-        (push r result)
-        (push l result)
-        (flatten (cdr a) result))
-      result))
+      (let ((base (car a)))
+        (let ((l (car base))
+              (r (cdr base)))
+          (if result
+              (setq result (list r l))
+              (progn
+                (push l result)
+                (push r result)))
+          (flatten (cdr a) result)))
+      (reverse result)))
 
 (defun get-session-from-cookie (request)
   (let ((cookie (gethash "cookie" (request-headers *request*))))
     (unless cookie
       (return-from get-session-from-cookie nil))
-    (let ((splited-cookie (flatten (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
+    (let ((splited-cookie (flatten (mapcar #'(lambda (v)
+                                               (let  ((base (cl-ppcre:split "=" v)))
+                                                 (cons (car base) (cadr base))))
                                            (cl-ppcre:split ";" cookie)))))
-      (unless (> 2 (length splited-cookie))
+      (when (<= (length splited-cookie) 1)
+        (format t "~%not reach latest length cookie~%")
         (return-from get-session-from-cookie nil))
-      (let ((session (member :lack.sesslion splited-cookie)))
+      (let ((session (member "lack.session" splited-cookie :test #'equal)))
         (if session
             (cadr session)
             nil)))))
