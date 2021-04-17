@@ -18,6 +18,8 @@
 (defvar *mysql-true* 1)
 (defvar *mysql-false* 0)
 
+(defvar *posted-table* "posted_table")
+
 (defstruct user-table-struct
   (board-name "" :type string)
   (user-name "" :type string)
@@ -36,9 +38,6 @@
   (unixtime 0 :type intger)
   (ipaddr "" :type string)
   (max 1000 :type integer))
-
-;; this solt is sample. don't use production.
-;; (defvar *solt* "wqk0SZoDaZioQbuYzCM3mRBDFbj8FD9sx3ZX34wwhnMjtdAIM2tqonirJ7o8NuDpPkFIFbAacZYTsBRHzjmagGpZZb6aAZVvk5AcWJXWGRdTZlpo7vuXF3zvg1xp9yp0")
 
 (defmacro caddddr (v)
   `(caddr (cddr ,v)))
@@ -69,6 +68,29 @@
 
 
 ;; Functions
+
+(defun flatten (a &optional (result nil))
+  (if a
+      (let ((l (caar a))
+            (r (cadar a)))
+        (push r result)
+        (push l result)
+        (flatten (cdr a) result))
+      result))
+
+(defun get-session-from-cookie (request)
+  (let ((cookie (gethash "cookie" (request-headers *request*))))
+    (unless cookie
+      (return-from get-session-from-cookie nil))
+    (let ((splited-cookie (flatten (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
+                                           (cl-ppcre:split ";" cookie)))))
+      (unless (> 2 (length splited-cookie))
+        (return-from get-session-from-cookie nil))
+      (let ((session (member :lack.sesslion splited-cookie)))
+        (if session
+            (cadr session)
+            nil)))))
+
 
 (defun change-line-in-dat (filename outpath text target-number)
   (let ((result ""))
@@ -141,14 +163,14 @@
         t
         nil)))
 
-(defun get-posted-ipaddr-values (table-name ipaddr)
+(defun get-posted-values (table-name session)
   (with-connection (db)
     (retrieve-one
      (select (fields :count :appearance_date :is_penalty :wait_time)
              (from (intern table-name))
-             (where (:like :ipaddr ipaddr))))))
+             (where (:like :session_data session))))))
 
-(defun set-posted-ipaddr-count-from-db (table-name ipaddr universal-time n
+(defun set-posted-count-from-db (table-name session universal-time n
                                         &optional (is-penalty nil)
                                           (wait-time *default-penalty-time*))
   (let ((date (get-current-datetime universal-time)))
@@ -159,14 +181,14 @@
                      :appearance_date date
                      :is_penalty (if is-penalty 1 0)
                      :wait_time wait-time)
-               (where (:like :ipaddr ipaddr)))))))
+               (where (:like :session_data session)))))))
 
-(defun insert-posted-ipaddr-from-db (table-name ipaddr universal-time)
+(defun insert-posted-from-db (table-name session universal-time)
   (let ((date (get-current-datetime universal-time)))
     (with-connection (db)
       (execute
        (insert-into (intern table-name)
-                    (set= :ipaddr ipaddr
+                    (set= :session_data session
                           :appearance_date date
                           :is_penalty 0
                           :count 1
@@ -181,16 +203,18 @@
 (defmacro hour-to-second (h)
   `(* ,h 60 60))
 
-(defun check-abuse-post (ipaddr time)
-  (let* ((table-name "posted_ipaddr_table")
-         (fetch-result (get-posted-ipaddr-values table-name ipaddr))
+(defun check-abuse-post (session time)
+  (unless session
+    (return-from check-abuse-post t))
+  (let* ((table-name *posted-table*)
+         (fetch-result (get-posted-values table-name session))
          (current-detail-date (get-detail-time-from-universal-time time))
          (current-second (getf current-detail-date :second))
          (current-minute (getf current-detail-date :minute))
          (current-hour (getf current-detail-date :hour))
          (current-date (getf current-detail-date :date)))
     (unless fetch-result
-      (insert-posted-ipaddr-from-db table-name ipaddr time)
+      (insert-posted-from-db table-name session time)
       (return-from check-abuse-post t))
     (let* ((appearance-date (getf fetch-result :appearance-date))
            (is-penalty (getf fetch-result :is-penalty))
@@ -208,15 +232,15 @@
         (return-from check-abuse-post nil))
       (cond ((<= wait-time diff)
              (setq is-penalty nil)
-             (set-posted-ipaddr-count-from-db table-name ipaddr time 0)
+             (set-posted-count-from-db table-name session time 0)
              t)
             ((> count 5)
-             (set-posted-ipaddr-count-from-db
-              table-name ipaddr time (1+ count) t
+             (set-posted-count-from-db
+              table-name session time (1+ count) t
               (if (< wait-time *24-hour-seconds*) (+ wait-time *default-penalty-time*) wait-time))
              nil)
             (t
-             (set-posted-ipaddr-count-from-db table-name ipaddr time (1+ count) nil wait-time)
+             (set-posted-count-from-db table-name session time (1+ count) nil wait-time)
              nil)))))
 
 (defun init-threads-table ()
@@ -833,10 +857,12 @@
         (on-exception *web* 404))))
 
 
+
 (defroute ("/test/bbs.cgi" :method :POST) (&key _parsed)
   (let ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
+        (session (get-session-from-cookie *request*))
         (universal-time (get-universal-time)))
-    (if (check-abuse-post ipaddr universal-time)
+    (if (check-abuse-post session universal-time)
         (let* ((message (get-value-from-key "MESSAGE" _parsed))
                (cookie (gethash "cookie" (request-headers *request*)))
                (splited-cookie (if (null cookie)
@@ -855,9 +881,11 @@
           (render #P "time_restrict.html" (list
                                            :ipaddr ipaddr
                                            :minute
-                                           (/ (getf (get-posted-ipaddr-values "posted_ipaddr_table" ipaddr)
-                                                    :wait-time)
-                                              60)
+                                           (if session
+                                               (/ (getf (get-posted-values *posted-table* session)
+                                                        :wait-time)
+                                                  60)
+                                               -1)
                                                      
                                            :bbs bbs
                                            :key (if key key nil)))))))
