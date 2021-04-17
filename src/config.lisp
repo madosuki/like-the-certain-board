@@ -21,6 +21,7 @@
            :*session-login-key*
            :*session-admin-key*
            :*session-cap-text-key*
+           :*session-last-post-seconds*
            :*max-thread-list*
            :*admin-ipaddr*
            :*dat-path*
@@ -56,6 +57,7 @@
 (defvar *9-hour-seconds* (* 9 60 60))
 (defvar *delete-message* "削除されました<><>削除されました<> 削除されました <>")
 (defvar *session-login-key* "logged-in")
+(defvar *session-last-post-seconds* "last-post-seconds")
 (defvar *session-admin-key* "is-admin")
 (defvar *session-cap-text-key* "cap-text")
 (defvar *max-thread-list* 10000)
