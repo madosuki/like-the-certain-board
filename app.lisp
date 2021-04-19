@@ -1,9 +1,9 @@
 (ql:quickload :like-certain-board)
 
 (defpackage like-certain-board.app
-  (:use :cl)
+  (:use :cl :lack.middleware.session.state.cookie)
   (:import-from :lack.builder
-                :builder)
+   :builder)
   (:import-from :ppcre
                 :scan
                 :regex-replace)
@@ -18,23 +18,30 @@
 
 (in-package :like-certain-board.app)
 
-;; (defclass <my-lack-middleware-state-cookie> (<lack.session.state.cookie>)
-;;   ((path :init-form "/"
-;;          :accessor path)
-;;    (domain :init-form nil
-;;            :accessor domain)
-;;    (expiers :init-form (get-universal-time)
-;;             :accessor)
-;;    (secure :init-form nil
-;;            :accessor secure)
-;;    (httponly :init-form nil
-;;              :accessor httponly)
-;;    (cookie-key :init-form "lack.session"
-;;                :accessor cookie-key)))
+;; (defstruct (extend-cookie-state (:include cookie-state))
+;;   (samesite "Lax" :type string))
 
-;; (defclass <my-lack-middleware-session> (<lack.middleware.session>)
-;;   ((state :init-form (make-instance '<my-lack-session-state-cookie>)
-;;           :accessor state)))
+;; (defmethod finalize-state ((state extend-cookie-state) sid (res list) options)
+;;   ;; Don't send Set-Cookie header when it's not necessary.
+;;   (destructuring-bind (&key no-store new-session change-id expire &allow-other-keys)
+;;       options
+;;     (when (or no-store
+;;               (not (or new-session change-id expire)))
+;;       (return-from finalize-state res)))
+
+;;   (let ((res (apply #'make-response res))
+;;         (options (with-slots (path domain expires secure httponly samesite) state
+;;                    (list :path path
+;;                          :domain domain
+;;                          :secure secure
+;;                          :httponly httponly
+;;                          :samesite samesite
+;;                          :expires (+ (get-universal-time)
+;;                                      (getf options :expires expires))))))
+;;     (setf (getf (response-set-cookies res) (cookie-state-cookie-key state))
+;;           `(:value ,sid ,@options))
+;;     (finalize-response res)))
+
 
 (builder
  (:static
@@ -50,9 +57,12 @@
      `(:backtrace
        :output ,(getf (config) :error-log))
      nil)
- :session
- ;; (:session
- ;;  :state (make-instance <my-lack-middleware-state-cooki>))
+ ;; :session
+ (:session
+  :state (make-cookie-state
+          :httponly t
+          :cookie-key "app.session"
+          :expires 1800))
  (if (productionp)
      nil
      (lambda (app)
