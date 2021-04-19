@@ -843,10 +843,10 @@
 (defroute ("/:board-name/" :method :GET) (&key board-name)
   ;; (maphash #'(lambda (key value) (format t "~%Key:~A, Value:~A~%" key value)) (request-headers *request*))
   ;; (print (gethash "cookie" (request-headers *request*)))
-  (put-thread-list board-name))
+  (put-thread-list board-name *web*))
 
 (defroute ("/:board-name" :method :GET) (&key board-name)
-  (put-thread-list board-name))
+  (put-thread-list board-name *web*))
 
 (defroute ("/:board-name/subject.txt" :method :GET) (&key board-name)
   (declare (ignore board-name))

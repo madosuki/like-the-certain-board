@@ -567,7 +567,7 @@
             (format t "~%~%insert!~%~%")))))
     status))
 
-(defun put-thread-list (board-name)
+(defun put-thread-list (board-name web)
   (if (string= board-name *board-name*)
       (progn
         (check-exists-threads-table-and-create-table-when-does-not)
@@ -581,7 +581,7 @@
                                        :time (get-unix-time (get-universal-time))
                                        :threads result
                                        :is-login is-login))))
-      (on-exception *web* 404)))
+      (on-exception web 404)))
 
 (defun get-param (body)
   (let ((tmp (cl-ppcre:split "&" body))
