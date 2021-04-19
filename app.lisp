@@ -18,6 +18,24 @@
 
 (in-package :like-certain-board.app)
 
+;; (defclass <my-lack-middleware-state-cookie> (<lack.session.state.cookie>)
+;;   ((path :init-form "/"
+;;          :accessor path)
+;;    (domain :init-form nil
+;;            :accessor domain)
+;;    (expiers :init-form (get-universal-time)
+;;             :accessor)
+;;    (secure :init-form nil
+;;            :accessor secure)
+;;    (httponly :init-form nil
+;;              :accessor httponly)
+;;    (cookie-key :init-form "lack.session"
+;;                :accessor cookie-key)))
+
+;; (defclass <my-lack-middleware-session> (<lack.middleware.session>)
+;;   ((state :init-form (make-instance '<my-lack-session-state-cookie>)
+;;           :accessor state)))
+
 (builder
  (:static
   :path (lambda (path)
@@ -33,6 +51,8 @@
        :output ,(getf (config) :error-log))
      nil)
  :session
+ ;; (:session
+ ;;  :state (make-instance <my-lack-middleware-state-cooki>))
  (if (productionp)
      nil
      (lambda (app)
