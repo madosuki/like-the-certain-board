@@ -53,4 +53,6 @@ services:
     ports:
       - 8080:80
       - 8081:443
+    volumes:
+      - ./docker/nginx/conf:/etc/nginx/conf.d/
 
