@@ -14,7 +14,12 @@
                 :productionp
    :*static-directory*)
   (:import-from :like-certain-board.db
-                :connection-settings))
+   :connection-settings)
+  (:import-from :lack.response
+   :make-response
+   :finalize-response
+   :response-set-cookies)
+  )
 
 (in-package :like-certain-board.app)
 
@@ -22,7 +27,6 @@
 ;;   (samesite "Lax" :type string))
 
 ;; (defmethod finalize-state ((state extend-cookie-state) sid (res list) options)
-;;   ;; Don't send Set-Cookie header when it's not necessary.
 ;;   (destructuring-bind (&key no-store new-session change-id expire &allow-other-keys)
 ;;       options
 ;;     (when (or no-store
@@ -38,7 +42,7 @@
 ;;                          :samesite samesite
 ;;                          :expires (+ (get-universal-time)
 ;;                                      (getf options :expires expires))))))
-;;     (setf (getf (response-set-cookies res) (cookie-state-cookie-key state))
+;;     (setf (getf (response-set-cookies res) (extend-cookie-state-cookie-key state))
 ;;           `(:value ,sid ,@options))
 ;;     (finalize-response res)))
 
@@ -62,6 +66,7 @@
   :state (make-cookie-state
           :httponly t
           :cookie-key "app.session"
+          :samesite 'LACK.MIDDLEWARE.SESSION.STATE.COOKIE::LAX
           :expires 1800))
  (if (productionp)
      nil
