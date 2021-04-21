@@ -95,13 +95,15 @@
           (bbs-cgi-function tmp-array ipaddr universal-time))
         (let ((bbs (cdr (assoc "bbs" _parsed :test #'string=)))
               (key (cdr (assoc "key" _parsed :test #'string=))))
-          ;; (setf (response-status *response*) 429)
-          (set-response-status 429)
-          (render #P "time_restrict.html" (list
-                                           :ipaddr ipaddr
-                                           :minute 1
-                                           :bbs bbs
-                                           :key (if key key nil)))))))
+          (if (or (null bbs) (null key))
+              (progn (set-response-status 400)
+                     (next-route))
+              (set-response-status 429)
+              (render #P "time_restrict.html" (list
+                                               :ipaddr ipaddr
+                                               :minute 1
+                                               :bbs bbs
+                                               :key (if key key nil))))))))
 
 
 
