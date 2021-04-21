@@ -98,12 +98,12 @@
           (if (or (null bbs) (null key))
               (progn (set-response-status 400)
                      (next-route))
-              (set-response-status 429)
-              (render #P "time_restrict.html" (list
-                                               :ipaddr ipaddr
-                                               :minute 1
-                                               :bbs bbs
-                                               :key (if key key nil))))))))
+              (progn (set-response-status 429)
+                     (render #P "time_restrict.html" (list
+                                                      :ipaddr ipaddr
+                                                      :minute 1
+                                                      :bbs bbs
+                                                      :key (if key key nil)))))))))
 
 
 
