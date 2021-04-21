@@ -446,10 +446,10 @@
              (set= :max 10000)
              (where (:like :unixtime unixtime))))))
 
-(defun decode-max-line-string (s)
-  (let ((regex-str "!max_line=[\\d+]$"))
+(defun decode-max-line-string (target)
+  (let ((regex-str "max_line=([0-9]+)"))
     (regex-group-bind (number)
-                      (regex-str s)
+                      regex-str target
                       (cond ((null number)
                              nil)
                             ((= (length number) 4)
