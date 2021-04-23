@@ -1,7 +1,7 @@
 version: '3.4'
 services:
   webapp:
-    image: frolvlad/alpine-glibc:alpine-3.12
+    image: debian:bullseye-slim
     container_name: like_the_certain_board
     build:
       context: ./docker/webapp
