@@ -39,7 +39,6 @@
   (hash "" :type string)
   (create-date "" :type string)
   (latest-date "" :type string)
-  (ipaddr "" :type string)
   (is-admin nil :type integer)
   (cap-text "" :type string))
 
@@ -49,7 +48,6 @@
   (last-modified-date "" :type string)
   (res-count 1 :type integer)
   (unixtime 0 :type intger)
-  (ipaddr "" :type string)
   (max 1000 :type integer))
 
 (defmacro caddddr (v)
@@ -282,47 +280,12 @@
                                :default 1)
                     (unixtime :type 'integer
                               :primary-key t)
-                    (ipaddr :type 'text
-                            :not-null t)
                     (max-line :type 'integer
                               :default *default-max-length*
                               :not-null t)
                     (is-deleted :type 'integer
                                 :default *mysql-false*))))))
 
-;; (defvar *user-login-table* "user_login_table")
-;; (defun create-user-login-table ()
-;;   (with-connection (db)
-;;     (execute
-;;      (create-table (list (create-user-login-table-name user-name) :if-exists-not t)
-;;                    ((id :type 'integer
-;;                         :primary-key t
-;;                         :auto-increment t)
-;;                     (user-name :type 'text
-;;                                :not-null t)
-;;                     (login-date :type 'datetime
-;;                                 :not-null t)
-;;                     (ip-address :type '(:varchar 43)
-;;                                 :not-null t)
-;;                     (session :type 'text))))))
-
-;; (defun insert-user-login-table (user-name ipaddr date session)
-;;   (with-connection (db)
-;;     (execute
-;;      (insert-into :user-login-table
-;;                   (set=
-;;                    :user-name user-name
-;;                    :login-date date
-;;                    :ip-address ipaddr
-;;                    :session session)))))
-
-;; (defun get-latest-login-data-from-user-login-table (user-name)
-;;   (with-connection (db)
-;;     (retrieve-one
-;;      (select :*
-;;              (from :user-login-table)
-;;              (where (:= :user-name user-name))
-;;              (order-by (:desc :login-date))))))
 
 (defun get-user-table (board-name user-name)
   (with-connection (db)
@@ -337,7 +300,6 @@
         (hash (user-table-struct-hash user-data))
         (create-date (user-table-struct-create-date user-data))
         (latest-date (user-table-struct-latest-date user-data))
-        (ipaddr (user-table-struct-ipaddr user-data))
         (is-admin (user-table-struct-is-admin user-data))
         (cap-text (user-table-struct-cap-text user-data)))
     (with-connection (db)
@@ -349,7 +311,6 @@
                      :hash hash
                      :create_date create-date
                      :latest_date latest-date
-                     :ipaddr ipaddr
                      :is_admin is-admin
                      :cap_text cap-text))))))
 
@@ -422,7 +383,7 @@
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" (apply-dice final-name t) trip mail datetime id final-text title)
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" (apply-dice final-name t) trip mail datetime id final-text))))
 
-(defun create-thread-in-db (&key title create-date unixtime ipaddr max-line)
+(defun create-thread-in-db (&key title create-date unixtime max-line)
   (let ((date (get-current-datetime create-date)))
     (handler-case (with-connection (db)
                       (execute
@@ -432,7 +393,6 @@
                                           :last-modified-date date
                                           :res-count 1
                                           :unixtime unixtime
-                                          :ipaddr ipaddr
                                           :max-line (if (or (null max-line) (< max-line *default-max-length*))
                                                         *default-max-length*
                                                         max-line)))))
@@ -508,7 +468,6 @@
                                               (create-thread-in-db :title title
                                                                    :create-date date
                                                                    :unixtime unixtime
-                                                                   :ipaddr ipaddr
                                                                    :max-line max-line)
                                               (create-dat :unixtime unixtime
                                                           :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
@@ -769,7 +728,7 @@
     (let ((db-hash-string (getf data :hash)))
       (string= hash-string db-hash-string))))
 
-(defun login (board-name user-name password ipaddr universal-time)
+(defun login (board-name user-name password universal-time)
   (when (or (null user-name) (null password))
     (return-from login nil))
   (let* ((hash (sha256 (concatenate 'string *solt* password)))
@@ -791,7 +750,7 @@
           (t
            nil))))
 
-(defun create-user (board-name user-name password ipaddr date &optional (is-admin nil) (cap-text nil))
+(defun create-user (board-name user-name password date &optional (is-admin nil) (cap-text nil))
   (unless (or user-name password)
     (return-from create-user nil))
   (when (get-user-table board-name user-name)
@@ -805,7 +764,6 @@
                      :board-name board-name
                      :create-date date
                      :latest-date date
-                     :ipaddr ipaddr
                      :is-admin (if is-admin 1 0)
                      :cap-text (if cap-text cap-text ""))))
     (handler-case (insert-user-table user-data)

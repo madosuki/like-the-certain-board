@@ -160,7 +160,7 @@
                  (next-route))
                (progn
                  (setq user-name (create-safety-strings user-name))
-                 (let ((login-check (login board-name user-name password ipaddr date)))
+                 (let ((login-check (login board-name user-name password date)))
                    (cond ((eq login-check 'logged-in)
                           (render #P "login.html" (list :bbs board-name :is-login "logged-in")))
                          ((eql login-check t)
@@ -181,7 +181,7 @@
               ))
            (t
             (if (string= ipaddr *admin-ipaddr*)
-                (let ((create-result (create-user board-name user-name password ipaddr date is-admin cap-text)))
+                (let ((create-result (create-user board-name user-name password date is-admin cap-text)))
                   (set-response-status 401)
                   (cond ((eq create-result 'exist-user)
                          "This User Name is existed.")
