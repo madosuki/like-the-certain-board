@@ -117,7 +117,7 @@
                        (:li :class "form"
                             (:label :for "subject"
                                     :class "form"
-                                    "スレッドタイトル")
+                                    "スレッドタイトル：")
                             (:input :name "subject"
                                     :type "text"
                                     :value ""
@@ -142,7 +142,7 @@
                        (:li :class "form"
                             (:label :for "max_line"
                                     :class "form"
-                                    "最大行指定（＊1001〜10000まで有効．それより下を指定した場合，1000になり，超えた場合は10000として扱います．")
+                                    "最大行指定（＊1001〜10000まで有効．それより下を指定した場合，1000になり，超えた場合は10000として扱います．）：")
                             (:input :name "max_line"
                                     :type "number"
                                     :value "1000"
@@ -245,7 +245,7 @@
                             (:li :class "form"
                                  (:label :for "mail"
                                          :class "form"
-                                         "メール:")
+                                         "メールアドレス:")
                                  (:input :name "mail"
                                          :type "text"
                                          :class "form"
