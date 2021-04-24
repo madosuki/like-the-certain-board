@@ -144,15 +144,15 @@
       (on-exception *web* 404)))
 
 (defroute ("/:board-name/login" :method :GET) (&key board-name)
-  (render #P "login.html" (list :bbs board-name
-                                :is-login (if (gethash *session-login-key* *session*)
-                                              "logged-in"
-                                              ""))))
+  (login-view :board-url-name board-name
+              :board-name *board-name*
+              :is-login (if (gethash *session-login-key* *session*)
+                            'logged-in
+                            nil)))
 
 (defroute ("/:board-name/api/user" :method :POST) (&key board-name _parsed)
   (let* ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
-         (is-login (get-value-from-key "is_login" _parsed))
-         (is-logout (get-value-from-key "is_logout" _parsed))
+         (mode (get-value-from-key "mode" _parsed))
          (user-name (get-value-from-key "user_name" _parsed))
          (password (get-value-from-key "password" _parsed))
          (is-admin (get-value-from-key "is_admin" _parsed))
@@ -163,11 +163,10 @@
                              (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
                                      (cl-ppcre:split ";" cookie))))
          (date (get-universal-time)))
-    (cond ((and (not (null is-login))
-                (not (null is-logout)))
+    (cond ((or (null mode) (null (string= mode "login")) (null (string= mode "logout")))
            (set-response-status 400)
            (next-route))
-          ((not (null is-login))
+          ((equal mode "login")
            (if (or (null user-name)
                    (null password))
                (progn
@@ -177,15 +176,18 @@
                  (setq user-name (create-safety-strings user-name))
                  (let ((login-check (login board-name user-name password date)))
                    (cond ((eq login-check 'logged-in)
-                          (render #P "login.html" (list :bbs board-name :is-login "logged-in")))
+                          ;; (render #P "login.html" (list :bbs board-name :is-login "logged-in"))
+                          (login-view :board-name *board-name* :board-url-name board-name :is-login 'logged-in))
                          ((eql login-check t)
                           (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
                           (set-response-status 302)
                           (next-route))
                          (t
                           (set-response-status 401)
-                          (render #P "login.html" (list :bbs board-name :is-login "failed"))))))))
-           ((not (null is-logout))
+                          ;; (render #P "login.html" (list :bbs board-name :is-login "failed"))
+                          (login-view :board-name *board-name* :board-url-name board-name :is-login 'failed)
+                          ))))))
+           ((equal mode "logout")
             (let ((check (gethash *session-login-key* *session*)))
               (when check
                 (clrhash *session*))
@@ -194,7 +196,7 @@
               (set-response-status 302)
               (next-route)
               ))
-           (t
+           ((equal mode "create")
             (if (string= ipaddr *admin-ipaddr*)
                 (let ((create-result (create-user board-name user-name password date is-admin cap-text)))
                   (set-response-status 401)
@@ -209,7 +211,10 @@
                          "that is invalid parameter.")))
                 (progn
                   (set-response-status 400)
-                  "Your ip aadress is don't trust."))))))
+                  "Your ip aadress is don't trust.")))
+           (t
+            (set-response-status 400)
+            "not defined that mode"))))
 
 
 (defroute ("/:board-name/api/line" :method :POST) (&key board-name _parsed)

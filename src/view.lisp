@@ -18,7 +18,8 @@
            :index-view
            :board-view
            :thread-view
-           :time-restrict-view))
+           :time-restrict-view
+           :login-view))
 (in-package :like-certain-board.view)
 
 (djula:add-template-directory *template-directory*)
@@ -306,3 +307,43 @@
                           (:a :href (format nil "/~A" bbs)
                               :class "nav-item-in-footer"
                               "板に戻る")))))
+
+
+(defun login-view (&key board-name board-url-name is-login)
+  (main-content board-name
+                (:h1 "ログインページ")
+                (raw (cond ((eq is-login 'logged-in)
+                            (markup (:h2 "ログイン済みです")))
+                           ((eq is-login 'failed)
+                            (markup (:h2 "ログインに失敗しました")))))
+                (:form :action (format nil "/~A/api/user" board-url-name)
+                       :method "POST"
+                       (:ul :class "form"
+                            (:li :class "form"
+                                 (:label :for "user_name"
+                                         :class "form"
+                                         "User Name:")
+                                 (:input :name "user_name"
+                                        :type "text"
+                                        :class "form"
+                                        :pattern "^[a-zA-Z0-9]+"))
+                            (:li :class "form"
+                                 (:label :for "password"
+                                         :class "form"
+                                         "Your Password:")
+                                 (:input :name "password"
+                                         :class "form"
+                                         :type "text"
+                                         :pattern "^[a-zA-Z0-9]+"))
+                            (:li :class "form"
+                                 (:button :type "submit"
+                                          "送信")))
+                       (:input :name "mode"
+                               :type "hidden"
+                               :value "login"))
+                (:footer :id "footer"
+                         (:nav
+                          (:ul
+                           (:li
+                            (:a :href (format nil "/~A" board-url-name)
+                                "板に戻る")))))))
