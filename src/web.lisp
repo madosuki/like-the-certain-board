@@ -30,7 +30,9 @@
 ;; Routing rules
 
 (defroute "/" ()
-  (render #P"index.html"))
+  ;; (render #P"index.html")
+  (index-view)
+  )
 
 (defroute ("/:board-name/" :method :GET) (&key board-name)
   ;; (maphash #'(lambda (key value) (format t "~%Key:~A, Value:~A~%" key value)) (request-headers *request*))

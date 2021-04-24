@@ -2,12 +2,13 @@
 This program is like 2ちゃん program.
 
 
-## Dependent
+## Dependents
 - roswell
 - quicklisp
 - caveman2
 - flexi-streams
 - Ironclad
+- cl-markup
 - [generate-like-certain-board-strings](https://github.com/madosuki/generate-like-certain-board-strings)
 
 ## Run

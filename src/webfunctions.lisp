@@ -541,11 +541,17 @@
           (dolist (x result)
             (setf (getf x :create-date) (format-datetime (getf x :create-date)))
             (setf (getf x :last-modified-date) (format-datetime (getf x :last-modified-date))))
-          (render #P"board.html" (list :board-name *board-title*
-                                       :bbs board-name
-                                       :time (get-unix-time (get-universal-time))
-                                       :threads result
-                                       :is-login is-login))))
+          (board-view :board-name *board-title*
+                      :bbs board-name
+                      :time (get-unix-time (get-universal-time))
+                      :thread-list result
+                      :is-login is-login)
+          ;; (render #P"board.html" (list :board-name *board-title*
+          ;;                              :bbs board-name
+          ;;                              :time (get-unix-time (get-universal-time))
+          ;;                              :threads result
+          ;;                              :is-login is-login))
+          ))
       (on-exception web 404)))
 
 (defun get-param (body)
