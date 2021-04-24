@@ -72,7 +72,13 @@
          (current-unix-time (get-unix-time (get-universal-time)))
          (is-login (gethash *session-login-key* *session*)))
     (if (probe-file filepath)
-        (render #P "thread.html" (list :title title :thread dat-list :bbs *board-name* :key unixtime :time current-unix-time :is-login is-login))
+        ;; (render #P "thread.html" (list :title title :thread dat-list :bbs *board-name* :key unixtime :time current-unix-time :is-login is-login))
+        (thread-view :title title
+                     :thread dat-list
+                     :bbs *board-name*
+                     :key unixtime
+                     :time current-unix-time
+                     :is-login is-login)
         (on-exception *web* 404))))
 
 
@@ -82,6 +88,7 @@
          (last-post-seconds (gethash *session-last-post-seconds* *session*))
          (universal-time (get-universal-time))
          (current-unixtime (get-unix-time universal-time)))
+    (format t "~%~%~%~%~A~%~%~%~%" _parsed)
     (if (check-abuse-post last-post-seconds current-unixtime)
         (let* ((message (get-value-from-key "MESSAGE" _parsed))
                (cookie (gethash "cookie" (request-headers *request*)))
