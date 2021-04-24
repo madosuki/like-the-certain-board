@@ -88,7 +88,6 @@
          (last-post-seconds (gethash *session-last-post-seconds* *session*))
          (universal-time (get-universal-time))
          (current-unixtime (get-unix-time universal-time)))
-    (format t "~%~%~%~%~A~%~%~%~%" _parsed)
     (if (check-abuse-post last-post-seconds current-unixtime)
         (let* ((message (get-value-from-key "MESSAGE" _parsed))
                (cookie (gethash "cookie" (request-headers *request*)))
@@ -108,11 +107,18 @@
               (progn (set-response-status 400)
                      (next-route))
               (progn (set-response-status 429)
-                     (render #P "time_restrict.html" (list
-                                                      :ipaddr ipaddr
-                                                      :minute 1
-                                                      :bbs bbs
-                                                      :key (if key key nil)))))))))
+                     ;; (render #P "time_restrict.html" (list
+                     ;;                                  :ipaddr ipaddr
+                     ;;                                  :minute 1
+                     ;;                                  :bbs bbs
+                     ;;                                  :key (if key key nil)))
+                     (time-restrict-view
+                      :ipaddr ipaddr
+                      :minute 1
+                      :bbs bbs
+                      :key (if key key nil)
+                      :mail "example@example.com")
+                     ))))))
 
 
 

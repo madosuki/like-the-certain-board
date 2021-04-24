@@ -14,10 +14,11 @@
   (:import-from :datafly
                 :encode-json)
   (:export :render
-   :render-json
+           :render-json
            :index-view
-   :board-view
-   :thread-view))
+           :board-view
+           :thread-view
+           :time-restrict-view))
 (in-package :like-certain-board.view)
 
 (djula:add-template-directory *template-directory*)
@@ -73,17 +74,18 @@
 
 (defun set-thread-table-row (item bbs is-login)
   (let ((normal (markup
-                 (:td :class "cell-spacing"
-                      (:a :href (format nil "/test/read.cgi/~A/~A" bbs (getf item :unixtime))
-                          (getf item :title)))
-                 (:td :class "cell-spacing"
-                      (getf item :create-date))
-                 (:td :class "cell-spacing"
-                      (getf item :last-modified-date))
-                 (:td :class "cell-spacing"
-                      (format nil "~A" (getf item :res-count)))
-                 (:td :class "cell-spacing"
-                      (format nil "~A" (getf item :max-line)))))
+                 (:tr
+                  (:td :class "cell-spacing"
+                       (:a :href (format nil "/test/read.cgi/~A/~A" bbs (getf item :unixtime))
+                           (raw (getf item :title))))
+                  (:td :class "cell-spacing"
+                       (getf item :create-date))
+                  (:td :class "cell-spacing"
+                       (getf item :last-modified-date))
+                  (:td :class "cell-spacing"
+                       (format nil "~A" (getf item :res-count)))
+                  (:td :class "cell-spacing"
+                       (format nil "~A" (getf item :max-line))))))
         (special
           (if is-login
               (markup (:td :class "cell-spacing"
@@ -191,9 +193,8 @@
                          (:th "最大行")
                          (when is-login
                            (:th "削除ボタン")))
-                        (:tr
-                         (loop for i in thread-list
-                               collect (set-thread-table-row i bbs is-login))))
+                        (loop for i in thread-list
+                              collect (set-thread-table-row i bbs is-login)))
                 (raw (create-thread-form bbs time))))
 
 (declaim (inline set-thread-row))
@@ -227,7 +228,7 @@
 (defun thread-view (&key title thread bbs key time is-login)
   (main-content title
                 (:h1 :style "margin-bottom: 2rem;"
-                     title)
+                     (raw title))
                 (loop for i in thread
                       for count from 1 to (1+ (length thread))
                       collect (set-thread-row count i is-login key))
@@ -282,3 +283,26 @@
                    (:li
                     (:a :href (format nil "/~A" bbs)
                         "板に戻る")))))))
+
+
+(defun time-restrict-view (&key ipaddr bbs key minute mail)
+  (main-content "連投規制"
+                (:h1 :id "alart-title"
+                     "投稿規制")
+                (:p (format nil "Your IP Address: ~A" ipaddr))
+                (raw (if (<= minute 1440)
+                         (markup (:p (format nil "~A分経つまつで投稿できません．" minute)))
+                         (progn
+                           (markup (:p "BANされました")
+                                   (:p (format nil
+                                               "~AかTwitter公式アカウントにIPアドレスを記載して解除申請してくだされば対応します．但し，悪質な場合は永久BANとなり解除申請に応じられませんのであしからず．"
+                                               mail))))))
+                (:footer :id "time-restrict"
+                         (:nav
+                          (raw (when key
+                                 (markup (:a :href (format nil "/test/read.cgi/~A/~A" bbs key)
+                                             :class "nav-item-in-footer"
+                                             "スレッドに戻る"))))
+                          (:a :href (format nil "/~A" bbs)
+                              :class "nav-item-in-footer"
+                              "板に戻る")))))

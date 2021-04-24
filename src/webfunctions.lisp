@@ -374,7 +374,7 @@
            (apply-dice
             (create-safety-strings
              (shape-text
-              (replace-other-line-to-lf text)))))
+              (replace-other-line-to-lf text))))) ;; did convert-html-special-chars in shape-text function
          (mail (create-safety-strings (convert-html-special-chars email)))
          (final-name (create-safety-strings (convert-html-special-chars name))))
     (when (string/= trip "")
@@ -441,11 +441,9 @@
       (setq text ""))
     (when (eq name 'no-data)
       (setq name *default-name*))
-    ;; (setq email (replace-not-available-char-when-cp932 email))
-    ;; (setq name (replace-not-available-char-when-cp932 email))
     (if (stringp title)
         (progn
-          (setq title (create-safety-strings title))
+          (setq title (create-safety-strings (convert-html-special-chars title)))
           (let ((tmp (separate-trip-from-input name)))
             (when (> (length tmp) 1)
               (setq trip-key (cadr tmp)))
