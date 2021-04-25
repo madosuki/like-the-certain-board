@@ -106,7 +106,7 @@
               (write-result-view :error-type 'something :message "bad parameter"))))
         (let ((bbs (cdr (assoc "bbs" _parsed :test #'string=)))
               (key (cdr (assoc "key" _parsed :test #'string=))))
-          (if (or (null bbs) (null key))
+          (if (and (null bbs) (null key))
               (progn (set-response-status 400)
                      (write-result-view :error-type 'something :message "bad parameter: require key and bbs."))
               (progn (set-response-status 429)
