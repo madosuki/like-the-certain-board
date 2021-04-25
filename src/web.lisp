@@ -105,7 +105,7 @@
               (key (cdr (assoc "key" _parsed :test #'string=))))
           (if (or (null bbs) (null key))
               (progn (set-response-status 400)
-                     (next-route))
+                     (write-result-view :error-type 'something :message "bad parameter: require key and bbs."))
               (progn (set-response-status 429)
                      ;; (render #P "time_restrict.html" (list
                      ;;                                  :ipaddr ipaddr

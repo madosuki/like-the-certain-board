@@ -654,9 +654,11 @@
             (cond
               ((string= submit "書き込む")
                (cond ((or (null key) (null bbs))
-                      (set-response-status 400))
+                      (set-response-status 400)
+                      (write-result-view :error 'unknown :message "bad parameter: require bbs and key params."))
                      ((> (cadr (get-res-count :key key)) *default-max-length*)
-                      (set-response-status 503))
+                      (set-response-status 503)
+                      (write-result-view :error 'write-error :message "このスレッドはレス数が最大数に達しています．"))
                      (t
                       (let ((status (insert-res form ipaddr universal-time)))
                         (if (= status 200)
@@ -665,24 +667,26 @@
                               (set-response-status 302))
                             (progn
                               (set-response-status status)
-                              )))))
-               (next-route))
+                              (write-result-view :error 'write-error :message "混雑等の理由で新規スレッド作成に失敗しました．")))))))
               ((string= submit "新規スレッド作成")
                (if (null bbs)
-                   (set-response-status 400)
+                   (progn (set-response-status 400)
+                          (write-result-view :error 'create-error :message "bad parameter: require bbs param."))
                    (let ((status (create-thread :_parsed form :date universal-time :ipaddr ipaddr)))
                      (if (= status 200)
                          (progn (setf (getf (response-headers *response*) :location) (concatenate 'string "/" bbs))
-                                (set-response-status 302))
-                         (set-response-status status)
-                         )))
-               (next-route))
+                                (set-response-status 302)
+                                (next-route))
+                         (progn
+                           (set-response-status status)
+                           (write-result-view :error-type 'create-error :message "混雑等の理由で新規スレッド作成に失敗しました．"))
+                         ))))
               (t
                (set-response-status 400)
-               (next-route)))))
+               (write-result-view :error-type 'unknown :message "bad parameter: does not exists that mode.")))))
         (progn
           (set-response-status 400)
-          (next-route)))))
+          (write-result-view :error-type 'something :message "bad parameter: missing params.")))))
 
 (defun load-file-with-recursive (pathname start end)
   (with-open-file (input pathname

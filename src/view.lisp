@@ -19,7 +19,8 @@
            :board-view
            :thread-view
            :time-restrict-view
-           :login-view))
+           :login-view
+           :write-result-view))
 (in-package :like-certain-board.view)
 
 (djula:add-template-directory *template-directory*)
@@ -324,9 +325,9 @@
                                          :class "form"
                                          "User Name:")
                                  (:input :name "user_name"
-                                        :type "text"
-                                        :class "form"
-                                        :pattern "^[a-zA-Z0-9]+"))
+                                         :type "text"
+                                         :class "form"
+                                         :pattern "^[a-zA-Z0-9]+"))
                             (:li :class "form"
                                  (:label :for "password"
                                          :class "form"
@@ -347,3 +348,19 @@
                            (:li
                             (:a :href (format nil "/~A" board-url-name)
                                 "板に戻る")))))))
+
+(defun write-result-view (&key board-url-name key error-type message)
+  (main-content (cond ((eq error-type 'write-error)
+                       "書き込みエラー")
+                      ((eq error-type 'create-error)
+                       "新規スレッド作成エラー")
+                      (t "何かのエラー"))
+                (:div :id "error-msg"
+                      (:p message)
+                      (raw (when board-url-name
+                             (markup (:a :href (format nil "/~A" board-url-name)
+                                         "板に戻る"))))
+                      (raw (when key
+                             (markup
+                              (:a :href (format nil "/~A/~A" board-url-name key)
+                                  "スレッドに戻る")))))))
