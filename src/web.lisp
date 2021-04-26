@@ -291,5 +291,7 @@
 
 (defmethod on-exception ((app <web>) (code (eql 404)))
   (declare (ignore app))
-  (merge-pathnames #P"_errors/404.html"
-                   *template-directory*))
+  (notfound-view)
+  ;; (merge-pathnames #P"_errors/404.html"
+  ;;                  *template-directory*)
+  )

@@ -20,7 +20,8 @@
            :thread-view
            :time-restrict-view
            :login-view
-           :write-result-view))
+           :write-result-view
+           :notfound-view))
 (in-package :like-certain-board.view)
 
 (djula:add-template-directory *template-directory*)
@@ -364,3 +365,12 @@
                              (markup
                               (:a :href (format nil "/~A/~A" board-url-name key)
                                   "スレッドに戻る")))))))
+
+(defun notfound-view ()
+  (main-content "404 Not Found"
+                (:style "#error { text-align: center; background-color: gray; height: 100vh;} #status { font-family: Times, serif; font-size: 10vw; } #message { font-family: Helvetica, sans-serif; font-size: 5vw; }")
+                (:div :id "error"
+                      (:div :id "status"
+                            "404")
+                      (:div :id "message"
+                            "Not Found"))))
