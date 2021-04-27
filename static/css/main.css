@@ -116,3 +116,21 @@ input.form, textarea.form {
     order: 2;
     flex: 1 1;
 }
+
+nav {
+}
+
+nav ul {
+    display: float;
+    overflow: hidden;
+}
+
+nav li {
+    float: right;
+    margin-right: 1.5rem;
+    list-style: none;
+}
+
+header {
+    margin-bottom: 1rem;
+}

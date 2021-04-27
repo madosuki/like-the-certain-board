@@ -106,11 +106,18 @@
               "")))
     (concatenate 'string normal special)))
 
+
 (defmacro main-content (title &body body)
   `(base-html ,title
-    (:body
-     (:div :id "main"
-           ,@body))))
+              (:body
+               (:header
+                (:nav (:ul
+                       (:li (:a :href "/")
+                            "トップに戻る")
+                       (:li (:a :href "/about"
+                                "このサイトについて")))))
+               (:div :id "main"
+                     ,@body))))
 
 (declaim (inine create-thread-form))
 (defun create-thread-form (bbs time)
@@ -367,10 +374,11 @@
                                   "スレッドに戻る")))))))
 
 (defun notfound-view ()
-  (main-content "404 Not Found"
-                (:style "#error { text-align: center; background-color: gray; height: 100vh;} #status { font-family: Times, serif; font-size: 10vw; } #message { font-family: Helvetica, sans-serif; font-size: 5vw; }")
-                (:div :id "error"
-                      (:div :id "status"
-                            "404")
-                      (:div :id "message"
-                            "Not Found"))))
+  (base-html "404 Not Found"
+             (:style "#error { text-align: center; background-color: gray; height: 100vh;} #status { font-family: Times, serif; font-size: 10vw; } #message { font-family: Helvetica, sans-serif; font-size: 5vw; }")
+             (:div :id "error"
+                   (:div :id "status"
+                         "404")
+                   (:div :id "message"
+                         "Not Found"))))
+
