@@ -139,6 +139,14 @@
              (limit *max-thread-list*)
              (where (:like :is-deleted *mysql-false*))))))
 
+(defun get-expire-thread-list (datetime)
+  (with-connection (db)
+    (retrieve-all
+     (select :* (from :threads)
+             (where (:and (:like :is-deleted *mysql-false*)
+                          (:> (:datediff datetime :last-modified-date)
+                              180)))))))
+
 (defun get-thread-list-when-create-subject-txt ()
   (with-connection (db)
     (retrieve-all
@@ -152,6 +160,13 @@
      (delete-from :threads
                   (where (:= :unixtime key))
                   (limit 1)))))
+
+(defun delete-expire-threads (datetime)
+  (with-connection (db)
+    (execute
+     (delete-from :threads
+                  (where (:> (:datediff datetime :last-modified-date)
+                             180))))))
 
 
 (defun check-exists-table (table-name)
@@ -803,3 +818,6 @@
   (let ((html (dat-to-html dat-file-path)))
     (save-html unixtime html)))
 
+
+;; (defun convert-bunch-of-thread-to-kakolog (board-name parsed)
+;;   (let (())))

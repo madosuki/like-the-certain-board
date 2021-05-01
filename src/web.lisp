@@ -282,9 +282,11 @@
                (prgon
                 (set-response-status 403)
                 "invalid params")))
+          ((string= mode "convert-bunch-of-thread-to-kakolog")
+           (convert-bunch-of-thread-to-kakolog board-name _parsed))
           (t
-           (set-response-status 410)
-           "not exists this thread."))))
+           (set-response-status 400)
+           "invalid params"))))
 
 ;;
 ;; Error pages
