@@ -139,7 +139,7 @@
              (limit *max-thread-list*)
              (where (:like :is-deleted *mysql-false*))))))
 
-(defun get-expire-thread-list (datetime)
+(defun get-expired-thread-list (datetime)
   (with-connection (db)
     (retrieve-all
      (select :* (from :threads)
@@ -559,13 +559,7 @@
                       :time (get-unix-time (get-universal-time))
                       :thread-list result
                       :is-login is-login)
-          ;; (render #P"board.html" (list :board-name *board-title*
-          ;;                              :bbs board-name
-          ;;                              :time (get-unix-time (get-universal-time))
-          ;;                              :threads result
-          ;;                              :is-login is-login))
-          ))
-      (on-exception web 404)))
+      (on-exception web 404)))))
 
 (defun get-param (body)
   (let ((tmp (cl-ppcre:split "&" body))
@@ -807,11 +801,16 @@
           collect line)))
 
 (defun save-html (unixtime html)
-  (with-open-file (stream (concatenate 'string *kakolog-html-path* unixtime ".html")
-                          :direction :output
-                          :if-does-not-exist :create
-                          :if-exists :supersede)
-    (write-line html stream)))
+  (handler-case
+      (progn (with-open-file (out-s (format nil "~A~A.html" *kakolog-html-path* unixtime)
+                                     :direction :output
+                                     :if-does-not-exist :create
+                                     :if-exists :supersede)
+               (write-line html out-s))
+             'success)
+    (error (e)
+      (declare (ignore e))
+      'error)))
 
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
 (defun to-kakolog (unixtime dat-file-path)
@@ -819,5 +818,14 @@
     (save-html unixtime html)))
 
 
-;; (defun convert-bunch-of-thread-to-kakolog (board-name parsed)
-;;   (let (())))
+(defun convert-bunch-of-thread-to-kakolog ()
+  (let ((thread-list (get-expired-thread-list (get-current-datetime (get-universal-time)))))
+    (unless thread-list
+      (return-from convert-bunch-of-thread-to-kakolog 'not-exists-expired-thread))
+    (dolist (x thead-list)
+      (let* ((key (getf x :unixtime))
+             (filepath (format nil "~A~A.dat" *dat-path* key)))
+        (when (probe-file filepath)
+          (when (eq (to-kakolog key) 'success)
+            (when (delete-file filepath)
+              (delete-thread key))))))))
