@@ -283,7 +283,10 @@
                 (set-response-status 403)
                 "invalid params")))
           ((string= mode "convert-bunch-of-thread-to-kakolog")
-           (convert-bunch-of-thread-to-kakolog board-name _parsed))
+           (let ((result (convert-bunch-of-thread-to-kakolog board-name _parsed)))
+             (if (or (null result) (eq result 'not-exists-expired-thread))
+                 "failed"
+                 "success")))
           (t
            (set-response-status 400)
            "invalid params"))))
