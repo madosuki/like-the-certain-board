@@ -835,4 +835,4 @@
                     (push (cons key 'failed-delete-thread) result))
                 (push (cons key 'failed-convert-to-kakolog) result))
             (push (cons key 'not-exists-dat-file) result))))
-    result))
+    (nreverse result)))
