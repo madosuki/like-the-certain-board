@@ -819,13 +819,20 @@
 
 
 (defun convert-bunch-of-thread-to-kakolog ()
-  (let ((thread-list (get-expired-thread-list (get-current-datetime (get-universal-time)))))
+  (let ((thread-list (get-expired-thread-list (get-current-datetime (get-universal-time))))
+        (result nil))
     (unless thread-list
       (return-from convert-bunch-of-thread-to-kakolog 'not-exists-expired-thread))
     (dolist (x thead-list)
       (let* ((key (getf x :unixtime))
              (filepath (format nil "~A~A.dat" *dat-path* key)))
-        (when (probe-file filepath)
-          (when (eq (to-kakolog key) 'success)
-            (when (delete-file filepath)
-              (delete-thread key))))))))
+        (if (probe-file filepath)
+            (if (eq (to-kakolog key) 'success)
+                (if (delete-file filepath)
+                    (progn
+                      (delete-thread key)
+                      (push (cons key 'success) result))
+                    (push (cons key 'failed-delete-thread) result))
+                (push (cons key 'failed-convert-to-kakolog) result))
+            (push (cons key 'not-exists-dat-file) result))))
+    result))
