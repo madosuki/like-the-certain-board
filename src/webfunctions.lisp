@@ -558,8 +558,8 @@
                       :bbs board-name
                       :time (get-unix-time (get-universal-time))
                       :thread-list result
-                      :is-login is-login)
-      (on-exception web 404)))))
+                      :is-login is-login)))
+      (on-exception web 404)))
 
 (defun get-param (body)
   (let ((tmp (cl-ppcre:split "&" body))

@@ -30,9 +30,7 @@
 ;; Routing rules
 
 (defroute "/" ()
-  ;; (render #P"index.html")
-  (index-view)
-  )
+  (index-view))
 
 (defroute ("/:board-name/" :method :GET) (&key board-name)
   ;; (maphash #'(lambda (key value) (format t "~%Key:~A, Value:~A~%" key value)) (request-headers *request*))
@@ -296,7 +294,4 @@
 
 (defmethod on-exception ((app <web>) (code (eql 404)))
   (declare (ignore app))
-  (notfound-view)
-  ;; (merge-pathnames #P"_errors/404.html"
-  ;;                  *template-directory*)
-  )
+  (notfound-view))
