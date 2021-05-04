@@ -146,7 +146,7 @@
      (select :* (from :threads)
              (where (:and (:like :is-deleted *mysql-false*)
                           (:> (:datediff datetime :last-modified-date)
-                              1)))))))
+                              180)))))))
 
 (defun get-thread-list-when-create-subject-txt ()
   (with-connection (db)
