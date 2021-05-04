@@ -23,7 +23,8 @@
    :login
    :create-user
    :get-thread-list-when-create-subject-txt
-   :generate-dat-name))
+   :generate-dat-name
+   :convert-bunch-of-thread-to-kakolog))
 (in-package :like-certain-board.webfunctions)
 
 (deftype mysql-true-type (n) `(= n 1))
@@ -145,7 +146,7 @@
      (select :* (from :threads)
              (where (:and (:like :is-deleted *mysql-false*)
                           (:> (:datediff datetime :last-modified-date)
-                              180)))))))
+                              1)))))))
 
 (defun get-thread-list-when-create-subject-txt ()
   (with-connection (db)
@@ -803,14 +804,15 @@
 (defun save-html (unixtime html)
   (handler-case
       (progn (with-open-file (out-s (format nil "~A~A.html" *kakolog-html-path* unixtime)
-                                     :direction :output
-                                     :if-does-not-exist :create
-                                     :if-exists :supersede)
+                                    :direction :output
+                                    :if-does-not-exist :create
+                                    :if-exists :supersede)
                (write-line html out-s))
              'success)
     (error (e)
-      (declare (ignore e))
-      'error)))
+      ;; (declare (ignore e))
+      (format t "~%~%~A~%~%" e)
+      nil)))
 
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
 (defun to-kakolog (unixtime dat-file-path)
@@ -822,12 +824,12 @@
   (let ((thread-list (get-expired-thread-list (get-current-datetime (get-universal-time))))
         (result nil))
     (unless thread-list
-      (return-from convert-bunch-of-thread-to-kakolog 'not-exists-expired-thread))
-    (dolist (x thead-list)
+      (return-from convert-bunch-of-thread-to-kakolog nil))
+    (dolist (x thread-list)
       (let* ((key (getf x :unixtime))
              (filepath (format nil "~A~A.dat" *dat-path* key)))
         (if (probe-file filepath)
-            (if (eq (to-kakolog key) 'success)
+            (if (to-kakolog key filepath)
                 (if (delete-file filepath)
                     (progn
                       (delete-thread key)
@@ -835,4 +837,5 @@
                     (push (cons key 'failed-delete-thread) result))
                 (push (cons key 'failed-convert-to-kakolog) result))
             (push (cons key 'not-exists-dat-file) result))))
+    (format t "~%~%~%~%~%~A~%~%~%~%~%" result)
     (nreverse result)))

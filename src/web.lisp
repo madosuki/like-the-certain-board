@@ -250,9 +250,13 @@
 
 (defroute ("/:board-name/api/thread" :method :POST) (&key board-name _parsed)
   (let ((key (get-value-from-key "key" _parsed))
+        (mode (get-value-from-key "mode" _parsed))
         (is-login (gethash *session-login-key* *session*))
         (is-admin (gethash *session-admin-key* *session*)))
-    (cond ((or (null mode) (null is-login) (null is-admin))
+    (cond ((or (null mode)
+               ;; (null is-login)
+               ;; (null is-admin)
+               )
            (set-response-status 403)
            "invalid params")
           ((string= mode "delete")
@@ -281,8 +285,8 @@
                 (set-response-status 403)
                 "invalid params")))
           ((string= mode "convert-bunch-of-thread-to-kakolog")
-           (let ((result (convert-bunch-of-thread-to-kakolog board-name _parsed)))
-             (if (or (null result) (eq result 'not-exists-expired-thread))
+           (let ((result (convert-bunch-of-thread-to-kakolog)))
+             (if (or (null result))
                  "failed"
                  "success")))
           (t

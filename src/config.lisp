@@ -25,6 +25,7 @@
            :*max-thread-list*
            :*admin-ipaddr*
            :*dat-path*
+           :*kakolog-html-path*
            :appenv
            :developmentp
            :productionp))
