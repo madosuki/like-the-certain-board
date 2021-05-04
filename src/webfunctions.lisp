@@ -337,6 +337,13 @@
              (set= :latest_date date)
              (where (:and (:like :user_name user-name) (:like :board_name board-name)))))))
 
+(defun insert-kakolog-table (unixtime)
+  (with-connection (db)
+    (execute
+     (insert-into :kakolog
+                  (set=
+                   :unixtime unixtime)))))
+
 (defun format-datetime (date)
   (multiple-value-bind (second minute hour date month year day summer timezone)
       (decode-universal-time date)
@@ -817,7 +824,10 @@
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
 (defun to-kakolog (unixtime dat-file-path)
   (let ((html (dat-to-html dat-file-path)))
-    (save-html unixtime html)))
+    (if (save-html unixtime html)
+        (progn (insert-kakolog-table unixtime)
+               'success)
+        nil)))
 
 
 (defun convert-bunch-of-thread-to-kakolog ()
