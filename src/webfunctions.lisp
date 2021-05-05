@@ -747,7 +747,7 @@
   (let ((data (get-user-table board-name user-name))
         (session-is-login (gethash *session-login-key* *session*)))
     (unless data
-      (return-from check-login-possible nil))
+      (return-from check-login-possible 'not-found))
     (when session-is-login
       (return-from check-login-possible 'logged-in))
     (let ((db-hash-string (getf data :hash)))
@@ -762,7 +762,7 @@
          (date (get-current-datetime universal-time)))
     (cond ((eq checked 'logged-in)
            'logged-in)
-          ((eql checked t)
+          ((eq checked t)
            (let ((db-data (get-user-table board-name user-name))
                  (is-admin (getf db-data :is-admin))
                  (cap-text (getf db-data :cap-text)))
@@ -772,9 +772,9 @@
                (setf (gethash *session-cap-text-key* *session*) cap-text)))
            (setf (gethash *session-login-key* *session*) t)
            (update-user-table board-name user-name date)
-           t)
+           'success)
           (t
-           nil))))
+           'invalid-username-or-password))))
 
 (defun create-user (board-name user-name password date &optional (is-admin nil) (cap-text nil))
   (unless (or user-name password)

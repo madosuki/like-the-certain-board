@@ -179,7 +179,7 @@
                    (cond ((eq login-check 'logged-in)
                           ;; (render #P "login.html" (list :bbs board-name :is-login "logged-in"))
                           (login-view :board-name *board-name* :board-url-name board-name :is-login 'logged-in))
-                         ((eql login-check t)
+                         ((eq login-check 'success)
                           (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
                           (set-response-status 302)
                           (next-route))
