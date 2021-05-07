@@ -82,7 +82,9 @@
 (defrout ("/:board-name/kakolog/:unixtime" :method :GET) (&key board-name unixtime)
   (let ((path (format nil "~A/~A.html" *kakolog-html-path* unixtime)))
     (if (probe-file path)
-        (kakolog-view "title" path board-name)
+        (let* ((data (get-a-kakolog-thread unixtime))
+               (title (getf data :title)))
+          (kakolog-view title path board-name))
         (on-exception *web* 404))))
 
 

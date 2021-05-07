@@ -25,7 +25,8 @@
    :get-thread-list-when-create-subject-txt
    :generate-dat-name
    :convert-bunch-of-thread-to-kakolog
-   :get-a-thread))
+   :get-a-thread
+   :get-a-kakolog-thread))
 (in-package :like-certain-board.webfunctions)
 
 (deftype mysql-true-type (n) `(= n 1))
@@ -154,6 +155,12 @@
     (retrieve-one
      (select :* (from :threads)
              (where (:= :unixtime unixtime))))))
+
+(defun get-a-kakolog-thread (unixtime)
+  (with-connection (db)
+    (retrieve-one
+     (select :* (from :kakolog)
+             (where (:= unixtime unixtime))))))
 
 
 (defun get-thread-list-when-create-subject-txt ()
