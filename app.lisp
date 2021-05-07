@@ -18,34 +18,9 @@
   (:import-from :lack.response
    :make-response
    :finalize-response
-   :response-set-cookies)
-  )
+   :response-set-cookies))
 
 (in-package :like-certain-board.app)
-
-;; (defstruct (extend-cookie-state (:include cookie-state))
-;;   (samesite "Lax" :type string))
-
-;; (defmethod finalize-state ((state extend-cookie-state) sid (res list) options)
-;;   (destructuring-bind (&key no-store new-session change-id expire &allow-other-keys)
-;;       options
-;;     (when (or no-store
-;;               (not (or new-session change-id expire)))
-;;       (return-from finalize-state res)))
-
-;;   (let ((res (apply #'make-response res))
-;;         (options (with-slots (path domain expires secure httponly samesite) state
-;;                    (list :path path
-;;                          :domain domain
-;;                          :secure secure
-;;                          :httponly httponly
-;;                          :samesite samesite
-;;                          :expires (+ (get-universal-time)
-;;                                      (getf options :expires expires))))))
-;;     (setf (getf (response-set-cookies res) (extend-cookie-state-cookie-key state))
-;;           `(:value ,sid ,@options))
-;;     (finalize-response res)))
-
 
 (builder
  (:static
@@ -66,7 +41,7 @@
   :state (make-cookie-state
           :httponly t
           :cookie-key "app.session"
-          :samesite 'LACK.MIDDLEWARE.SESSION.STATE.COOKIE::LAX
+          :samesite :lax
           :expires 1800))
  (if (productionp)
      nil

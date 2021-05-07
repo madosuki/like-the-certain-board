@@ -43,7 +43,6 @@ RUN ros install fukamachi/caveman && \
     ros install trivial-utf-8 && \
     ros install madosuki/generate-like-certain-board-strings && \
     ros install madosuki/clack && \
-    ros install madosuki/lack && \
     ros install madosuki/cl-markup
 
 
