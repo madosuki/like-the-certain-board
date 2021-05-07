@@ -12,7 +12,9 @@
                 :render-template*
                 :*djula-execute-package*)
   (:import-from :datafly
-                :encode-json)
+   :encode-json)
+  (:import-from :uiop
+                :read-file-string)
   (:export :render
            :render-json
            :index-view
@@ -382,3 +384,10 @@
                    (:div :id "message"
                          "Not Found"))))
 
+
+(defun kakolog-view (title html-path board-url-name)
+  (base-html (format nil "過去ログ: ~A" title)
+             (raw (read-file-string html-path))
+             (raw (when board-url-name
+                    (markup (:a :href (format nil "/~A" board-url-name)
+                                "板に戻る"))))))

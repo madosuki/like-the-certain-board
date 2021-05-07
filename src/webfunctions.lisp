@@ -24,7 +24,8 @@
    :create-user
    :get-thread-list-when-create-subject-txt
    :generate-dat-name
-   :convert-bunch-of-thread-to-kakolog))
+   :convert-bunch-of-thread-to-kakolog
+   :get-a-thread))
 (in-package :like-certain-board.webfunctions)
 
 (deftype mysql-true-type (n) `(= n 1))
@@ -147,6 +148,13 @@
              (where (:and (:like :is-deleted *mysql-false*)
                           (:> (:datediff datetime :last-modified-date)
                               180)))))))
+
+(defun get-a-thread (unixtime)
+  (with-connection (db)
+    (retrieve-one
+     (select :* (from :threads)
+             (where (:= :unixtime unixtime))))))
+
 
 (defun get-thread-list-when-create-subject-txt ()
   (with-connection (db)
@@ -337,12 +345,13 @@
              (set= :latest_date date)
              (where (:and (:like :user_name user-name) (:like :board_name board-name)))))))
 
-(defun insert-kakolog-table (unixtime)
+(defun insert-kakolog-table (unixtime title)
   (with-connection (db)
     (execute
      (insert-into :kakolog
                   (set=
-                   :unixtime unixtime)))))
+                   :unixtime unixtime
+                   :title title)))))
 
 (defun format-datetime (date)
   (multiple-value-bind (second minute hour date month year day summer timezone)
@@ -822,10 +831,10 @@
       nil)))
 
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
-(defun to-kakolog (unixtime dat-file-path)
+(defun to-kakolog (unixtime dat-file-path title)
   (let ((html (dat-to-html dat-file-path)))
     (if (save-html unixtime html)
-        (progn (insert-kakolog-table unixtime)
+        (progn (insert-kakolog-table unixtime title)
                'success)
         nil)))
 
@@ -837,9 +846,10 @@
       (return-from convert-bunch-of-thread-to-kakolog nil))
     (dolist (x thread-list)
       (let* ((key (getf x :unixtime))
+             (title (getf x :title))
              (filepath (format nil "~A~A.dat" *dat-path* key)))
         (if (probe-file filepath)
-            (if (to-kakolog key filepath)
+            (if (to-kakolog key filepath title)
                 (if (delete-file filepath)
                     (progn
                       (delete-thread key)
