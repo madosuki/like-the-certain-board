@@ -147,8 +147,8 @@
     (retrieve-all
      (select :* (from :threads)
              (where (:and (:like :is-deleted *mysql-false*)
-                          (:> (:datediff datetime :last-modified-date)
-                              180)))))))
+                          (:= (:datediff datetime :last-modified-date)
+                              0)))))))
 
 (defun get-a-thread (unixtime)
   (with-connection (db)

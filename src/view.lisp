@@ -23,7 +23,8 @@
            :time-restrict-view
            :login-view
            :write-result-view
-           :notfound-view))
+           :notfound-view
+           :kakolog-view))
 (in-package :like-certain-board.view)
 
 (djula:add-template-directory *template-directory*)

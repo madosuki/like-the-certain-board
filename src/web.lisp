@@ -79,7 +79,7 @@
                      :is-login is-login)
         (on-exception *web* 404))))
 
-(defrout ("/:board-name/kakolog/:unixtime" :method :GET) (&key board-name unixtime)
+(defroute ("/:board-name/kakolog/:unixtime" :method :GET) (&key board-name unixtime)
   (let ((path (format nil "~A/~A.html" *kakolog-html-path* unixtime)))
     (if (probe-file path)
         (let* ((data (get-a-kakolog-thread unixtime))
