@@ -392,3 +392,4 @@
                 (raw (when board-url-name
                        (markup (:a :href (format nil "/~A" board-url-name)
                                    "板に戻る"))))))
+

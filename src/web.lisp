@@ -63,21 +63,27 @@
   (caveman2:request-remote-addr caveman2:*request*))
 
 (defroute ("/test/read.cgi/:board-name/:unixtime" :method :GET) (&key board-name unixtime)
-  (declare (ignore board-name))
+  ;; (declare (ignore board-name))
   (let* ((filepath (concatenate 'string *dat-path* unixtime ".dat"))
          (dat-list (dat-to-keyword-list filepath))
          (title (cadr (member :title (car dat-list))))
          (current-unix-time (get-unix-time (get-universal-time)))
          (is-login (gethash *session-login-key* *session*)))
     (if (probe-file filepath)
-        ;; (render #P "thread.html" (list :title title :thread dat-list :bbs *board-name* :key unixtime :time current-unix-time :is-login is-login))
         (thread-view :title title
                      :thread dat-list
                      :bbs *board-name*
                      :key unixtime
                      :time current-unix-time
                      :is-login is-login)
-        (on-exception *web* 404))))
+        (let ((html-path (format nil "~A~A.html" *kakolog-html-path* unixtime)))
+          (if (probe-file html-path)
+              (progn
+                (setf (getf (response-headers *response*) :location)
+                      (format nil "/~A/kakolog/~A" board-name unixtime))
+                (set-response-status 302)
+                (next-route))
+              (on-exception *web* 404))))))
 
 (defroute ("/:board-name/kakolog/:unixtime" :method :GET) (&key board-name unixtime)
   (let ((path (format nil "~A/~A.html" *kakolog-html-path* unixtime)))
