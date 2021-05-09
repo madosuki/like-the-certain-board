@@ -387,8 +387,8 @@
 
 
 (defun kakolog-view (title html-path board-url-name)
-  (base-html (format nil "過去ログ: ~A" title)
-             (raw (read-file-string html-path))
-             (raw (when board-url-name
-                    (markup (:a :href (format nil "/~A" board-url-name)
-                                "板に戻る"))))))
+  (main-content (format nil "過去ログ: ~A" title)
+                (raw (read-file-string html-path))
+                (raw (when board-url-name
+                       (markup (:a :href (format nil "/~A" board-url-name)
+                                   "板に戻る"))))))
