@@ -26,7 +26,8 @@
    :generate-dat-name
    :convert-bunch-of-thread-to-kakolog
    :get-a-thread
-   :get-a-kakolog-thread))
+   :get-a-kakolog-thread
+   :get-kakolog-thread-list))
 (in-package :like-certain-board.webfunctions)
 
 (deftype mysql-true-type (n) `(= n 1))
@@ -155,6 +156,13 @@
     (retrieve-one
      (select :* (from :threads)
              (where (:= :unixtime unixtime))))))
+
+(defun get-kakolog-thread-list ()
+  (with-connection (db)
+    (retrieve-all
+     (select :* (from :kakolog)
+             (order-by (:desc :unixtime))
+             (limit *max-thread-list*)))))
 
 (defun get-a-kakolog-thread (unixtime)
   (with-connection (db)

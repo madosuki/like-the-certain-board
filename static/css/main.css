@@ -28,6 +28,10 @@ h4#thread-content-title {
     margin-bottom: 1rem;
 }
 
+#footer a {
+    padding-right: 0.75rem;
+}
+
 footer#footer nav ul {
     list-style: none;
 }
@@ -42,7 +46,7 @@ dl {
 }
 
 dd.thread_text {
-    font-family: Mona, Monapo, IPAMonaPGothic, "MS PGothic", sans-serif;
+    font-family: Mona, Monapo, IPAMonaPGothic, "MS PGothic", "MS Pゴシック", sans-serif;
     font-size: 16px;
     margin-bottom: 1.5rem;
 }

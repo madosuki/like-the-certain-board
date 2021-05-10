@@ -40,6 +40,12 @@
 (defroute ("/:board-name" :method :GET) (&key board-name)
   (put-thread-list board-name *web*))
 
+(defroute ("/:board-name/kakolog" :method :GET) (&key board-name)
+  (let ((data (get-kakolog-thread-list)))
+    (if data
+        (kakolog-list-view board-name data)
+        (kakolog-list-view board-name))))
+
 (defroute ("/:board-name/subject.txt" :method :GET) (&key board-name)
   (declare (ignore board-name))
   (let* ((tmp (get-thread-list-when-create-subject-txt))

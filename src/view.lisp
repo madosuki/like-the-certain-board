@@ -24,7 +24,8 @@
            :login-view
            :write-result-view
            :notfound-view
-           :kakolog-view))
+           :kakolog-view
+           :kakolog-list-view))
 (in-package :like-certain-board.view)
 
 (djula:add-template-directory *template-directory*)
@@ -390,6 +391,35 @@
   (main-content (format nil "過去ログ: ~A" title)
                 (raw (read-file-string html-path))
                 (raw (when board-url-name
-                       (markup (:a :href (format nil "/~A" board-url-name)
-                                   "板に戻る"))))))
+                       (markup (:footer :id "footer"
+                                        (:nav
+                                         (:ul
+                                          (:li
+                                           (:a :href (format nil "/~A" board-url-name)
+                                               "板に戻る")
+                                           (:a :href (format nil "/~A/kakolog" board-url-name)
+                                               "過去ログ倉庫に戻る"))))))))))
 
+
+(defun kakolog-list-view (board-name &optional (data nil))
+  (flet ((set-kakolog-list-table (columns)
+           (let ((unixtime (getf columns :unixtime))
+                 (title (getf columns :title)))
+             (markup
+              (:tr
+               (:td :class "cell-spacing"
+                    (:a :href (format nil "/~A/kakolog/~A" board-name unixtime)
+                        title))
+               (:td :class "cell-spacing"
+                    unixtime))))))
+    (main-content "過去ログ倉庫"
+                  (:h1 "過去ログ倉庫")
+                  (:div :class "thread"
+                        (if data
+                            (raw (markup (:table :id "thread-list"
+                                                 (:tr
+                                                  (:th "スレ名")
+                                                  (:th "key"))
+                                                 (loop for i in data
+                                                       collect (set-kakolog-list-table i)))))
+                            "過去ログはありません")))))
