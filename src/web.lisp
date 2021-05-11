@@ -6,11 +6,9 @@
         :like-certain-board.view
         :like-certain-board.db
         :like-certain-board.webfunctions
-        :datafly
-        :sxql
         :quri
         :cl-fad
-        :generate-like-certain-board-strings)
+   :generate-like-certain-board-strings)
   (:export :*web*))
 (in-package :like-certain-board.web)
 
@@ -82,7 +80,7 @@
                      :key unixtime
                      :time current-unix-time
                      :is-login is-login)
-        (let ((html-path (format nil "~A~A.html" *kakolog-html-path* unixtime)))
+        (let ((html-path (format nil "~A/~A.html" *kakolog-html-path* unixtime)))
           (if (probe-file html-path)
               (progn
                 (setf (getf (response-headers *response*) :location)
@@ -96,9 +94,8 @@
     (if (probe-file path)
         (let* ((data (get-a-kakolog-thread unixtime))
                (title (getf data :title)))
-          (kakolog-view title path board-name))
+          (kakolog-view title path board-name unixtime))
         (on-exception *web* 404))))
-
 
 
 (defroute ("/test/bbs.cgi" :method :POST) (&key _parsed)
@@ -152,10 +149,17 @@
           (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
           (setf (response-body *response*) pathname))
         (progn
-          ;; (setf (response-status *response*) 404)
           (set-response-status 404)
           ""))))
 
+(defroute ("/:board-name/kakolog/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
+  (declare (ignore board-name))
+  (let ((path (probe-file (format nil "~A/~A.dat" *kakolog-dat-path* unixtime))))
+    (if path
+        (progn
+          (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
+          (setf (response-body *response*) path))
+        (on-exception *web* 404))))
 
 (defroute ("/:board-name/SETTING.TXT" :method :GET) (&key board-name)
   (if (string= board-name *board-name*)
@@ -299,10 +303,19 @@
                    (if (probe-file filepath)
                        (if (to-kakolog key filepath title)
                            (if (delete-thread key)
-                               (progn
-                                 (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
-                                 (set-response-status 302)
-                                 (next-route))
+                               (let ((result nil))
+                                 (handler-case  (copy-file filepath (format nil "~A~A.dat" *kakolog-dat-path* key))
+                                   (error (e)
+                                     (format t "~%~%~A~%~%" e)
+                                     (setq result "failed copy from dat")))
+                                 (unless result
+                                     (if (delete-file filepath)
+                                         (progn
+                                           (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
+                                           (set-response-status 302)
+                                           (next-route))
+                                         (setq result "failed delete file")))
+                                 result)
                                "failed delete thread")
                            "failed convert html")
                        "not exists thread"))

@@ -26,6 +26,7 @@
            :*admin-ipaddr*
            :*dat-path*
            :*kakolog-html-path*
+           :*kakolog-dat-path*
            :appenv
            :developmentp
            :productionp))
@@ -65,6 +66,7 @@
 (defvar *admin-ipaddr* "127.0.0.1")
 (defvar *dat-path* (uiop:getenv "DAT_DIR_PATH"))
 (defvar *kakolog-html-path* (uiop:getenv "KAKOLOG_HTML_DIR_PATH"))
+(defvar *kakolog-dat-path* (uiop:getenv "KAKOLOG_DAT_DIR_PATH"))
 
 (defun set-settings ()
   (with-open-file (input (if *settings-path*

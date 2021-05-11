@@ -9,7 +9,7 @@
         :sxql
         :quri
         :cl-fad
-        :generate-like-certain-board-strings)
+   :generate-like-certain-board-strings)
   (:export
    :put-thread-list
    :to-kakolog
@@ -148,7 +148,7 @@
     (retrieve-all
      (select :* (from :threads)
              (where (:and (:like :is-deleted *mysql-false*)
-                          (:= (:datediff datetime :last-modified-date)
+                          (:> (:datediff datetime :last-modified-date)
                               0)))))))
 
 (defun get-a-thread (unixtime)
@@ -841,7 +841,6 @@
                (write-line html out-s))
              'success)
     (error (e)
-      ;; (declare (ignore e))
       (format t "~%~%~A~%~%" e)
       nil)))
 
@@ -865,9 +864,18 @@
              (filepath (format nil "~A~A.dat" *dat-path* key)))
         (if (probe-file filepath)
             (if (to-kakolog key filepath title)
-                (progn
-                  (delete-thread key)
-                  (push (cons key 'success) result))
+                (let ((c t))
+                  (handler-case (copy-file filepath (format nil "~A~A.dat" *kakolog-dat-path* key))
+                    (error (e)
+                      ;; (declare (ignore e))
+                      (format t "~%~%~%~%~A~%~%~%~%" e)
+                      (push (cons key 'failed-copy-from-dat) result)
+                      (setq c nil)))
+                  (when c
+                    (if (delete-file filepath)
+                        (progn (delete-thread key)
+                               (push (cons key 'success) result))
+                        (push (cons key 'failed-delete-dat) result))))
                 (push (cons key 'failed-convert-to-kakolog) result))
             (push (cons key 'not-exists-dat-file) result))))
     (format t "~%~%~%~%~%~A~%~%~%~%~%" result)

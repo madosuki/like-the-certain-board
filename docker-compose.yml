@@ -17,7 +17,8 @@ services:
     volumes:
       - ./:/root/.roswell/local-projects/like-the-certain-board/
       - ../dat/:/roswell/dat/
-      - ../html/:/roswell/html/
+      - ../kakolog/html/:/roswell/kakolog/html/
+      - ../kakolog/dat/:/roswell/kakolog/dat/
       - ../settings/:/roswell/settings/
 
   db:

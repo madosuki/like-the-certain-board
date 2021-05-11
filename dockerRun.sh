@@ -1,7 +1,8 @@
 #!/bin/sh
 
 export BOARD_SETTINGS_PATH=/roswell/settings/
-export KAKOLOG_HTML_DIR_PATH=/roswell/html/
+export KAKOLOG_HTML_DIR_PATH=/roswell/kakolog/html/
+export KAKOLOG_DAT_DIR_PATH=/roswell/kakolog/dat/
 export DAT_DIR_PATH=/roswell/dat/
 export APP_ENV=production
 
