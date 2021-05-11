@@ -301,7 +301,7 @@
 
 (defun time-restrict-view (&key ipaddr bbs key minute mail)
   (main-content "連投規制"
-                (:h1 :id "alart-title"
+                (:h1 :id "alert-title"
                      "投稿規制")
                 (:p (format nil "Your IP Address: ~A" ipaddr))
                 (raw (if (<= minute 1440)
