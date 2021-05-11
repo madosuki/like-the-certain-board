@@ -9,6 +9,11 @@ body {
     font-family: 'Noto Sans JP', 'Yu Gothic Medium', YuGothic, Meiryo, 'MS PGothic', 'Myriad Pro', Calibri, Helvetica, Arial, sans-serif;
 }
 
+h1#title {
+    margin-bottom: 2rem;
+    margin-left: 1rem;
+}
+
 h1#alert-title {
     margin-bottom: 2rem;
 }

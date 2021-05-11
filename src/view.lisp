@@ -241,7 +241,7 @@
 
 (defun thread-view (&key title thread bbs key time is-login)
   (main-content title
-                (:h1 :style "margin-bottom: 2rem;"
+                (:h1 :id "title"
                      (raw title))
                 (loop for i in thread
                       for count from 1 to (1+ (length thread))
