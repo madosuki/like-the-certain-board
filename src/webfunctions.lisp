@@ -865,11 +865,9 @@
              (filepath (format nil "~A~A.dat" *dat-path* key)))
         (if (probe-file filepath)
             (if (to-kakolog key filepath title)
-                (if (delete-file filepath)
-                    (progn
-                      (delete-thread key)
-                      (push (cons key 'success) result))
-                    (push (cons key 'failed-delete-thread) result))
+                (progn
+                  (delete-thread key)
+                  (push (cons key 'success) result))
                 (push (cons key 'failed-convert-to-kakolog) result))
             (push (cons key 'not-exists-dat-file) result))))
     (format t "~%~%~%~%~%~A~%~%~%~%~%" result)

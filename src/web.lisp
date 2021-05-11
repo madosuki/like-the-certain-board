@@ -299,12 +299,10 @@
                    (if (probe-file filepath)
                        (if (to-kakolog key filepath title)
                            (if (delete-thread key)
-                               (if (delete-file filepath)
-                                   (progn
-                                     (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
-                                     (set-response-status 302)
-                                     (next-route))
-                                   "failed delete file")
+                               (progn
+                                 (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
+                                 (set-response-status 302)
+                                 (next-route))
                                "failed delete thread")
                            "failed convert html")
                        "not exists thread"))
