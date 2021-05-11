@@ -23,9 +23,10 @@ h4#thread-content-title {
 }
 
 #footer {
-    margin-top: 2rem;
-    margin-left: 1rem;
-    margin-bottom: 1rem;
+    padding-top: 2rem;
+    padding-left: 1rem;
+    padding-bottom: 1rem;
+    background-color: #EFEFEF;
 }
 
 #footer a {
@@ -68,6 +69,8 @@ a:hover {
     flex-direction: column;
     align-items: left;
     flex-wrap: nowrap;
+    background-color: #EFEFEF;
+    height: 100%;
 }
 
 td.cell-spacing {
@@ -95,8 +98,8 @@ table#thread-list {
 }
 
 form {
-    margin-top: 1rem;
-    margin-right: 1rem;
+    padding-top: 1rem;
+    padding-right: 1rem;
 }
 
 ul.form li.form {
@@ -136,5 +139,6 @@ nav li {
 }
 
 header {
-    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    background-color: #EFEFEF;
 }
