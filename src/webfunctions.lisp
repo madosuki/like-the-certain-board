@@ -27,7 +27,8 @@
    :convert-bunch-of-thread-to-kakolog
    :get-a-thread
    :get-a-kakolog-thread
-   :get-kakolog-thread-list))
+   :get-kakolog-thread-list
+   :insert-kakolog-table))
 (in-package :like-certain-board.webfunctions)
 
 (deftype mysql-true-type (n) `(= n 1))
@@ -148,7 +149,7 @@
     (retrieve-all
      (select :* (from :threads)
              (where (:and (:like :is-deleted *mysql-false*)
-                          (:> (:datediff datetime :last-modified-date)
+                          (:= (:datediff datetime :last-modified-date)
                               0)))))))
 
 (defun get-a-thread (unixtime)
@@ -845,11 +846,10 @@
       nil)))
 
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
-(defun to-kakolog (unixtime dat-file-path title)
+(defun to-kakolog (unixtime dat-file-path)
   (let ((html (dat-to-html dat-file-path)))
     (if (save-html unixtime html)
-        (progn (insert-kakolog-table unixtime title)
-               'success)
+        'success
         nil)))
 
 
@@ -861,21 +861,28 @@
     (dolist (x thread-list)
       (let* ((key (getf x :unixtime))
              (title (getf x :title))
-             (filepath (format nil "~A~A.dat" *dat-path* key)))
-        (if (probe-file filepath)
-            (if (to-kakolog key filepath title)
+             (orig-dat-filepath (format nil "~A/~A.dat" *dat-path* key))
+             (kakolog-dat-filepath (format nil "~A/~A.dat" *kakolog-dat-path* key))
+             (kakolog-html-filepath (format nil "~A/~A.html" *kakolog-html-path* key)))
+        (if (probe-file orig-dat-filepath)
+            (if (to-kakolog key orig-dat-filepath)
                 (let ((c t))
-                  (handler-case (copy-file filepath (format nil "~A~A.dat" *kakolog-dat-path* key))
+                  (handler-case (copy-file orig-dat-filepath kakolog-dat-filepath)
                     (error (e)
-                      ;; (declare (ignore e))
                       (format t "~%~%~%~%~A~%~%~%~%" e)
+                      (delete-file kakolog-dat-filepath)
+                      (delete-file kakolog-html-filepath)
                       (push (cons key 'failed-copy-from-dat) result)
                       (setq c nil)))
                   (when c
-                    (if (delete-file filepath)
+                    (if (delete-file orig-dat-filepath)
                         (progn (delete-thread key)
+                               (insert-kakolog-table key title)
                                (push (cons key 'success) result))
-                        (push (cons key 'failed-delete-dat) result))))
+                        (progn
+                          (delete-file kakolog-dat-filepath)
+                          (delete-file kakolog-html-filepath)
+                          (push (cons key 'failed-delete-dat) result)))))
                 (push (cons key 'failed-convert-to-kakolog) result))
             (push (cons key 'not-exists-dat-file) result))))
     (format t "~%~%~%~%~%~A~%~%~%~%~%" result)
