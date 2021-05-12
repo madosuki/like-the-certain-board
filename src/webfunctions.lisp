@@ -28,7 +28,7 @@
    :get-a-thread
    :get-a-kakolog-thread
    :get-kakolog-thread-list
-   :insert-kakolog-table))
+   :kakolog-process))
 (in-package :like-certain-board.webfunctions)
 
 (deftype mysql-true-type (n) `(= n 1))
@@ -852,19 +852,11 @@
         'success
         nil)))
 
-
-(defun convert-bunch-of-thread-to-kakolog ()
-  (let ((thread-list (get-expired-thread-list (get-current-datetime (get-universal-time))))
-        (result nil))
-    (unless thread-list
-      (return-from convert-bunch-of-thread-to-kakolog nil))
-    (dolist (x thread-list)
-      (let* ((key (getf x :unixtime))
-             (title (getf x :title))
-             (orig-dat-filepath (format nil "~A/~A.dat" *dat-path* key))
-             (kakolog-dat-filepath (format nil "~A/~A.dat" *kakolog-dat-path* key))
-             (kakolog-html-filepath (format nil "~A/~A.html" *kakolog-html-path* key)))
-        (if (probe-file orig-dat-filepath)
+(defun kakolog-process (&key key title)
+  (let ((orig-dat-filepath (format nil "~A/~A.dat" *dat-path* key))
+        (kakolog-dat-filepath (format nil "~A/~A.dat" *kakolog-dat-path* key))
+        (kakolog-html-filepath (format nil "~A/~A.html" *kakolog-html-path* key)))
+    (if (probe-file orig-dat-filepath)
             (if (to-kakolog key orig-dat-filepath)
                 (let ((c t))
                   (handler-case (copy-file orig-dat-filepath kakolog-dat-filepath)
@@ -878,12 +870,22 @@
                     (if (delete-file orig-dat-filepath)
                         (progn (delete-thread key)
                                (insert-kakolog-table key title)
-                               (push (cons key 'success) result))
+                               'success)
                         (progn
                           (delete-file kakolog-dat-filepath)
                           (delete-file kakolog-html-filepath)
-                          (push (cons key 'failed-delete-dat) result)))))
-                (push (cons key 'failed-convert-to-kakolog) result))
-            (push (cons key 'not-exists-dat-file) result))))
+                          'failed-delete-dat))))
+                'faild-convert-dat-to-html)
+            'not-exists-that-a-dat-file)))
+
+(defun convert-bunch-of-thread-to-kakolog ()
+  (let ((thread-list (get-expired-thread-list (get-current-datetime (get-universal-time))))
+        (result nil))
+    (unless thread-list
+      (return-from convert-bunch-of-thread-to-kakolog nil))
+    (dolist (x thread-list)
+      (let* ((key (getf x :unixtime))
+             (title (getf x :title)))
+        (push (cons key (kakolog-process :key key :title title)) result)))
     (format t "~%~%~%~%~%~A~%~%~%~%~%" result)
     (nreverse result)))
