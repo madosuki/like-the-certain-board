@@ -125,7 +125,7 @@
 
 (declaim (inine create-thread-form))
 (defun create-thread-form (bbs time)
-  (html5  (:h4 :style "margin-top: 4em;"
+  (html5  (:h4 :class "form-title"
                 "新規スレッド作成フォーム")
            (:form :action "/test/bbs.cgi"
                   :method "POST"
@@ -246,51 +246,53 @@
                 (loop for i in thread
                       for count from 1 to (1+ (length thread))
                       collect (set-thread-row count i is-login key))
-                (:form :action "/test/bbs.cgi"
-                       :method "POST"
-                       (:ul :class "form"
-                            (:li :class "form"
-                                 (:label :for "FROM"
-                                         :class "form"
-                                         "名前：")
-                                 (:input :name "FROM"
-                                         :class "form"
-                                         :type "text"
-                                         :value "名無しさん"))
-                            (:li :class "form"
-                                 (:label :for "mail"
-                                         :class "form"
-                                         "メールアドレス:")
-                                 (:input :name "mail"
-                                         :type "text"
-                                         :class "form"
-                                         :value ""))
-                            (:li :class "form"
-                                 (:label :for "MESSAGE"
-                                         :class "form"
-                                         "本文：")
-                                 (:textarea :class "form"
-                                            :name "MESSAGE"
-                                            :cols 60
-                                            :rows 10
-                                            :value ""
-                                            :required t
-                                            nil))
-                            (:li :class "form"
-                                 (:button :type "submit"
-                                          "送信")))
-                       (:input :name "bbs"
-                               :value bbs
-                               :type "hidden")
-                       (:input :name "key"
-                               :value (format nil "~A" key)
-                               :type "hidden")
-                       (:input :name "time"
-                               :value (format nil "~A" time)
-                               :type "hidden")
-                       (:input :name "submit"
-                               :type "hidden"
-                               :value "書き込む"))
+                (:div  (:h4 :class "form-title"
+                            "投稿フォーム")
+                       (:form :action "/test/bbs.cgi"
+                              :method "POST"
+                              (:ul :class "form"
+                                   (:li :class "form"
+                                        (:label :for "FROM"
+                                                :class "form"
+                                                "名前：")
+                                        (:input :name "FROM"
+                                                :class "form"
+                                                :type "text"
+                                                :value "名無しさん"))
+                                   (:li :class "form"
+                                        (:label :for "mail"
+                                                :class "form"
+                                                "メールアドレス:")
+                                        (:input :name "mail"
+                                                :type "text"
+                                                :class "form"
+                                                :value ""))
+                                   (:li :class "form"
+                                        (:label :for "MESSAGE"
+                                                :class "form"
+                                                "本文：")
+                                        (:textarea :class "form"
+                                                   :name "MESSAGE"
+                                                   :cols 60
+                                                   :rows 10
+                                                   :value ""
+                                                   :required t
+                                                   nil))
+                                   (:li :class "form"
+                                        (:button :type "submit"
+                                                 "送信")))
+                              (:input :name "bbs"
+                                      :value bbs
+                                      :type "hidden")
+                              (:input :name "key"
+                                      :value (format nil "~A" key)
+                                      :type "hidden")
+                              (:input :name "time"
+                                      :value (format nil "~A" time)
+                                      :type "hidden")
+                              (:input :name "submit"
+                                      :type "hidden"
+                                      :value "書き込む")))
                 (:footer :id "footer"
                  (:nav
                   (:ul
@@ -389,7 +391,8 @@
 
 (defun kakolog-view (title html-path board-url-name key)
   (main-content (format nil "過去ログ: ~A" title)
-                (raw (read-file-string html-path))
+                (:div :id "kakolog"
+                 (raw (read-file-string html-path)))
                 (raw (when board-url-name
                        (markup (:footer :id "footer"
                                         (:nav
@@ -416,13 +419,13 @@
                (:td :class "cell-spacing"
                     unixtime))))))
     (main-content "過去ログ倉庫"
-                  (:h1 "過去ログ倉庫")
-                  (:div :class "thread"
-                        (if data
-                            (raw (markup (:table :id "thread-list"
-                                                 (:tr
-                                                  (:th "スレ名")
-                                                  (:th "key"))
-                                                 (loop for i in data
-                                                       collect (set-kakolog-list-table i)))))
-                            "過去ログはありません")))))
+                  (:div :id "kakolog-list-contents"
+                   (:h1 "過去ログ倉庫")
+                   (if data
+                       (raw (markup (:table :id "thread-list"
+                                            (:tr
+                                             (:th "スレ名")
+                                             (:th "key"))
+                                            (loop for i in data
+                                                  collect (set-kakolog-list-table i)))))
+                       (raw (:p "過去ログはありません")))))))

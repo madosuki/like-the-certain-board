@@ -10,18 +10,33 @@ body {
     height: 100vh;
 }
 
+#kakolog h1 {
+    padding-bottom: 2rem;
+    padding-left: 1rem;
+}
+
+#kakolog-list-contents h1 {
+    text-align: center;
+}
+
+#kakolog-list-contents {
+    display: flex;
+    justify-content: center;
+    flex-flow: column;
+}
+
 h1#title {
-    margin-bottom: 2rem;
-    margin-left: 1rem;
+    padding-bottom: 2rem;
+    padding-left: 1rem;
 }
 
 h1#alert-title {
-    margin-bottom: 2rem;
+    padding-bottom: 2rem;
 }
 
 h4#thread-content-title {
-    margin-top: 2rem;
-    margin-left: 1rem;
+    padding-top: 2rem;
+    padding-left: 1rem;
 }
 
 #time-restrict {
@@ -50,7 +65,7 @@ footer#footer nav ul {
 }
 
 dl {
-    margin-left: 1rem;
+    padding-left: 1rem;
     white-space: nowrap;
 }
 
@@ -62,7 +77,6 @@ dd.thread_text {
 
 a:link {
   color: blue;
-  /*text-decoration: none;*/
 }
 a:visited {
   color: red;
@@ -118,12 +132,12 @@ li.form {
     display: flex;
     flex-direction: column;
     align-items: left;
-    margin-left: 1em;
+    padding-left: 1em;
 }
 
 label.form {
-    margin-top: 0.5rem;
-    margin-right: 5rem;
+    padding-top: 0.5rem;
+    padding-right: 5rem;
     order: 1;
 }
 
@@ -149,4 +163,9 @@ nav li {
 header {
     padding-bottom: 1rem;
     background-color: #EFEFEF;
+}
+
+.form-title {
+    padding-top: 4rem;
+    padding-left: 1rem;
 }
