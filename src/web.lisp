@@ -125,11 +125,6 @@
               (progn (set-response-status 400)
                      (write-result-view :error-type 'something :message "bad parameter: require key and bbs."))
               (progn (set-response-status 429)
-                     ;; (render #P "time_restrict.html" (list
-                     ;;                                  :ipaddr ipaddr
-                     ;;                                  :minute 1
-                     ;;                                  :bbs bbs
-                     ;;                                  :key (if key key nil)))
                      (time-restrict-view
                       :ipaddr ipaddr
                       :minute 1
@@ -201,7 +196,6 @@
                  (setq user-name (create-safety-strings user-name))
                  (let ((login-check (login board-name user-name password date)))
                    (cond ((eq login-check 'logged-in)
-                          ;; (render #P "login.html" (list :bbs board-name :is-login "logged-in"))
                           (login-view :board-name *board-name* :board-url-name board-name :is-login 'logged-in))
                          ((eq login-check 'success)
                           (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
@@ -209,7 +203,6 @@
                           (next-route))
                          (t
                           (set-response-status 401)
-                          ;; (render #P "login.html" (list :bbs board-name :is-login "failed"))
                           (login-view :board-name *board-name* :board-url-name board-name :is-login 'failed)
                           ))))))
            ((equal mode "logout")
@@ -249,15 +242,12 @@
          (is-login (gethash *session-login-key* *session*))
          (is-admin (gethash *session-admin-key* *session*)))
     (cond ((null is-login)
-           ;; (setf (response-status *response*) 403)
            (set-response-status 403)
            "not was logged-in")
           ((null is-admin)
-           ;; (setf (response-status *response*) 403)
            (set-response-status 403)
            "you are not admin")
           ((or (null line) (null key))
-           ;; (setf (response-status *response*) 400)
            (set-response-status 400)
            "invalid param")
           ((and (numberp line-number) (string= board-name *board-name*))
@@ -279,12 +269,12 @@
         (is-admin (gethash *session-admin-key* *session*)))
     (cond ((or (null mode)
                (null is-login)
-               (null is-admin)
-               )
+               (null is-admin))
            (set-response-status 403)
            "Access Denied")
           ((string= mode "delete")
-           (if (and (not (null key)) (check-exist-row (parse-integer key)))
+           (if (and (not (null key))
+                    (check-exist-row (parse-integer key)))
                (let ((filepath (format nil "~A/~A.dat" *dat-path* key)))
                  (when (probe-file filepath)
                    (delete-thread key)
@@ -304,9 +294,9 @@
                         "invalid params"))))
           ((string= mode "convert-bunch-of-thread-to-kakolog")
            (let ((result (convert-bunch-of-thread-to-kakolog)))
-             (if (null result)
-                 result
-                 "success")))
+             (if result
+                 "success"
+                 "failed")))
           (t
            (set-response-status 400)
            "invalid params"))))

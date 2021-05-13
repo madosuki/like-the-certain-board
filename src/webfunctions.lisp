@@ -141,16 +141,14 @@
     (retrieve-all
      (select :* (from :threads)
              (order-by (:desc :last-modified-date))
-             (limit *max-thread-list*)
-             (where (:like :is-deleted *mysql-false*))))))
+             (limit *max-thread-list*)))))
 
 (defun get-expired-thread-list (datetime)
   (with-connection (db)
     (retrieve-all
      (select :* (from :threads)
-             (where (:and (:like :is-deleted *mysql-false*)
-                          (:= (:datediff datetime :last-modified-date)
-                              0)))))))
+             (where (:> (:datediff datetime :last-modified-date)
+                        180))))))
 
 (defun get-a-thread (unixtime)
   (with-connection (db)
@@ -258,46 +256,6 @@
 (defmacro hour-to-second (h)
   `(* ,h 60 60))
 
-;; (defun check-abuse-post (session time)
-;;   (unless session
-;;     (return-from check-abuse-post t))
-;;   (let* ((table-name *posted-table*)
-;;          (fetch-result (get-posted-values table-name session))
-;;          (current-detail-date (get-detail-time-from-universal-time time))
-;;          (current-second (getf current-detail-date :second))
-;;          (current-minute (getf current-detail-date :minute))
-;;          (current-hour (getf current-detail-date :hour))
-;;          (current-date (getf current-detail-date :date)))
-;;     (unless fetch-result
-;;       (insert-posted-from-db table-name session time)
-;;       (return-from check-abuse-post t))
-;;     (let* ((appearance-date (getf fetch-result :appearance-date))
-;;            (is-penalty (getf fetch-result :is-penalty))
-;;            (count (getf fetch-result :count))
-;;            (appearance-detail-date (get-detail-time-from-universal-time appearance-date))
-;;            (target-second (getf appearance-detail-date :second))
-;;            (target-minute (getf appearance-detail-date :minute))
-;;            (target-hour (getf appearance-detail-date :hour))
-;;            (target-date (getf appearance-detail-date :date))
-;;            (wait-time (getf fetch-result :wait-time))
-;;            (left  (+ current-second (hour-to-second current-hour) (* current-minute 60)))
-;;            (right (+ target-second (hour-to-second target-hour) (* target-minute 60)))
-;;            (diff (abs (- (if (< target-date current-date) (+ left *24-hour-seconds*) left) right))))
-;;       (when (>= wait-time *24-hour-seconds*)
-;;         (return-from check-abuse-post nil))
-;;       (cond ((<= wait-time diff)
-;;              (setq is-penalty nil)
-;;              (set-posted-count-from-db table-name session time 0)
-;;              t)
-;;             ((> count 5)
-;;              (set-posted-count-from-db
-;;               table-name session time (1+ count) t
-;;               (if (< wait-time *24-hour-seconds*) (+ wait-time *default-penalty-time*) wait-time))
-;;              nil)
-;;             (t
-;;              (set-posted-count-from-db table-name session time (1+ count) nil wait-time)
-;;              nil)))))
-
 (defun check-abuse-post (before-unixtime current-unixtime)
   (unless before-unixtime
     (return-from check-abuse-post t))
@@ -322,9 +280,7 @@
                               :primary-key t)
                     (max-line :type 'integer
                               :default *default-max-length*
-                              :not-null t)
-                    (is-deleted :type 'integer
-                                :default *mysql-false*))))))
+                              :not-null t))))))
 
 
 (defun get-user-table (board-name user-name)
