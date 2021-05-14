@@ -391,20 +391,20 @@
 
 (defun kakolog-view (title html-path board-url-name key)
   (main-content (format nil "過去ログ: ~A" title)
-                (:div :id "kakolog"
-                 (raw (read-file-string html-path)))
-                (raw (when board-url-name
-                       (markup (:footer :id "footer"
-                                        (:nav
-                                         (:ul
-                                          (:li
-                                           (:a :href (format nil "/~A" board-url-name)
-                                               "板に戻る")
-                                           (:a :href (format nil "/~A/kakolog" board-url-name)
-                                               "過去ログ倉庫に戻る")
-                                           (:a :href (format nil "/~A/kakolog/dat/~A.dat" board-url-name key)
-                                               :download (format nil "~A.dat" key)
-                                               "datをダウンロードする場合はこちら"))))))))))
+                (:div :id "kakolog-thread"
+                      (raw (read-file-string html-path))
+                      (raw (when board-url-name
+                             (markup (:footer :id "footer"
+                                              (:nav
+                                               (:ul
+                                                (:li
+                                                 (:a :href (format nil "/~A" board-url-name)
+                                                     "板に戻る")
+                                                 (:a :href (format nil "/~A/kakolog" board-url-name)
+                                                     "過去ログ倉庫に戻る")
+                                                 (:a :href (format nil "/~A/kakolog/dat/~A.dat" board-url-name key)
+                                                     :download (format nil "~A.dat" key)
+                                                     "datをダウンロードする場合はこちら")))))))))))
 
 
 (defun kakolog-list-view (board-name &optional (data nil))
