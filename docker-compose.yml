@@ -40,8 +40,8 @@ services:
     volumes:
       - ./docker/mysql/sql:/docker-entrypoint-initdb.d
       - ./docker/mysql/conf:/etc/mysql/conf.d
-      - ../mysql_log:/var/log/mysql
-
+      - db-data-store:/var/lib/mysql
+      - db-log-store:/var/log/mysql
   nginx:
     image: nginx:latest
     container_name: nginx_on_docker
@@ -58,3 +58,6 @@ services:
       - ./docker/nginx/conf:/etc/nginx/conf.d/
       - ../nginx_log:/var/log/nginx/
 
+volumes:
+  db-data-store:
+  db-log-store:

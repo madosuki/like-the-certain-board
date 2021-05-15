@@ -428,4 +428,4 @@
                                              (:th "key"))
                                             (loop for i in data
                                                   collect (set-kakolog-list-table i)))))
-                       (raw (:p "過去ログはありません")))))))
+                       (raw (markup (:p "過去ログはありません"))))))))
