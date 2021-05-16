@@ -27,6 +27,7 @@
            :*dat-path*
            :*kakolog-html-path*
            :*kakolog-dat-path*
+           :*log-path*
            :appenv
            :developmentp
            :productionp))
@@ -67,6 +68,7 @@
 (defvar *dat-path* (uiop:getenv "DAT_DIR_PATH"))
 (defvar *kakolog-html-path* (uiop:getenv "KAKOLOG_HTML_DIR_PATH"))
 (defvar *kakolog-dat-path* (uiop:getenv "KAKOLOG_DAT_DIR_PATH"))
+(defvar *log-path* "")
 
 (defun set-settings ()
   (with-open-file (input (if *settings-path*
@@ -82,7 +84,8 @@
             (solt (cdr (assoc :solt parsed)))
             (default-name (cdr (assoc :default-name parsed)))
             (board-name (cdr (assoc :board-name parsed)))
-            (board-title (cdr (assoc :board-title parsed))))
+            (board-title (cdr (assoc :board-title parsed)))
+            (log-path (cdr (assoc :log-path parsed))))
         (when site-db-name
           (setq *site-db-name* site-db-name))
         (when user-name-in-db
@@ -98,7 +101,9 @@
         (when board-name
           (setq *board-name* board-name))
         (when board-title
-          (setq *board-title* board-title))))))
+          (setq *board-title* board-title))
+        (when log-path
+          (setq *log-path* log-path))))))
 
 (set-settings)
 

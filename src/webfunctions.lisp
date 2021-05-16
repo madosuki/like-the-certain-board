@@ -98,7 +98,7 @@
       (when (<= (length splited-cookie) 1)
         (format t "~%not reach latest length cookie~%")
         (return-from get-session-from-cookie nil))
-      (let ((session (member "lack.session" splited-cookie :test #'equal)))
+      (let ((session (member "app.session" splited-cookie :test #'equal)))
         (if session
             (cadr session)
             nil)))))

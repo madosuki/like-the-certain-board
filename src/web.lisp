@@ -8,7 +8,9 @@
         :like-certain-board.webfunctions
         :quri
         :cl-fad
-   :generate-like-certain-board-strings)
+        :generate-like-certain-board-strings)
+  (:import-from :like-certain-board.utils
+                :write-log)
   (:export :*web*))
 (in-package :like-certain-board.web)
 
@@ -295,8 +297,15 @@
           ((string= mode "convert-bunch-of-thread-to-kakolog")
            (let ((result (convert-bunch-of-thread-to-kakolog)))
              (if result
-                 "success"
-                 "failed")))
+                 (progn
+                   (dolist (x result)
+                     (write-log :mode :change-result
+                                :message (format nil "~A: ~A" (car x) (cdr x))))
+                   "success")
+                 (progn
+                   (write-log :mode :change-result
+                              :message "failed bunch of thread to kakolog")
+                   "failed"))))
           (t
            (set-response-status 400)
            "invalid params"))))
