@@ -10,6 +10,8 @@
         :quri
         :cl-fad
    :generate-like-certain-board-strings)
+  (:import-from :like-certain-board.utils
+                :write-log)
   (:export
    :put-thread-list
    :to-kakolog
@@ -96,7 +98,8 @@
                                                  (cons (car base) (cadr base))))
                                            (cl-ppcre:split ";" cookie)))))
       (when (<= (length splited-cookie) 1)
-        (format t "~%not reach latest length cookie~%")
+        (write-log :mode :error
+                   :message (format nil "not reach latest length cookie"))
         (return-from get-session-from-cookie nil))
       (let ((session (member "app.session" splited-cookie :test #'equal)))
         (if session
@@ -129,7 +132,8 @@
          (is-not-error nil))
     (handler-case (change-line-in-dat path outpath *delete-message* line-number)
       (error (e)
-        (format t "~%~A~%" e))
+        (write-log :mode :error
+                   :message e))
       (:no-error (c)
         (declare (ignore c))
         (rename-file outpath path)
@@ -401,7 +405,8 @@
                                                         *default-max-length*
                                                         max-line)))))
       (error (e)
-        (format t "Error create-thread-in-db: ~A~%" e)))))
+        (write-log :mode :error
+                   :message (format nil "Error create-thread-in-db: ~A~%" e))))))
 
 (defun change-max-of-thread-in-db (unixtime)
   (with-connection (db)
@@ -476,7 +481,8 @@
                                               200)
                                             title date unixtime ipaddr name text)
                        (error (e)
-                         (format t "~%Error in create-thread-function: ~A~%" e)
+                         (write-log :mode :error
+                                    :message (format nil "Error in create-thread-function: ~A" e))
                          (incf unixtime)
                          (if (< count 10)
                              (progress title date unixtime ipaddr name text (incf count))
@@ -531,7 +537,8 @@
                (sb-ext:string-to-octets *1001* :external-format :sjis) input)
               (update-res-count-of-thread :key key)
               (update-last-modified-date-of-thread :date universal-time :key key))
-            (format t "~%~%insert!~%~%")))))
+            (write-log :mode :changes-result
+                       :message (format nil "insert: ~A" time))))))
     status))
 
 (defun put-thread-list (board-name web)
@@ -558,7 +565,7 @@
     (nreverse result)))
 
 (defun try-url-decode (x &optional (encode :UTF-8) (error-count 0))
-  (format t "~%url-encode: ~A~%" x)
+  ;; (format t "~%url-encode: ~A~%" x)
   (handler-case (quri:url-decode x :encoding encode)
     (error (e)
       (declare (ignore e))
@@ -775,7 +782,8 @@
                      :cap-text (if cap-text cap-text ""))))
     (handler-case (insert-user-table user-data)
       (error (e)
-        (format t "~%Error: ~A~%" e)
+        (write-log :mode :error
+                   :message (format nil "~%Error in create-user : ~A~%" e))
         (setq return-status 'create-failed)))
     return-status))
 
@@ -798,7 +806,8 @@
                (write-line html out-s))
              'success)
     (error (e)
-      (format t "~%~%~A~%~%" e)
+      (write-log :mode :error
+                 :message (format nil "Error in save-html: ~A" e))
       nil)))
 
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
@@ -817,7 +826,8 @@
                 (let ((c t))
                   (handler-case (copy-file orig-dat-filepath kakolog-dat-filepath)
                     (error (e)
-                      (format t "~%~%~%~%~A~%~%~%~%" e)
+                      (write-log :mode :error
+                                 :message (format nil "Error in kakolog-process: ~A" e))
                       (delete-file kakolog-dat-filepath)
                       (delete-file kakolog-html-filepath)
                       (push (cons key 'failed-copy-from-dat) result)
@@ -843,5 +853,4 @@
       (let* ((key (getf x :unixtime))
              (title (getf x :title)))
         (push (cons key (kakolog-process :key key :title title)) result)))
-    (format t "~%~%~%~%~%~A~%~%~%~%~%" result)
     (nreverse result)))
