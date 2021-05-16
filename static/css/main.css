@@ -7,7 +7,8 @@
 
 body {
     font-family: 'Noto Sans JP', 'Yu Gothic Medium', YuGothic, Meiryo, 'MS PGothic', 'Myriad Pro', Calibri, Helvetica, Arial, sans-serif;
-    height: 100vh;
+    height: 100%;
+    background-color: #EFEFEF;
 }
 
 #kakolog-thread h1 {
@@ -72,6 +73,7 @@ dl {
 dd.thread_text {
     font-family: Mona, Monapo, IPAMonaPGothic, "MS PGothic", "MS Pゴシック", sans-serif;
     font-size: 16px;
+    line-height: 18px;
     margin-bottom: 1.5rem;
 }
 
@@ -91,8 +93,8 @@ a:hover {
     flex-direction: column;
     align-items: left;
     flex-wrap: nowrap;
-    background-color: #EFEFEF;
-    height: 100;
+    /* background-color: #EFEFEF; */
+    /* height: 100%; */
 }
 
 td.cell-spacing {
