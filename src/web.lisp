@@ -33,15 +33,16 @@
   (index-view))
 
 (defroute ("/:board-name/" :method :GET) (&key board-name)
-  ;; (maphash #'(lambda (key value) (format t "~%Key:~A, Value:~A~%" key value)) (request-headers *request*))
-  ;; (print (gethash "cookie" (request-headers *request*)))
   (put-thread-list board-name *web*))
 
 (defroute ("/:board-name" :method :GET) (&key board-name)
   (put-thread-list board-name *web*))
 
 (defroute ("/:board-name/kakolog" :method :GET) (&key board-name)
-  (let ((data (get-kakolog-thread-list)))
+  (let* ((board-list-data (get-a-board-name-from-name board-name))
+         (data (if board-list-data
+                   (get-kakolog-thread-list (getf board-list-data :id))
+                   nil)))
     (if data
         (kakolog-list-view board-name data)
         (kakolog-list-view board-name))))
@@ -70,7 +71,7 @@
 
 (defroute ("/test/read.cgi/:board-name/:unixtime" :method :GET) (&key board-name unixtime)
   ;; (declare (ignore board-name))
-  (let* ((filepath (concatenate 'string *dat-path* unixtime ".dat"))
+  (let* ((filepath (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime))
          (dat-list (dat-to-keyword-list filepath))
          (title (cadr (member :title (car dat-list))))
          (current-unix-time (get-unix-time (get-universal-time)))
@@ -82,7 +83,7 @@
                      :key unixtime
                      :time current-unix-time
                      :is-login is-login)
-        (let ((html-path (format nil "~A/~A.html" *kakolog-html-path* unixtime)))
+        (let ((html-path (format nil "~A/~A/~A.html" *kakolog-html-path* board-name unixtime)))
           (if (probe-file html-path)
               (progn
                 (setf (getf (response-headers *response*) :location)
@@ -92,11 +93,18 @@
               (on-exception *web* 404))))))
 
 (defroute ("/:board-name/kakolog/:unixtime" :method :GET) (&key board-name unixtime)
-  (let ((path (format nil "~A/~A.html" *kakolog-html-path* unixtime)))
+  (let ((path (format nil "~A/~A/~A.html" *kakolog-html-path* board-name unixtime)))
     (if (probe-file path)
-        (let* ((data (get-a-kakolog-thread unixtime))
-               (title (getf data :title)))
-          (kakolog-view title path board-name unixtime))
+        (let* ((board-list-data (get-a-board-name-from-name board-name))
+               (data (if board-list-data
+                         (get-a-kakolog-thread unixtime (getf board-list-data :id))
+                         nil))
+               (title (if data
+                          (getf data :title)
+                          nil)))
+          (if title
+              (kakolog-view title path board-name unixtime)
+              (on-exception *web* 404)))
         (on-exception *web* 404))))
 
 

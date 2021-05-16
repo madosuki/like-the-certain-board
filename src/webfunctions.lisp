@@ -140,11 +140,25 @@
         (setq is-not-error t)))
     is-not-error))
 
-(defun get-thread-list ()
+(defun get-a-board-name-from-id (id)
+  (with-connection (db)
+    (retrieve-one
+     (select :* (from :board_list)
+             (where (:= :id id))))))
+
+(defun get-a-board-name-from-name (url-name)
+  (with-connection (db)
+    (retrieve-one
+     (select :* (from :board_list)
+             (where (:like :url_name url-name))))))
+
+
+(defun get-thread-list (board-id)
   (with-connection (db)
     (retrieve-all
      (select :* (from :threads)
              (order-by (:desc :last-modified-date))
+             (where (:= :board-id board-id))
              (limit *max-thread-list*)))))
 
 (defun get-expired-thread-list (datetime)
@@ -160,18 +174,20 @@
      (select :* (from :threads)
              (where (:= :unixtime unixtime))))))
 
-(defun get-kakolog-thread-list ()
+(defun get-kakolog-thread-list (board-id)
   (with-connection (db)
     (retrieve-all
      (select :* (from :kakolog)
              (order-by (:desc :unixtime))
+             (where (:= :board_id board-id))
              (limit *max-thread-list*)))))
 
-(defun get-a-kakolog-thread (unixtime)
+(defun get-a-kakolog-thread (unixtime board-id)
   (with-connection (db)
     (retrieve-one
      (select :* (from :kakolog)
-             (where (:= unixtime unixtime))))))
+             (where (:and (:= unixtime unixtime)
+                          (:= board-id board-id)))))))
 
 
 (defun get-thread-list-when-create-subject-txt ()
@@ -284,6 +300,8 @@
                               :primary-key t)
                     (max-line :type 'integer
                               :default *default-max-length*
+                              :not-null t)
+                    (board-id :type 'integer
                               :not-null t))))))
 
 
@@ -321,13 +339,14 @@
              (set= :latest_date date)
              (where (:and (:like :user_name user-name) (:like :board_name board-name)))))))
 
-(defun insert-kakolog-table (unixtime title)
+(defun insert-kakolog-table (unixtime title board-id)
   (with-connection (db)
     (execute
      (insert-into :kakolog
                   (set=
                    :unixtime unixtime
-                   :title title)))))
+                   :title title
+                   :board-id board-id)))))
 
 (defun format-datetime (date)
   (multiple-value-bind (second minute hour date month year day summer timezone)
@@ -360,9 +379,9 @@
   `(replace-not-available-char-when-cp932 (escape-sql-query ,s)))
 
 
-(defun create-dat (&key unixtime first-line)
+(defun create-dat (&key unixtime first-line boar-url-name)
   (let* ((filename (concatenate 'string (write-to-string unixtime) ".dat"))
-         (path (concatenate 'string *dat-path* filename)))
+         (path (format nil "~A/~A/~A" *dat-path* board-url-name filename)))
     (unless (cl-fad:directory-exists-p *dat-path*)
       (ensure-directories-exist *dat-path*))
     (with-open-file (i path
@@ -391,7 +410,7 @@
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" (apply-dice final-name t) trip mail datetime id final-text title)
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" (apply-dice final-name t) trip mail datetime id final-text))))
 
-(defun create-thread-in-db (&key title create-date unixtime max-line)
+(defun create-thread-in-db (&key title create-date unixtime max-line board-id)
   (let ((date (get-current-datetime create-date)))
     (handler-case (with-connection (db)
                       (execute
@@ -403,7 +422,8 @@
                                           :unixtime unixtime
                                           :max-line (if (or (null max-line) (< max-line *default-max-length*))
                                                         *default-max-length*
-                                                        max-line)))))
+                                                        max-line)
+                                          :board-id board-id))))
       (error (e)
         (write-log :mode :error
                    :message (format nil "Error create-thread-in-db: ~A~%" e))))))
@@ -429,7 +449,7 @@
                              1000)))))
 
 
-(defun create-thread (&key _parsed date ipaddr)
+(defun create-thread (&key _parsed date ipaddr board-id)
   (check-exists-threads-table-and-create-table-when-does-not)
   (let ((title (get-value-from-key-on-list "subject" _parsed))
         (name (get-value-from-key-on-list "FROM" _parsed))
@@ -475,9 +495,12 @@
                                               (create-thread-in-db :title title
                                                                    :create-date date
                                                                    :unixtime unixtime
-                                                                   :max-line max-line)
-                                              (create-dat :unixtime unixtime
-                                                          :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
+                                                                   :max-line max-line
+                                                                   :board-id board-id)
+                                              (create-dat
+                                               :board-url-name bbs
+                                               :unixtime unixtime
+                                               :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
                                               200)
                                             title date unixtime ipaddr name text)
                        (error (e)
@@ -517,7 +540,7 @@
       (setq from *default-name*))
     (when (and (string/= time "") (< (cadr (get-res-count :key key)) (cadr (get-max-line :key key)))
                (> (get-unix-time universal-time) (parse-integer time :radix 10)))
-      (with-open-file (input (concatenate 'string *dat-path* key ".dat")
+      (with-open-file (input (format nil "~A/~A/~A.dat" *dat-path* bbs key)
                              :direction :output
                              :if-exists :append
                              :if-does-not-exist nil
@@ -542,20 +565,21 @@
     status))
 
 (defun put-thread-list (board-name web)
-  (if (string= board-name *board-name*)
-      (progn
-        (check-exists-threads-table-and-create-table-when-does-not)
-        (let ((result (get-thread-list))
-              (is-login (gethash *session-login-key* *session*)))
-          (dolist (x result)
-            (setf (getf x :create-date) (format-datetime (getf x :create-date)))
-            (setf (getf x :last-modified-date) (format-datetime (getf x :last-modified-date))))
-          (board-view :board-name *board-title*
-                      :bbs board-name
-                      :time (get-unix-time (get-universal-time))
-                      :thread-list result
-                      :is-login is-login)))
-      (on-exception web 404)))
+  (let ((board-list-data (get-a-board-name-from-name board-name)))
+    (if board-list-data
+        (progn
+          (check-exists-threads-table-and-create-table-when-does-not)
+          (let ((result (get-thread-list (getf board-list-data :id)))
+                (is-login (gethash *session-login-key* *session*)))
+            (dolist (x result)
+              (setf (getf x :create-date) (format-datetime (getf x :create-date)))
+              (setf (getf x :last-modified-date) (format-datetime (getf x :last-modified-date))))
+            (board-view :board-name *board-title*
+                        :bbs board-name
+                        :time (get-unix-time (get-universal-time))
+                        :thread-list result
+                        :is-login is-login)))
+        (on-exception web 404))))
 
 (defun get-param (body)
   (let ((tmp (cl-ppcre:split "&" body))
@@ -653,12 +677,16 @@
               (if (null value)
                   (setq form (nconc (list key 'no-data) form))
                   (setq form (nconc (list key (try-url-decode value)) form)))))
-          (let ((bbs (get-value-from-key-on-list "bbs" form))
-                (key (get-value-from-key-on-list "key" form))
-                (submit (get-value-from-key-on-list "submit" form)))
+          (let* ((bbs (get-value-from-key-on-list "bbs" form))
+                 (board-id (let ((board-list-data (get-a-board-name-from-name bbs)))
+                             (if board-list-data
+                                 (getf board-list-data :id)
+                                 nil)))
+                 (key (get-value-from-key-on-list "key" form))
+                 (submit (get-value-from-key-on-list "submit" form)))
             (cond
               ((string= submit "書き込む")
-               (cond ((or (null key) (null bbs))
+               (cond ((or (null key) (null bbs) (null board-id))
                       (set-response-status 400)
                       (write-result-view :error 'unknown :message "bad parameter: require bbs and key params."))
                      ((> (cadr (get-res-count :key key)) *default-max-length*)
@@ -674,10 +702,14 @@
                               (set-response-status status)
                               (write-result-view :error 'write-error :message "混雑等の理由で新規スレッド作成に失敗しました．")))))))
               ((string= submit "新規スレッド作成")
-               (if (null bbs)
+               (if (or (null bbs) (null board-id))
                    (progn (set-response-status 400)
                           (write-result-view :error 'create-error :message "bad parameter: require bbs param."))
-                   (let ((status (create-thread :_parsed form :date universal-time :ipaddr ipaddr)))
+                   (let ((status (create-thread
+                                  :_parsed form
+                                  :date universal-time
+                                  :ipaddr ipaddr
+                                  :board-id board-id)))
                      (if (= status 200)
                          (progn (setf (getf (response-headers *response*) :location) (concatenate 'string "/" bbs))
                                 (set-response-status 302)
@@ -797,9 +829,12 @@
           while line
           collect line)))
 
-(defun save-html (unixtime html)
+(defun save-html (board-url-name unixtime html)
   (handler-case
-      (progn (with-open-file (out-s (format nil "~A~A.html" *kakolog-html-path* unixtime)
+      (progn (with-open-file (out-s (format nil "~A/~A/~A.html"
+                                            *kakolog-html-path*
+                                            board-url-name
+                                            unixtime)
                                     :direction :output
                                     :if-does-not-exist :create
                                     :if-exists :supersede)
@@ -817,10 +852,10 @@
         'success
         nil)))
 
-(defun kakolog-process (&key key title)
-  (let ((orig-dat-filepath (format nil "~A/~A.dat" *dat-path* key))
-        (kakolog-dat-filepath (format nil "~A/~A.dat" *kakolog-dat-path* key))
-        (kakolog-html-filepath (format nil "~A/~A.html" *kakolog-html-path* key)))
+(defun kakolog-process (&key key title board-url-name)
+  (let ((orig-dat-filepath (format nil "~A/~A/~A.dat" *dat-path* board-url-name key))
+        (kakolog-dat-filepath (format nil "~A/~A/~A.dat" *kakolog-dat-path* board-url-name key))
+        (kakolog-html-filepath (format nil "~A/~A/~A.html" *kakolog-html-path* board-url-name key)))
     (if (probe-file orig-dat-filepath)
             (if (to-kakolog key orig-dat-filepath)
                 (let ((c t))
