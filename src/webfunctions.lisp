@@ -30,7 +30,8 @@
    :get-a-thread
    :get-a-kakolog-thread
    :get-kakolog-thread-list
-   :kakolog-process))
+   :kakolog-process
+   :get-a-board-name-from-name))
 (in-package :like-certain-board.webfunctions)
 
 (deftype mysql-true-type (n) `(= n 1))
@@ -161,18 +162,20 @@
              (where (:= :board-id board-id))
              (limit *max-thread-list*)))))
 
-(defun get-expired-thread-list (datetime)
+(defun get-expired-thread-list (datetime board-id)
   (with-connection (db)
     (retrieve-all
      (select :* (from :threads)
-             (where (:> (:datediff datetime :last-modified-date)
-                        180))))))
+             (where (:and (:> (:datediff datetime :last-modified-date)
+                              0)
+                          (:= :board-id board-id)))))))
 
-(defun get-a-thread (unixtime)
+(defun get-a-thread (unixtime board-id)
   (with-connection (db)
     (retrieve-one
      (select :* (from :threads)
-             (where (:= :unixtime unixtime))))))
+             (where (:and (:= :unixtime unixtime)
+                          (:= :board-id board-id)))))))
 
 (defun get-kakolog-thread-list (board-id)
   (with-connection (db)
@@ -186,8 +189,8 @@
   (with-connection (db)
     (retrieve-one
      (select :* (from :kakolog)
-             (where (:and (:= unixtime unixtime)
-                          (:= board-id board-id)))))))
+             (where (:and (:= :unixtime unixtime)
+                          (:= :board_id board-id)))))))
 
 
 (defun get-thread-list-when-create-subject-txt ()
@@ -197,11 +200,12 @@
              (from :threads)
              (order-by (:desc :last-modified-date))))))
 
-(defun delete-thread (key)
+(defun delete-thread (key board-id)
   (with-connection (db)
     (execute
      (delete-from :threads
-                  (where (:= :unixtime key))
+                  (where (:and (:= :unixtime key)
+                               (:= :board-id board-id)))
                   (limit 1)))))
 
 (defun delete-expire-threads (datetime)
@@ -346,7 +350,7 @@
                   (set=
                    :unixtime unixtime
                    :title title
-                   :board-id board-id)))))
+                   :board_id board-id)))))
 
 (defun format-datetime (date)
   (multiple-value-bind (second minute hour date month year day summer timezone)
@@ -379,7 +383,7 @@
   `(replace-not-available-char-when-cp932 (escape-sql-query ,s)))
 
 
-(defun create-dat (&key unixtime first-line boar-url-name)
+(defun create-dat (&key unixtime first-line board-url-name)
   (let* ((filename (concatenate 'string (write-to-string unixtime) ".dat"))
          (path (format nil "~A/~A/~A" *dat-path* board-url-name filename)))
     (unless (cl-fad:directory-exists-p *dat-path*)
@@ -491,7 +495,7 @@
                      (setq max-line *default-max-length*)))
               (setq max-line *default-max-length*))
           (labels ((progress (title date unixtime ipaddr name text &optional (count 0))
-                     (handler-case (funcall (lambda (title date unixtime ipaddr name text)
+                     (handler-case (funcall (lambda (title date unixtime ipaddr name text board-id bbs)
                                               (create-thread-in-db :title title
                                                                    :create-date date
                                                                    :unixtime unixtime
@@ -502,7 +506,7 @@
                                                :unixtime unixtime
                                                :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
                                               200)
-                                            title date unixtime ipaddr name text)
+                                            title date unixtime ipaddr name text board-id bbs)
                        (error (e)
                          (write-log :mode :error
                                     :message (format nil "Error in create-thread-function: ~A" e))
@@ -513,7 +517,7 @@
             (progress title date unixtime ipaddr name text)))
         400)))
 
-(defun insert-res (_parsed ipaddr universal-time)
+(defun insert-res (_parsed ipaddr universal-time board-id)
   (let* ((bbs (get-value-from-key-on-list "bbs" _parsed))
          (key (get-value-from-key-on-list "key" _parsed)) ;; unix time
          (time (get-value-from-key-on-list "time" _parsed)) ;; same above
@@ -553,13 +557,13 @@
                          "")))
           (let ((res (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
             (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input)
-            (update-last-modified-date-of-thread :date universal-time :key key)
-            (update-res-count-of-thread :key key)
+            (update-last-modified-date-of-thread :date universal-time :key key :board-id board-id)
+            (update-res-count-of-thread :key key :board-id board-id)
             (when (>= (cadr (get-res-count :key key)) (cadr (get-max-line :key key)))
               (write-sequence
                (sb-ext:string-to-octets *1001* :external-format :sjis) input)
-              (update-res-count-of-thread :key key)
-              (update-last-modified-date-of-thread :date universal-time :key key))
+              (update-res-count-of-thread :key key :board-id board-id)
+              (update-last-modified-date-of-thread :date universal-time :key key :board-id board-id))
             (write-log :mode :changes-result
                        :message (format nil "insert: ~A" time))))))
     status))
@@ -609,12 +613,13 @@
         (otherwise
          nil)))))
 
-(defun update-last-modified-date-of-thread (&key date key)
+(defun update-last-modified-date-of-thread (&key date key board-id)
   (with-connection (db)
     (execute
      (update :threads
              (set= :last-modified-date (get-current-datetime date))
-             (where (:like :unixtime key))))))
+             (where (:and (:like :unixtime key)
+                          (:= :board-id board-id)))))))
 
 (defun get-res-count (&key key)
   (with-connection (db)
@@ -630,13 +635,14 @@
              (from :threads)
              (where (:like :unixtime key))))))
 
-(defun update-res-count-of-thread (&key key)
+(defun update-res-count-of-thread (&key key board-id)
   (let ((tmp (get-res-count :key key)))
     (with-connection (db)
       (execute
        (update :threads
                (set= :res-count (1+  (cadr tmp)))
-               (where (:like :unixtime key)))))))
+               (where (:= (:like :unixtime key)
+                          (:= :board-id board-id))))))))
 
 (defun generate-confirme-page (bbs key is-utf8 form)
   (let* ((from (get-value-from-key-on-list "FROM" form))
@@ -693,7 +699,7 @@
                       (set-response-status 503)
                       (write-result-view :error 'write-error :message "このスレッドはレス数が最大数に達しています．"))
                      (t
-                      (let ((status (insert-res form ipaddr universal-time)))
+                      (let* ((status (insert-res form ipaddr universal-time board-id)))
                         (if (= status 200)
                             (progn
                               (setf (getf (response-headers *response*) :location) (concatenate 'string "/test/read.cgi/" bbs "/" key))
@@ -846,46 +852,59 @@
       nil)))
 
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
-(defun to-kakolog (unixtime dat-file-path)
+(defun to-kakolog (board-url-name unixtime dat-file-path)
   (let ((html (dat-to-html dat-file-path)))
-    (if (save-html unixtime html)
+    (if (save-html board-url-name unixtime html)
         'success
         nil)))
 
-(defun kakolog-process (&key key title board-url-name)
+(defun kakolog-process (&key key title board-url-name board-id)
   (let ((orig-dat-filepath (format nil "~A/~A/~A.dat" *dat-path* board-url-name key))
         (kakolog-dat-filepath (format nil "~A/~A/~A.dat" *kakolog-dat-path* board-url-name key))
         (kakolog-html-filepath (format nil "~A/~A/~A.html" *kakolog-html-path* board-url-name key)))
     (if (probe-file orig-dat-filepath)
-            (if (to-kakolog key orig-dat-filepath)
-                (let ((c t))
+            (if (to-kakolog board-url-name key orig-dat-filepath)
+                (let ((c nil))
                   (handler-case (copy-file orig-dat-filepath kakolog-dat-filepath)
                     (error (e)
                       (write-log :mode :error
                                  :message (format nil "Error in kakolog-process: ~A" e))
                       (delete-file kakolog-dat-filepath)
                       (delete-file kakolog-html-filepath)
-                      (push (cons key 'failed-copy-from-dat) result)
-                      (setq c nil)))
-                  (when c
-                    (if (delete-file orig-dat-filepath)
-                        (progn (delete-thread key)
-                               (insert-kakolog-table key title)
-                               'success)
-                        (progn
-                          (delete-file kakolog-dat-filepath)
-                          (delete-file kakolog-html-filepath)
-                          'failed-delete-dat))))
-                'faild-convert-dat-to-html)
-            'not-exists-that-a-dat-file)))
+                      (setq c 'failed-copy-from-dat)))
+                  (if (null c)
+                      (if (delete-file orig-dat-filepath)
+                          (progn (delete-thread key board-id)
+                                 (insert-kakolog-table key title board-id)
+                                 'success)
+                          (progn
+                            (delete-file kakolog-dat-filepath)
+                            (delete-file kakolog-html-filepath)
+                            'failed-delete-dat))
+                      c))
+                (progn
+                  (write-log :mode :error
+                             :message (format nil "failed convert dat to html: ~A" orig-dat-filepath))
+                  'faild-convert-dat-to-html))
+            (progn
+              (write-log :mode :error
+                         :message (format nil "not exists dat file: ~A" orig-dat-filepath))
+              'not-exists-that-a-dat-file))))
 
-(defun convert-bunch-of-thread-to-kakolog ()
-  (let ((thread-list (get-expired-thread-list (get-current-datetime (get-universal-time))))
-        (result nil))
+(defun convert-bunch-of-thread-to-kakolog (board-url-name)
+  (let* ((board-id (let ((board-data (get-a-board-name-from-name board-url-name)))
+                     (if board-data
+                         (getf board-data :id)
+                         nil)))
+         (thread-list (if board-id
+                          (get-expired-thread-list (get-current-datetime (get-universal-time))
+                                                   board-id)
+                          nil))
+         (result nil))
     (unless thread-list
       (return-from convert-bunch-of-thread-to-kakolog nil))
     (dolist (x thread-list)
       (let* ((key (getf x :unixtime))
              (title (getf x :title)))
-        (push (cons key (kakolog-process :key key :title title)) result)))
+        (push (cons key (kakolog-process :key key :title title :board-url-name board-url-name :board-id board-id)) result)))
     (nreverse result)))

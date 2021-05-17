@@ -1,1 +1,1 @@
-create table if not exists mysite.kakolog (id integer primary key auto_increment, unixtime integer not null, title text not null, board_id)
+create table if not exists mysite.kakolog (id integer primary key auto_increment, unixtime integer not null, title text not null, board_id integer not null)

@@ -428,4 +428,10 @@
                                              (:th "key"))
                                             (loop for i in data
                                                   collect (set-kakolog-list-table i)))))
-                       (raw (markup (:p "過去ログはありません"))))))))
+                       (raw (markup (:p "過去ログはありません"))))
+                   (:footer :id "footer"
+                            (:nav
+                             (:ul
+                              (:li
+                               (:a :href (format nil "/~A" board-name)
+                                   "板に戻る")))))))))
