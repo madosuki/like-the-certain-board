@@ -33,10 +33,16 @@
   (index-view))
 
 (defroute ("/:board-name/" :method :GET) (&key board-name)
-  (put-thread-list board-name *web*))
+  (let ((board-data (get-a-board-name-from-name board-name)))
+    (if board-data
+        (put-thread-list board-name (getf board-data :name) *web*)
+        (on-exception *web* 404))))
 
 (defroute ("/:board-name" :method :GET) (&key board-name)
-  (put-thread-list board-name *web*))
+  (let ((board-data (get-a-board-name-from-name board-name)))
+    (if board-data
+        (put-thread-list board-name (getf board-data :name) *web*)
+        (on-exception *web* 404))))
 
 (defroute ("/:board-name/kakolog" :method :GET) (&key board-name)
   (let* ((board-list-data (get-a-board-name-from-name board-name))
@@ -48,48 +54,53 @@
         (kakolog-list-view board-name))))
 
 (defroute ("/:board-name/subject.txt" :method :GET) (&key board-name)
-  (declare (ignore board-name))
-  (let* ((tmp (get-thread-list-when-create-subject-txt))
-         (result nil))
-    (if tmp
-        (progn
-          (dolist (x tmp)
-            (let ((dat-name (generate-dat-name x))
-                  (title (cadr (member :title x)))
-                  (res-count (cadr (member :res-count x))))
-              (push (format nil "~A<>~A (~A)~%" dat-name title res-count) result)))
-          (let* ((final (apply #'concatenate 'string (nreverse result)))
-                 (oct (sb-ext:string-to-octets final :external-format :sjis))
-                 (content-length (length oct)))
-            `(200 (:content-type "text/plain" :content-length ,content-length) ,oct)))
-        (let* ((empty (sb-ext:string-to-octets "" :external-format :sjis))
-               (content-length (length empty)))
-          `(200 (:content-type "text/plain" :content-length ,content-length) ,empty)))))
+  (let ((board-data (get-a-board-name-from-name board-name)))
+    (if board-data
+        (let* ((tmp (get-thread-list-when-create-subject-txt (getf board-data :id)))
+               (result nil))
+          (if tmp
+              (progn
+                (dolist (x tmp)
+                  (let ((dat-name (generate-dat-name x))
+                        (title (cadr (member :title x)))
+                        (res-count (cadr (member :res-count x))))
+                    (push (format nil "~A<>~A (~A)~%" dat-name title res-count) result)))
+                (let* ((final (apply #'concatenate 'string (nreverse result)))
+                       (oct (sb-ext:string-to-octets final :external-format :sjis))
+                       (content-length (length oct)))
+                  `(200 (:content-type "text/plain" :content-length ,content-length) ,oct)))
+              (let* ((empty (sb-ext:string-to-octets "" :external-format :sjis))
+                     (content-length (length empty)))
+                `(200 (:content-type "text/plain" :content-length ,content-length) ,empty))))
+        (on-exception *web* 404))))
 
 (defroute "/ipinfo" ()
   (caveman2:request-remote-addr caveman2:*request*))
 
 (defroute ("/test/read.cgi/:board-name/:unixtime" :method :GET) (&key board-name unixtime)
-  (let* ((filepath (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime))
-         (dat-list (dat-to-keyword-list filepath))
-         (title (cadr (member :title (car dat-list))))
-         (current-unix-time (get-unix-time (get-universal-time)))
-         (is-login (gethash *session-login-key* *session*)))
-    (if (probe-file filepath)
-        (thread-view :title title
-                     :thread dat-list
-                     :bbs *board-name*
-                     :key unixtime
-                     :time current-unix-time
-                     :is-login is-login)
-        (let ((html-path (format nil "~A/~A/~A.html" *kakolog-html-path* board-name unixtime)))
-          (if (probe-file html-path)
-              (progn
-                (setf (getf (response-headers *response*) :location)
-                      (format nil "/~A/kakolog/~A" board-name unixtime))
-                (set-response-status 302)
-                (next-route))
-              (on-exception *web* 404))))))
+  (let* ((dat-filepath (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime))
+         (is-login (gethash *session-login-key* *session*))
+         (board-data (get-a-board-name-from-name board-name)))
+    (if board-data
+        (if (probe-file dat-filepath)
+            (let ((dat-list (dat-to-keyword-list dat-filepath))
+                  (title (cadr (member :title (car dat-list))))
+                  (current-unix-time (get-unix-time (get-universal-time))))
+              (thread-view :title title
+                           :thread dat-list
+                           :bbs board-name
+                           :key unixtime
+                           :time current-unix-time
+                           :is-login is-login))
+            (let ((html-path (format nil "~A/~A/~A.html" *kakolog-html-path* board-name unixtime)))
+              (if (probe-file html-path)
+                  (progn
+                    (setf (getf (response-headers *response*) :location)
+                          (format nil "/~A/kakolog/~A" board-name unixtime))
+                    (set-response-status 302)
+                    (next-route))
+                  (on-exception *web* 404))))
+        (on-exception *web* 404))))
 
 (defroute ("/:board-name/kakolog/:unixtime" :method :GET) (&key board-name unixtime)
   (let ((path (format nil "~A/~A/~A.html" *kakolog-html-path* board-name unixtime)))
@@ -146,7 +157,6 @@
 
 
 (defroute ("/:board-name/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
-  (declare (ignore board-name))
   (let ((pathname (probe-file (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime))))
     (if (not (null pathname))
         (progn
@@ -157,8 +167,7 @@
           ""))))
 
 (defroute ("/:board-name/kakolog/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
-  (declare (ignore board-name))
-  (let ((path (probe-file (format nil "~A/~A.dat" *kakolog-dat-path* unixtime))))
+  (let ((path (probe-file (format nil "~A/~A/~A.dat" *kakolog-dat-path* board-name unixtime))))
     (if path
         (progn
           (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
@@ -166,18 +175,22 @@
         (on-exception *web* 404))))
 
 (defroute ("/:board-name/SETTING.TXT" :method :GET) (&key board-name)
-  (if (string= board-name *board-name*)
-      (let ((pathname "SETTING.txt"))
-        (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
-        (setf (response-body *response*) (probe-file pathname)))
-      (on-exception *web* 404)))
+  (let ((board-data (get-a-board-name-from-name board-name)))
+    (if board-data
+        (let ((pathname "SETTING.txt"))
+          (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
+          (setf (response-body *response*) (probe-file pathname)))
+        (on-exception *web* 404))))
 
 (defroute ("/:board-name/login" :method :GET) (&key board-name)
-  (login-view :board-url-name board-name
-              :board-name *board-name*
-              :is-login (if (gethash *session-login-key* *session*)
-                            'logged-in
-                            nil)))
+  (let ((board-data (get-a-board-name-from-name board-name)))
+    (if board-data
+        (login-view :board-url-name board-name
+                    :board-name (getf board-data :name)
+                    :is-login (if (gethash *session-login-key* *session*)
+                                  'logged-in
+                                  nil))
+        (on-exception *web* 404))))
 
 (defroute ("/:board-name/api/user" :method :POST) (&key board-name _parsed)
   (let* ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
@@ -191,8 +204,11 @@
                              nil
                              (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
                                      (cl-ppcre:split ";" cookie))))
-         (date (get-universal-time)))
-    (cond ((or (null mode) (null (string= mode "login")) (null (string= mode "logout")))
+         (date (get-universal-time))
+         (board-data (get-a-board-name-from-name board-name)))
+    (cond ((null board-data)
+           (on-exception *web* 404))
+          ((or (null mode) (null (string= mode "login")) (null (string= mode "logout")))
            (set-response-status 400)
            (next-route))
           ((equal mode "login")
@@ -205,14 +221,14 @@
                  (setq user-name (create-safety-strings user-name))
                  (let ((login-check (login board-name user-name password date)))
                    (cond ((eq login-check 'logged-in)
-                          (login-view :board-name *board-name* :board-url-name board-name :is-login 'logged-in))
+                          (login-view :board-name (getf board-data :name) :board-url-name board-name :is-login 'logged-in))
                          ((eq login-check 'success)
                           (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
                           (set-response-status 302)
                           (next-route))
                          (t
                           (set-response-status 401)
-                          (login-view :board-name *board-name* :board-url-name board-name :is-login 'failed)
+                          (login-view :board-name (getf board-data :name) :board-url-name board-name :is-login 'failed)
                           ))))))
            ((equal mode "logout")
             (let ((check (gethash *session-login-key* *session*)))
@@ -249,8 +265,11 @@
          (line (get-value-from-key "line" _parsed))
          (line-number (parse-integer (if (stringp line) line "") :junk-allowed t))
          (is-login (gethash *session-login-key* *session*))
-         (is-admin (gethash *session-admin-key* *session*)))
-    (cond ((null is-login)
+         (is-admin (gethash *session-admin-key* *session*))
+         (board-data (get-a-board-name-from-name board-name)))
+    (cond ((null board-data)
+           (on-exception *web* 404))
+          ((null is-login)
            (set-response-status 403)
            "not was logged-in")
           ((null is-admin)
@@ -259,9 +278,9 @@
           ((or (null line) (null key))
            (set-response-status 400)
            "invalid param")
-          ((and (numberp line-number) (string= board-name *board-name*))
+          ((numberp line-number)
            (if (delete-line-in-dat key line-number)
-                 (let* ((filepath (concatenate 'string *dat-path* key ".dat"))
+                 (let* ((filepath (format nil "~A/~A/~A.dat" *dat-path* board-name key))
                         (dat-list (dat-to-keyword-list filepath))
                         (title (cadr (member :title (car dat-list))))
                         (current-unix-time (get-unix-time (get-universal-time)))
@@ -275,8 +294,10 @@
   (let ((key (get-value-from-key "key" _parsed))
         (mode (get-value-from-key "mode" _parsed))
         (is-login (gethash *session-login-key* *session*))
-        (is-admin (gethash *session-admin-key* *session*)))
+        (is-admin (gethash *session-admin-key* *session*))
+        (board-data (get-a-board-name-from-name board-name)))
     (cond ((or (null mode)
+               (null board-data)
                ;; (null is-login)
                ;; (null is-admin)
                )

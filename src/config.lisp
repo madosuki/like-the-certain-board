@@ -9,8 +9,6 @@
            :*static-directory*
            :*template-directory*
            :*solt*
-           :*board-title*
-           :*board-name*
            :*default-name*
            :*default-max-length*
            :*1001*
@@ -83,8 +81,6 @@
             (db-hostname (cdr (assoc :db-hostname parsed)))
             (solt (cdr (assoc :solt parsed)))
             (default-name (cdr (assoc :default-name parsed)))
-            (board-name (cdr (assoc :board-name parsed)))
-            (board-title (cdr (assoc :board-title parsed)))
             (log-path (cdr (assoc :log-path parsed))))
         (when site-db-name
           (setq *site-db-name* site-db-name))
@@ -98,10 +94,6 @@
           (setq *solt* solt))
         (when default-name
           (setq *default-name* default-name))
-        (when board-name
-          (setq *board-name* board-name))
-        (when board-title
-          (setq *board-title* board-title))
         (when log-path
           (setq *log-path* log-path))))))
 

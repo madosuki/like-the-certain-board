@@ -193,11 +193,12 @@
                           (:= :board_id board-id)))))))
 
 
-(defun get-thread-list-when-create-subject-txt ()
+(defun get-thread-list-when-create-subject-txt (board-id)
   (with-connection (db)
     (retrieve-all
      (select (fields :title :res-count :unixtime)
              (from :threads)
+             (where (:= :board-id board-id))
              (order-by (:desc :last-modified-date))))))
 
 (defun delete-thread (key board-id)
@@ -578,7 +579,7 @@
                        :message (format nil "insert: ~A" time))))))
     status))
 
-(defun put-thread-list (board-name web)
+(defun put-thread-list (board-name board-title web)
   (let ((board-list-data (get-a-board-name-from-name board-name)))
     (if board-list-data
         (progn
@@ -588,7 +589,7 @@
             (dolist (x result)
               (setf (getf x :create-date) (format-datetime (getf x :create-date)))
               (setf (getf x :last-modified-date) (format-datetime (getf x :last-modified-date))))
-            (board-view :board-name *board-title*
+            (board-view :board-name board-title
                         :bbs board-name
                         :time (get-unix-time (get-universal-time))
                         :thread-list result
