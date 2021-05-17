@@ -494,27 +494,37 @@
                     (t
                      (setq max-line *default-max-length*)))
               (setq max-line *default-max-length*))
-          (labels ((progress (title date unixtime ipaddr name text &optional (count 0))
-                     (handler-case (funcall (lambda (title date unixtime ipaddr name text board-id bbs)
-                                              (create-thread-in-db :title title
-                                                                   :create-date date
-                                                                   :unixtime unixtime
-                                                                   :max-line max-line
-                                                                   :board-id board-id)
-                                              (create-dat
-                                               :board-url-name bbs
-                                               :unixtime unixtime
-                                               :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
-                                              200)
-                                            title date unixtime ipaddr name text board-id bbs)
-                       (error (e)
-                         (write-log :mode :error
-                                    :message (format nil "Error in create-thread-function: ~A" e))
-                         (incf unixtime)
-                         (if (< count 10)
-                             (progress title date unixtime ipaddr name text (incf count))
-                             (return-from create-thread 400))))))
-            (progress title date unixtime ipaddr name text)))
+          (labels ((progress (title date unixtime ipaddr name text board-id &optional (count 0))
+                     (let ((is-error nil))
+                       (handler-case (create-thread-in-db :title title
+                                                          :create-date date
+                                                          :unixtime unixtime
+                                                          :max-line max-line
+                                                          :board-id board-id)
+                         (error (e)
+                           (write-log :mode :error
+                                      :message (format nil "Error in create-thread-function: ~A" e))
+                           (setq is-error t)))
+                       (if is-error
+                           (progn
+                             (incf unixtime)
+                             (if (< count 10)
+                                 (progress title date unixtime ipaddr name text (incf count))
+                                 (return-from create-thread 400)))
+                           (progn (handler-case  (create-dat
+                                                  :board-url-name bbs
+                                                  :unixtime unixtime
+                                                  :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
+                                    (error (e)
+                                      (write-log :mode :error
+                                                 :message (format nil "Error failed create-dat function: ~A" e))
+                                      (delete-thread unixtime board-id)
+                                      (incf unixtime)
+                                      (if (< count 10)
+                                          (progress title date unixtime ipaddr name text board-id (incf count))
+                                          (return-from create-thread 400))))
+                                  200)))))
+            (progress title date unixtime ipaddr name text board-id)))
         400)))
 
 (defun insert-res (_parsed ipaddr universal-time board-id)
