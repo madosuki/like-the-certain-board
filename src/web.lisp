@@ -70,7 +70,6 @@
   (caveman2:request-remote-addr caveman2:*request*))
 
 (defroute ("/test/read.cgi/:board-name/:unixtime" :method :GET) (&key board-name unixtime)
-  ;; (declare (ignore board-name))
   (let* ((filepath (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime))
          (dat-list (dat-to-keyword-list filepath))
          (title (cadr (member :title (car dat-list))))
@@ -148,7 +147,7 @@
 
 (defroute ("/:board-name/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
   (declare (ignore board-name))
-  (let ((pathname (probe-file (concatenate 'string *dat-path* unixtime ".dat"))))
+  (let ((pathname (probe-file (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime))))
     (if (not (null pathname))
         (progn
           (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
