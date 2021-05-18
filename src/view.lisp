@@ -428,7 +428,8 @@
                                              (:th "key"))
                                             (loop for i in data
                                                   collect (set-kakolog-list-table i)))))
-                       (raw (markup (:p "過去ログはありません"))))
+                       (raw (markup (:p :style "margin-left: 1rem"
+                                     "過去ログはありません"))))
                    (:footer :id "footer"
                             (:nav
                              (:ul
