@@ -111,7 +111,7 @@
     (concatenate 'string normal special)))
 
 
-(defmacro main-content (title &body body)
+(defmacro main-content (title board-url-name &body body)
   `(base-html ,title
               (:body
                (:header
@@ -119,7 +119,10 @@
                        (:li (:a :href "/")
                             "トップに戻る")
                        (:li (:a :href "/about"
-                                "このサイトについて")))))
+                                "このサイトについて"))
+                       (raw (when ,board-url-name
+                              (markup (:li (:a :href (format nil "/~A/kakolog" ,board-url-name)
+                                               "過去ログ倉庫"))))))))
                (:div :id "main"
                      ,@body))))
 
@@ -190,7 +193,7 @@
 
 
 (defun board-view (&key is-login board-name bbs thread-list time)
-  (main-content board-name
+  (main-content board-name bbs
                 (if is-login
                     (:h2 "ログイン済み")
                     "")
@@ -240,7 +243,7 @@
 
 
 (defun thread-view (&key title thread bbs key time is-login)
-  (main-content title
+  (main-content title bbs
                 (:h1 :id "title"
                      (raw title))
                 (loop for i in thread
@@ -302,7 +305,7 @@
 
 
 (defun time-restrict-view (&key ipaddr bbs key minute mail)
-  (main-content "連投規制"
+  (main-content "連投規制" bbs
                 (:h1 :id "alert-title"
                      "投稿規制")
                 (:p (format nil "Your IP Address: ~A" ipaddr))
@@ -325,7 +328,7 @@
 
 
 (defun login-view (&key board-name board-url-name is-login)
-  (main-content board-name
+  (main-content board-name board-url-name
                 (:h1 "ログインページ")
                 (raw (cond ((eq is-login 'logged-in)
                             (markup (:h2 "ログイン済みです")))
@@ -369,6 +372,7 @@
                       ((eq error-type 'create-error)
                        "新規スレッド作成エラー")
                       (t "何かのエラー"))
+                board-url-name
                 (:div :id "error-msg"
                       (:p message)
                       (raw (when board-url-name
@@ -390,7 +394,7 @@
 
 
 (defun kakolog-view (title html-path board-url-name key)
-  (main-content (format nil "過去ログ: ~A" title)
+  (main-content (format nil "過去ログ: ~A" title) nil
                 (:div :id "kakolog-thread"
                       (raw (read-file-string html-path))
                       (raw (when board-url-name
@@ -418,7 +422,7 @@
                         title))
                (:td :class "cell-spacing"
                     unixtime))))))
-    (main-content "過去ログ倉庫"
+    (main-content "過去ログ倉庫" nil
                   (:div :id "kakolog-list-contents"
                    (:h1 "過去ログ倉庫")
                    (if data

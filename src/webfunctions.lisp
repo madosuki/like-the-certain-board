@@ -902,16 +902,12 @@
                          :message (format nil "not exists dat file: ~A" orig-dat-filepath))
               'not-exists-that-a-dat-file))))
 
-(defun convert-bunch-of-thread-to-kakolog (board-url-name)
-  (let* ((board-id (let ((board-data (get-a-board-name-from-name board-url-name)))
-                     (if board-data
-                         (getf board-data :id)
-                         nil)))
-         (thread-list (if board-id
-                          (get-expired-thread-list (get-current-datetime (get-universal-time))
-                                                   board-id)
-                          nil))
-         (result nil))
+(defun convert-bunch-of-thread-to-kakolog (board-id)
+  (let ((thread-list (if board-id
+                         (get-expired-thread-list (get-current-datetime (get-universal-time))
+                                                  board-id)
+                         nil))
+       (result nil))
     (unless thread-list
       (return-from convert-bunch-of-thread-to-kakolog nil))
     (dolist (x thread-list)
