@@ -16,6 +16,12 @@ body {
     padding-left: 1rem;
 }
 
+#kakolog-thread dd {
+    font-family: Mona, Monapo, IPAMonaPGothic, "MS PGothic", "MS Pゴシック", sans-serif;
+    font-size: 16px;
+    line-height: 18px;
+}
+
 #kakolog-list-contents h1 {
     text-align: center;
 }

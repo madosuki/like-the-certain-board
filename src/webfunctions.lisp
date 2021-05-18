@@ -167,7 +167,7 @@
     (retrieve-all
      (select :* (from :threads)
              (where (:and (:> (:datediff datetime :last-modified-date)
-                              0)
+                              180)
                           (:= :board-id board-id)))))))
 
 (defun get-a-thread (unixtime board-id)
