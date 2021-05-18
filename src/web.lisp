@@ -83,9 +83,9 @@
          (board-data (get-a-board-name-from-name board-name)))
     (if board-data
         (if (probe-file dat-filepath)
-            (let ((dat-list (dat-to-keyword-list dat-filepath))
-                  (title (cadr (member :title (car dat-list))))
-                  (current-unix-time (get-unix-time (get-universal-time))))
+            (let* ((dat-list (dat-to-keyword-list dat-filepath))
+                   (title (cadr (member :title (car dat-list))))
+                   (current-unix-time (get-unix-time (get-universal-time))))
               (thread-view :title title
                            :thread dat-list
                            :bbs board-name
