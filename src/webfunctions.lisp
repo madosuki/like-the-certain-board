@@ -146,19 +146,19 @@
 (defun get-board-list ()
   (with-connection (db)
     (retrieve-all
-     (select :* (from :board_list)))))
+     (select :* (from :board-list)))))
 
 (defun get-a-board-name-from-id (id)
   (with-connection (db)
     (retrieve-one
-     (select :* (from :board_list)
+     (select :* (from :board-list)
              (where (:= :id id))))))
 
 (defun get-a-board-name-from-name (url-name)
   (with-connection (db)
     (retrieve-one
-     (select :* (from :board_list)
-             (where (:like :url_name url-name))))))
+     (select :* (from :board-list)
+             (where (:like :url-name url-name))))))
 
 
 (defun get-thread-list (board-id)
@@ -189,7 +189,7 @@
     (retrieve-all
      (select :* (from :kakolog)
              (order-by (:desc :unixtime))
-             (where (:= :board_id board-id))
+             (where (:= :board-id board-id))
              (limit *max-thread-list*)))))
 
 (defun get-a-kakolog-thread (unixtime board-id)
@@ -197,7 +197,7 @@
     (retrieve-one
      (select :* (from :kakolog)
              (where (:and (:= :unixtime unixtime)
-                          (:= :board_id board-id)))))))
+                          (:= :board-id board-id)))))))
 
 
 (defun get-thread-list-when-create-subject-txt (board-id)
@@ -358,7 +358,7 @@
                   (set=
                    :unixtime unixtime
                    :title title
-                   :board_id board-id)))))
+                   :board-id board-id)))))
 
 (defun format-datetime (date)
   (multiple-value-bind (second minute hour date month year day summer timezone)
