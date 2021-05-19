@@ -31,7 +31,8 @@
    :get-a-kakolog-thread
    :get-kakolog-thread-list
    :kakolog-process
-   :get-a-board-name-from-name))
+   :get-a-board-name-from-name
+   :get-board-list))
 (in-package :like-certain-board.webfunctions)
 
 (deftype mysql-true-type (n) `(= n 1))
@@ -140,6 +141,12 @@
         (rename-file outpath path)
         (setq is-not-error t)))
     is-not-error))
+
+
+(defun get-board-list ()
+  (with-connection (db)
+    (retrieve-all
+     (select :* (from :board_list)))))
 
 (defun get-a-board-name-from-id (id)
   (with-connection (db)

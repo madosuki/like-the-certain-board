@@ -74,10 +74,29 @@
      (:title ,title))
     ,@body))
 
-(defun index-view ()
-  (base-html "Index"
-             (:body
-              (:h1 "Index"))))
+(defmacro main-content (title board-url-name &body body)
+  `(base-html ,title
+              (:body
+               (:header
+                (:nav (:ul
+                       (:li (:a :href "/")
+                            "トップに戻る")
+                       (:li (:a :href "/about"
+                                "このサイトについて"))
+                       (raw (when ,board-url-name
+                              (markup (:li (:a :href (format nil "/~A/kakolog" ,board-url-name)
+                                               "過去ログ倉庫"))))))))
+               (:div :id "main"
+                     ,@body))))
+
+(defun index-view (board-list)
+  (main-content "板一覧" nil
+                (:div :id "board-list"
+                      (:h1 "板一覧")
+                      (:ul
+                       (loop for i in board-list
+                             collect (markup (:li (:a :href (format nil "/~A" (getf i :url-name))
+                                                      (getf i :name)))))))))
 
 (defun set-thread-table-row (item bbs is-login)
   (let ((normal (markup
@@ -111,20 +130,7 @@
     (concatenate 'string normal special)))
 
 
-(defmacro main-content (title board-url-name &body body)
-  `(base-html ,title
-              (:body
-               (:header
-                (:nav (:ul
-                       (:li (:a :href "/")
-                            "トップに戻る")
-                       (:li (:a :href "/about"
-                                "このサイトについて"))
-                       (raw (when ,board-url-name
-                              (markup (:li (:a :href (format nil "/~A/kakolog" ,board-url-name)
-                                               "過去ログ倉庫"))))))))
-               (:div :id "main"
-                     ,@body))))
+
 
 (declaim (inine create-thread-form))
 (defun create-thread-form (bbs time)

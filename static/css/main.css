@@ -11,6 +11,10 @@ body {
     background-color: #EFEFEF;
 }
 
+#board-list {
+    text-align: center;
+}
+
 #kakolog-thread h1 {
     padding-bottom: 2rem;
     padding-left: 1rem;
