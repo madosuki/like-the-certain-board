@@ -179,7 +179,7 @@
         (write-sequence tmp i)))))
 
 (defun create-res (&key name trip-key email date text ipaddr (first nil) (title ""))
-  (let* ((datetime (replace-hyphen-to-slash (get-current-datetime date)))
+  (let* ((datetime (replace-hyphen-to-slash date))
          (id (generate-id :ipaddr ipaddr :date datetime :solt *solt*))
          (trip (if (and (stringp trip-key) (string/= trip-key ""))
                    (generate-trip (subseq trip-key 1 (length trip-key)) "utf8")
@@ -256,9 +256,10 @@
                      (setq max-line *default-max-length*)))
               (setq max-line *default-max-length*))
           (labels ((progress (title date unixtime ipaddr name text board-id &optional (count 0))
-                     (let ((is-error nil))
+                     (let ((is-error nil)
+                           (formatted-date (get-current-datetime date)))
                        (handler-case (create-thread-in-db :title title
-                                                          :date (get-current-datetime date)
+                                                          :date formatted-date
                                                           :unixtime unixtime
                                                           :max-line max-line
                                                           :board-id board-id)
@@ -275,7 +276,7 @@
                            (progn (handler-case  (create-dat
                                                   :board-url-name bbs
                                                   :unixtime unixtime
-                                                  :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date date :first t :title title))
+                                                  :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date formatted-date :first t :title title))
                                     (error (e)
                                       (write-log :mode :error
                                                  :message (format nil "Error failed create-dat function: ~A" e))
