@@ -26,6 +26,7 @@
            :*kakolog-html-path*
            :*kakolog-dat-path*
            :*log-path*
+           :*settings-path*
            :appenv
            :developmentp
            :productionp))

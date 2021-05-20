@@ -1,4 +1,4 @@
-BBS_TITLE=yarufre
+BBS_TITLE=test
 BBS_NONAME_NAME=–¼–³‚µ‚³‚ñ
 BBS_DELETE_NAME=‚ ‚Ú‚ñ
 BBS_UNICODE=pass

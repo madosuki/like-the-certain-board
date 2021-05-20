@@ -181,7 +181,7 @@
 (defroute ("/:board-name/SETTING.TXT" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
     (if board-data
-        (let ((pathname "SETTING.txt"))
+        (let ((pathname (format nil "~A/~A/SETTING.txt" *settings-path* board-name)))
           (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
           (setf (response-body *response*) (probe-file pathname)))
         (on-exception *web* 404))))
