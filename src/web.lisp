@@ -137,7 +137,8 @@
           (handler-case  (progn (read-sequence tmp-array raw-body)
                                 (bbs-cgi-function tmp-array ipaddr universal-time))
             (error (e)
-              (declare (ignore e))
+              (write-log :mode :error
+                         :message e)
               (write-result-view :error-type 'something :message "bad parameter"))))
         (let ((bbs (cdr (assoc "bbs" _parsed :test #'string=)))
               (key (cdr (assoc "key" _parsed :test #'string=))))

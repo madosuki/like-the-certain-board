@@ -5,8 +5,6 @@
         :like-certain-board.config
         :like-certain-board.view
         :like-certain-board.db
-        :datafly
-        :sxql
         :quri
         :cl-fad
    :generate-like-certain-board-strings)
@@ -34,22 +32,6 @@
 
 (defvar *posted-table* "posted_table")
 
-(defstruct user-table-struct
-  (board-name "" :type string)
-  (user-name "" :type string)
-  (hash "" :type string)
-  (create-date "" :type string)
-  (latest-date "" :type string)
-  (is-admin nil :type integer)
-  (cap-text "" :type string))
-
-(defstruct thread-table-struct
-  (title "" :type string)
-  (create-date "" :type string)
-  (last-modified-date "" :type string)
-  (res-count 1 :type integer)
-  (unixtime 0 :type intger)
-  (max 1000 :type integer))
 
 (defmacro caddddr (v)
   `(caddr (cddr ,v)))
@@ -153,70 +135,6 @@
       nil
       t))
 
-(defun init-threads-table ()
-  (with-connection (db)
-    (execute
-     (create-table (:threads :if-exists-not t)
-                   ((title :type 'text
-                           :not-null t)
-                    (create-date :type 'datetime
-                                 :not-null t)
-                    (last-modified-date :type 'datetime
-                                        :not-null t)
-                    (res-count :type 'integer
-                               :not-null t
-                               :default 1)
-                    (unixtime :type 'integer
-                              :primary-key t)
-                    (max-line :type 'integer
-                              :default *default-max-length*
-                              :not-null t)
-                    (board-id :type 'integer
-                              :not-null t))))))
-
-
-(defun get-user-table (board-name user-name)
-  (with-connection (db)
-    (retrieve-one
-     (select :*
-             (from :user_table)
-             (where (:and (:like :user_name user-name) (:like :board_name board-name)))))))
-
-(defun insert-user-table (user-data)
-  (let ((user-name (user-table-struct-user-name user-data))
-        (board-name (user-table-struct-board-name user-data))
-        (hash (user-table-struct-hash user-data))
-        (create-date (user-table-struct-create-date user-data))
-        (latest-date (user-table-struct-latest-date user-data))
-        (is-admin (user-table-struct-is-admin user-data))
-        (cap-text (user-table-struct-cap-text user-data)))
-    (with-connection (db)
-      (execute
-       (insert-into :user_table
-                    (set=
-                     :board_name board-name
-                     :user_name user-name
-                     :hash hash
-                     :create_date create-date
-                     :latest_date latest-date
-                     :is_admin is-admin
-                     :cap_text cap-text))))))
-
-(defun update-user-table (board-name user-name date)
-  (with-connection (db)
-    (execute
-     (update :user_table
-             (set= :latest_date date)
-             (where (:and (:like :user_name user-name) (:like :board_name board-name)))))))
-
-(defun insert-kakolog-table (unixtime title board-id)
-  (with-connection (db)
-    (execute
-     (insert-into :kakolog
-                  (set=
-                   :unixtime unixtime
-                   :title title
-                   :board-id board-id)))))
 
 (defun format-datetime (date)
   (multiple-value-bind (second minute hour date month year day summer timezone)
@@ -224,11 +142,7 @@
     (declare (ignore day summer timezone))
     (format nil "~A/~2,'0d/~2,'0d ~2,'0d:~2,'0d:~2,'0d" year month date hour minute second)))
 
-(defun get-table-column-count (table-name column)
-  (with-connection (db)
-    (retrieve-one
-     (select (fields (:count (intern column)))
-             (from (intern table-name))))))
+
 
 (defun check-exists-threads-table-and-create-table-when-does-not ()
   (handler-case (check-exists-table "threads")
@@ -283,30 +197,8 @@
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" (apply-dice final-name t) trip mail datetime id final-text title)
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" (apply-dice final-name t) trip mail datetime id final-text))))
 
-(defun create-thread-in-db (&key title create-date unixtime max-line board-id)
-  (let ((date (get-current-datetime create-date)))
-    (handler-case (with-connection (db)
-                      (execute
-                       (insert-into :threads
-                                    (set= :title title
-                                          :create-date date
-                                          :last-modified-date date
-                                          :res-count 1
-                                          :unixtime unixtime
-                                          :max-line (if (or (null max-line) (< max-line *default-max-length*))
-                                                        *default-max-length*
-                                                        max-line)
-                                          :board-id board-id))))
-      (error (e)
-        (write-log :mode :error
-                   :message (format nil "Error create-thread-in-db: ~A~%" e))))))
 
-(defun change-max-of-thread-in-db (unixtime)
-  (with-connection (db)
-    (execute
-     (update :thread
-             (set= :max 10000)
-             (where (:like :unixtime unixtime))))))
+
 
 (defun decode-max-line-string (target)
   (let ((regex-str "max_line=([0-9]+)"))
@@ -366,7 +258,7 @@
           (labels ((progress (title date unixtime ipaddr name text board-id &optional (count 0))
                      (let ((is-error nil))
                        (handler-case (create-thread-in-db :title title
-                                                          :create-date date
+                                                          :date (get-current-datetime date)
                                                           :unixtime unixtime
                                                           :max-line max-line
                                                           :board-id board-id)
@@ -378,7 +270,7 @@
                            (progn
                              (incf unixtime)
                              (if (< count 10)
-                                 (progress title date unixtime ipaddr name text (incf count))
+                                 (progress title date unixtime ipaddr name text board-id (incf count))
                                  (return-from create-thread 400)))
                            (progn (handler-case  (create-dat
                                                   :board-url-name bbs
@@ -436,13 +328,13 @@
                          "")))
           (let ((res (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
             (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input)
-            (update-last-modified-date-of-thread :date universal-time :key key :board-id board-id)
+            (update-last-modified-date-of-thread :date (get-current-datetime universal-time) :key key :board-id board-id)
             (update-res-count-of-thread :key key :board-id board-id)
             (when (>= (cadr (get-res-count :key key)) (cadr (get-max-line :key key)))
               (write-sequence
                (sb-ext:string-to-octets *1001* :external-format :sjis) input)
               (update-res-count-of-thread :key key :board-id board-id)
-              (update-last-modified-date-of-thread :date universal-time :key key :board-id board-id))
+              (update-last-modified-date-of-thread :date (get-current-datetime universal-time) :key key :board-id board-id))
             (write-log :mode :changes-result
                        :message (format nil "insert: ~A" time))))))
     status))
@@ -492,36 +384,7 @@
         (otherwise
          nil)))))
 
-(defun update-last-modified-date-of-thread (&key date key board-id)
-  (with-connection (db)
-    (execute
-     (update :threads
-             (set= :last-modified-date (get-current-datetime date))
-             (where (:and (:like :unixtime key)
-                          (:= :board-id board-id)))))))
 
-(defun get-res-count (&key key)
-  (with-connection (db)
-    (retrieve-one
-     (select :res-count
-             (from :threads)
-             (where (:like :unixtime key))))))
-
-(defun get-max-line (&key key)
-  (with-connection (db)
-    (retrieve-one
-     (select :max-line
-             (from :threads)
-             (where (:like :unixtime key))))))
-
-(defun update-res-count-of-thread (&key key board-id)
-  (let ((tmp (get-res-count :key key)))
-    (with-connection (db)
-      (execute
-       (update :threads
-               (set= :res-count (1+  (cadr tmp)))
-               (where (:= (:like :unixtime key)
-                          (:= :board-id board-id))))))))
 
 (defun generate-confirme-page (bbs key is-utf8 form)
   (let* ((from (get-value-from-key-on-list "FROM" form))
