@@ -31,6 +31,7 @@ Normal DAT file path is according to DAT_DIR_PATH shell variable.
 Kakolog DAT file path is according to KAKOLOG_DAT_DIR_PATH shell variable.  
 Output HTML from dat when outdate path is according to KAKOLOG_HTML_DIR_PATH shell variable.   
 Above shell variables is must set.  
+  
 And should check settings_sample.json and SETTING_SAMPLE.txt.  
 Rename the former to settings.json then must put that in BOARD_SETTING_PATH/.   
 Rename the latter to SETTING.txt then must put that in BOARD_SETTING_PATH/your board name/.   
