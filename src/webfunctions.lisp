@@ -250,10 +250,13 @@
 
 
 (defun create-dat (&key unixtime first-line board-url-name)
-  (let* ((filename (concatenate 'string (write-to-string unixtime) ".dat"))
-         (path (format nil "~A/~A/~A" *dat-path* board-url-name filename)))
+  (let* ((dat-dir (format nil "~A/~A" *dat-path* board-url-name))
+         (filename (concatenate 'string (write-to-string unixtime) ".dat"))
+         (path (format nil "~A/~A" dat-dir filename)))
     (unless (cl-fad:directory-exists-p *dat-path*)
       (ensure-directories-exist *dat-path*))
+    (unless (cl-fad:directory-exists-p dat-dir)
+      (ensure-directories-exist dat-dir))
     (with-open-file (i path
                        :direction :output
                        :if-does-not-exist :create
@@ -702,8 +705,8 @@
     return-status))
 
 
-(defun get-dat-data (dat-name)
-  (with-open-file (stream dat-name
+(defun get-dat-data (dat-file-path)
+  (with-open-file (stream dat-file-path
                           :direction :input
                           :if-does-not-exist nil
                           :external-format :sjis)
@@ -735,12 +738,18 @@
         nil)))
 
 (defun kakolog-process (&key key title board-url-name board-id)
-  (let ((orig-dat-filepath (format nil "~A/~A/~A.dat" *dat-path* board-url-name key))
-        (kakolog-dat-filepath (format nil "~A/~A/~A.dat" *kakolog-dat-path* board-url-name key))
-        (kakolog-html-filepath (format nil "~A/~A/~A.html" *kakolog-html-path* board-url-name key)))
+  (let* ((orig-dat-filepath (format nil "~A/~A/~A.dat" *dat-path* board-url-name key))
+         (kakolog-dat-dir-path (format nil "~A/~A" *kakolog-dat-path* board-url-name))
+         (kakolog-html-dir-path (format nil "~A/~A" *kakolog-html-path* board-url-name))
+         (kakolog-dat-filepath (format nil "~A/~A.dat" kakolog-dat-dir-path key))
+         (kakolog-html-filepath (format nil "~A/~A.html" kakolog-html-dir-path key)))
     (if (probe-file orig-dat-filepath)
             (if (to-kakolog board-url-name key orig-dat-filepath)
                 (let ((c nil))
+                  (unless (cl-fad:directory-exists-p kakolog-dat-dir-path)
+                    (ensure-directories-exist kakolog-dat-dir-path))
+                  (unless (cl-fad:directory-exists-p kakolog-html-dir-path)
+                    (ensure-directories-exist kakolog-html-dir-path))
                   (handler-case (copy-file orig-dat-filepath kakolog-dat-filepath)
                     (error (e)
                       (write-log :mode :error
