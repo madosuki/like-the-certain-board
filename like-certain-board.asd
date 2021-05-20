@@ -51,7 +51,7 @@
                  (:file "view" :depends-on ("config"))
                  (:file "db" :depends-on ("config"))
                  (:file "config")
-                 (:file "webfunctions" :depends-on ("utils"))
+                 (:file "webfunctions" :depends-on ("utils") :depends-on ("db"))
                  (:file "utils" :depends-on ("config")))))
   :description ""
   :in-order-to ((test-op (test-op "like-certain-board-test"))))
