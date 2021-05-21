@@ -11,6 +11,7 @@ body {
     background-color: #EFEFEF;
 }
 
+
 #time-restrict {
     text-align: center;
 }
@@ -49,10 +50,6 @@ h1#alert-title {
     padding-bottom: 2rem;
 }
 
-h4#thread-content-title {
-    padding-top: 2rem;
-    padding-left: 1rem;
-}
 
 #time-restrict {
     margin-top: 1rem;
@@ -135,9 +132,19 @@ table#thread-list {
     border-collapse: collapse;
 }
 
-form {
-    padding-top: 1rem;
-    padding-right: 1rem;
+
+.form {
+    display: block;
+    width: 98vw;
+}
+
+h2.form {
+    padding-top: 2rem;
+    padding-left: 1rem;
+}
+
+textarea.form {
+    vertical-align: top;
 }
 
 ul.form li.form {
@@ -152,8 +159,8 @@ li.form {
 }
 
 label.form {
-    padding-top: 0.5rem;
-    padding-right: 5rem;
+    /* padding-top: 0.5rem; */
+    /* padding-right: 5rem; */
     order: 1;
 }
 

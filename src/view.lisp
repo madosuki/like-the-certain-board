@@ -136,7 +136,7 @@
 
 (declaim (inine create-thread-form))
 (defun create-thread-form (bbs time default-name)
-  (html5  (:h4 :class "form-title"
+  (html5  (:h2 :class "form"
                 "新規スレッド作成フォーム")
            (:form :action "/test/bbs.cgi"
                   :method "POST"
@@ -144,47 +144,47 @@
                        (:li :class "form"
                             (:label :for "subject"
                                     :class "form"
-                                    "スレッドタイトル：")
-                            (:input :name "subject"
-                                    :type "text"
-                                    :value ""
-                                    :class "form"
-                                    :required t))
+                                    "スレッドタイトル："
+                                    (:input :name "subject"
+                                            :type "text"
+                                            :value ""
+                                            :class "form"
+                                            :required t)))
                        (:li :class "form"
                             (:label :for "FROM"
                                     :class "form"
-                                    "名前:")
-                            (:input :name "FROM"
-                                    :type "text"
-                                    :value default-name
-                                    :class "form"))
+                                    "名前:"
+                                    (:input :name "FROM"
+                                            :type "text"
+                                            :value default-name
+                                            :class "form")))
                        (:li :class "form"
                             (:label :for "mail"
                                     :class "form"
-                                    "メールアドレス:")
-                            (:input :name "mail"
-                                    :type "text"
-                                    :value ""
-                                    :class "form"))
+                                    "メールアドレス:"
+                                    (:input :name "mail"
+                                            :type "text"
+                                            :value ""
+                                            :class "form")))
                        (:li :class "form"
                             (:label :for "max_line"
                                     :class "form"
-                                    "最大行指定（＊1001〜10000まで有効．それより下を指定した場合，1000になり，超えた場合は10000として扱います．）：")
-                            (:input :name "max_line"
-                                    :type "number"
-                                    :value "1000"
-                                    :class "form"))
+                                    "最大行指定（＊1001〜10000まで有効．それより下を指定した場合，1000になり，超えた場合は10000として扱います．）："
+                                    (:input :name "max_line"
+                                            :type "number"
+                                            :value "1000"
+                                            :class "form")))
                        (:li :class "form"
                             (:label :for "MESSAGE"
                                     :class "form"
-                                    "本文:")
-                            (:textarea :name "MESSAGE"
-                                       :value ""
-                                       :cols 60
-                                       :rows 10
-                                       :class "form"
-                                       :required t
-                                       nil))
+                                    "本文:"
+                                    (:textarea :name "MESSAGE"
+                                               :value ""
+                                               :cols 60
+                                               :rows 10
+                                               :class "form"
+                                               :required t
+                                               nil)))
                        (:li :class "form"
                             (:button
                              :type "submit"
@@ -259,7 +259,7 @@
                   (loop for i in thread
                         for count from 1 to (1+ (length thread))
                         collect (set-thread-row count i is-login key))
-                  (:div  (:h4 :class "form-title"
+                  (:div  (:h2 :class "form"
                               "投稿フォーム")
                          (:form :action "/test/bbs.cgi"
                                 :method "POST"
@@ -267,30 +267,30 @@
                                      (:li :class "form"
                                           (:label :for "FROM"
                                                   :class "form"
-                                                  "名前：")
-                                          (:input :name "FROM"
-                                                  :class "form"
-                                                  :type "text"
-                                                  :value default-name))
+                                                  "名前："
+                                                  (:input :name "FROM"
+                                                          :class "form"
+                                                          :type "text"
+                                                          :value default-name)))
                                      (:li :class "form"
                                           (:label :for "mail"
                                                   :class "form"
-                                                  "メールアドレス:")
-                                          (:input :name "mail"
-                                                  :type "text"
-                                                  :class "form"
-                                                  :value ""))
+                                                  "メールアドレス:"
+                                                  (:input :name "mail"
+                                                          :type "text"
+                                                          :class "form"
+                                                          :value "")))
                                      (:li :class "form"
                                           (:label :for "MESSAGE"
                                                   :class "form"
-                                                  "本文：")
-                                          (:textarea :class "form"
-                                                     :name "MESSAGE"
-                                                     :cols 60
-                                                     :rows 10
-                                                     :value ""
-                                                     :required t
-                                                     nil))
+                                                  "本文："
+                                                  (:textarea :class "form"
+                                                             :name "MESSAGE"
+                                                             :cols 60
+                                                             :rows 10
+                                                             :value ""
+                                                             :required t
+                                                             nil)))
                                      (:li :class "form"
                                           (:button :type "submit"
                                                    "送信")))
