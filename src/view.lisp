@@ -316,16 +316,17 @@
 
 (defun time-restrict-view (&key ipaddr bbs key minute mail)
   (main-content "連投規制" bbs
-                (:h1 :id "alert-title"
-                     "投稿規制")
-                (:p (format nil "Your IP Address: ~A" ipaddr))
-                (raw (if (<= minute 1440)
-                         (markup (:p (format nil "~A分経つまつで投稿できません．" minute)))
-                         (progn
-                           (markup (:p "BANされました")
-                                   (:p (format nil
-                                               "~AかTwitter公式アカウントにIPアドレスを記載して解除申請してくだされば対応します．但し，悪質な場合は永久BANとなり解除申請に応じられませんのであしからず．"
-                                               mail))))))
+                (:div :id "time-restrict"
+                 (:h1 :id "alert-title"
+                      "投稿規制")
+                 (:p (format nil "Your IP Address: ~A" ipaddr))
+                 (raw (if (<= minute 1440)
+                          (markup (:p (format nil "~A分経つまつで投稿できません．" minute)))
+                          (progn
+                            (markup (:p "BANされました")
+                                    (:p (format nil
+                                                "~AかTwitter公式アカウントにIPアドレスを記載して解除申請してくだされば対応します．但し，悪質な場合は永久BANとなり解除申請に応じられませんのであしからず．"
+                                                mail)))))))
                 (:footer :id "time-restrict"
                          (:nav
                           (raw (when key
@@ -384,6 +385,7 @@
                       (t "何かのエラー"))
                 board-url-name
                 (:div :id "error-msg"
+                      :style "text-align: center"
                       (:p message)
                       (raw (when board-url-name
                              (markup (:a :href (format nil "/~A" board-url-name)

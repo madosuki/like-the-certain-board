@@ -11,6 +11,10 @@ body {
     background-color: #EFEFEF;
 }
 
+#time-restrict {
+    text-align: center;
+}
+
 #board-list {
     text-align: center;
 }
