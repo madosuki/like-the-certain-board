@@ -48,10 +48,10 @@
                 :components
                 ((:file "main" :depends-on ("config" "view" "db"))
                  (:file "web" :depends-on ("view" "webfunctions" "utils"))
-                 (:file "view" :depends-on ("config"))
+                 (:file "view" :depends-on ("config" "db"))
                  (:file "db" :depends-on ("config"))
                  (:file "config")
-                 (:file "webfunctions" :depends-on ("utils") :depends-on ("db"))
+                 (:file "webfunctions" :depends-on ("utils" "db"))
                  (:file "utils" :depends-on ("config")))))
   :description ""
   :in-order-to ((test-op (test-op "like-certain-board-test"))))

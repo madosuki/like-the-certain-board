@@ -43,6 +43,8 @@
            :update-res-count-of-thread
            :user-table-struct
            :thread-table-struct
+           :get-default-name-from-name
+           :get-default-name-from-id
            ))
 (in-package :like-certain-board.db)
 
@@ -90,6 +92,19 @@
     (retrieve-one
      (select :* (from :board-list)
              (where (:like :url-name url-name))))))
+
+(defun get-default-name-from-name (url-name)
+  (with-connection (db)
+    (retrieve-one
+     (select :default-name (from :board-list)
+             (where (:like :url-name url-name))))))
+
+(defun get-default-name-from-id (id)
+  (with-connection (db)
+    (retrieve-one
+     (select :default-name (from :board-list)
+             (where (:= :id id))))))
+
 
 
 (defun get-thread-list (board-id)

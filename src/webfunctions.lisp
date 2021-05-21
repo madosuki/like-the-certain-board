@@ -234,7 +234,7 @@
     (when (eq text 'no-data)
       (setq text ""))
     (when (eq name 'no-data)
-      (setq name *default-name*))
+      (setq name (cadr (get-default-name-from-id board-id))))
     (if (stringp title)
         (progn
           (setq title (create-safety-strings (convert-html-special-chars title)))
@@ -301,7 +301,7 @@
     (when (and (gethash *session-login-key* *session*) (gethash *session-cap-text-key* *session*))
       (setq is-cap t))
     (when (or (null from) (eq from 'no-data))
-      (setq from *default-name*))
+      (setq from (cadr (get-default-name-from-id board-id))))
     (when (or (null mail) (eq mail 'no-data))
       (setq mail ""))
     (when (or (null bbs)
@@ -313,7 +313,7 @@
               (eq message 'no-data))
       (return-from insert-res 400))
     (when (string= from "")
-      (setq from *default-name*))
+      (setq from (cadr (get-default-name-from-id board-id))))
     (when (and (string/= time "") (< (cadr (get-res-count :key key)) (cadr (get-max-line :key key)))
                (> (get-unix-time universal-time) (parse-integer time :radix 10)))
       (with-open-file (input (format nil "~A/~A/~A.dat" *dat-path* bbs key)
@@ -326,16 +326,23 @@
                (name (car tmp))
                (trip (if (> (length tmp) 1)
                          (cadr tmp)
-                         "")))
-          (let ((res (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip :email mail :text message :ipaddr ipaddr :date universal-time)))
+                         ""))
+               (formatted-date (get-current-datetime universal-time)))
+          (let ((res (create-res
+                      :name (if is-cap (gethash *session-cap-text-key* *session*) name)
+                      :trip-key trip
+                      :email mail
+                      :text message
+                      :ipaddr ipaddr
+                      :date formatted-date)))
             (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input)
-            (update-last-modified-date-of-thread :date (get-current-datetime universal-time) :key key :board-id board-id)
+            (update-last-modified-date-of-thread :date formatted-date :key key :board-id board-id)
             (update-res-count-of-thread :key key :board-id board-id)
             (when (>= (cadr (get-res-count :key key)) (cadr (get-max-line :key key)))
               (write-sequence
                (sb-ext:string-to-octets *1001* :external-format :sjis) input)
               (update-res-count-of-thread :key key :board-id board-id)
-              (update-last-modified-date-of-thread :date (get-current-datetime universal-time) :key key :board-id board-id))
+              (update-last-modified-date-of-thread :date formatted-date :key key :board-id board-id))
             (write-log :mode :changes-result
                        :message (format nil "insert: ~A" time))))))
     status))

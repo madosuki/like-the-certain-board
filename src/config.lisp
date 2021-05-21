@@ -9,7 +9,6 @@
            :*static-directory*
            :*template-directory*
            :*solt*
-           :*default-name*
            :*default-max-length*
            :*1001*
            :*default-penalty-time*
@@ -49,9 +48,6 @@
 
 (defparameter *settings-path* (uiop:getenv "BOARD_SETTINGS_PATH"))
 
-(defvar *board-title* "")
-(defvar *default-name* "名無しさん")
-(defvar *board-name* "testboard")
 (defvar *default-max-length* 1000)
 (defvar *1001* "1001<><>Over Max Thread<> Reached max. Can't write to this thread. <>")
 (defvar *default-penalty-time* 60)
@@ -93,8 +89,6 @@
           (setq *db-hostname* db-hostname))
         (when solt
           (setq *solt* solt))
-        (when default-name
-          (setq *default-name* default-name))
         (when log-path
           (setq *log-path* log-path))))))
 

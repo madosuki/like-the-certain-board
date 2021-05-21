@@ -14,7 +14,9 @@
   (:import-from :datafly
    :encode-json)
   (:import-from :uiop
-                :read-file-string)
+   :read-file-string)
+  (:import-from :like-certain-board.db
+   :get-default-name-from-name)
   (:export :render
            :render-json
            :index-view
@@ -133,7 +135,7 @@
 
 
 (declaim (inine create-thread-form))
-(defun create-thread-form (bbs time)
+(defun create-thread-form (bbs time default-name)
   (html5  (:h4 :class "form-title"
                 "新規スレッド作成フォーム")
            (:form :action "/test/bbs.cgi"
@@ -154,7 +156,7 @@
                                     "名前:")
                             (:input :name "FROM"
                                     :type "text"
-                                    :value ""
+                                    :value default-name
                                     :class "form"))
                        (:li :class "form"
                             (:label :for "mail"
@@ -199,26 +201,27 @@
 
 
 (defun board-view (&key is-login board-name bbs thread-list time)
-  (main-content board-name bbs
-                (if is-login
-                    (:h2 "ログイン済み")
-                    "")
-                (:h1 :style "text-align: center;"
-                     board-name)
-                (:h4 :id "thread-content-title"
-                     "スレッド一覧")
-                (:table :id "thread-list"
-                        (:tr
-                         (:th "スレ名")
-                         (:th "作成日時")
-                         (:th "更新日時")
-                         (:th "レス数")
-                         (:th "最大行")
-                         (when is-login
-                           (:th "削除ボタン")))
-                        (loop for i in thread-list
-                              collect (set-thread-table-row i bbs is-login)))
-                (raw (create-thread-form bbs time))))
+  (let ((default-name (cadr (get-default-name-from-name bbs))))
+    (main-content board-name bbs
+                  (if is-login
+                      (:h2 "ログイン済み")
+                      "")
+                  (:h1 :style "text-align: center;"
+                       board-name)
+                  (:h4 :id "thread-content-title"
+                       "スレッド一覧")
+                  (:table :id "thread-list"
+                          (:tr
+                           (:th "スレ名")
+                           (:th "作成日時")
+                           (:th "更新日時")
+                           (:th "レス数")
+                           (:th "最大行")
+                           (when is-login
+                             (:th "削除ボタン")))
+                          (loop for i in thread-list
+                                collect (set-thread-table-row i bbs is-login)))
+                  (raw (create-thread-form bbs time default-name)))))
 
 (declaim (inline set-thread-row))
 (defun set-thread-row (count item is-login key)
@@ -249,65 +252,66 @@
 
 
 (defun thread-view (&key title thread bbs key time is-login)
-  (main-content title bbs
-                (:h1 :id "title"
-                     (raw title))
-                (loop for i in thread
-                      for count from 1 to (1+ (length thread))
-                      collect (set-thread-row count i is-login key))
-                (:div  (:h4 :class "form-title"
-                            "投稿フォーム")
-                       (:form :action "/test/bbs.cgi"
-                              :method "POST"
-                              (:ul :class "form"
-                                   (:li :class "form"
-                                        (:label :for "FROM"
-                                                :class "form"
-                                                "名前：")
-                                        (:input :name "FROM"
-                                                :class "form"
-                                                :type "text"
-                                                :value "名無しさん"))
-                                   (:li :class "form"
-                                        (:label :for "mail"
-                                                :class "form"
-                                                "メールアドレス:")
-                                        (:input :name "mail"
-                                                :type "text"
-                                                :class "form"
-                                                :value ""))
-                                   (:li :class "form"
-                                        (:label :for "MESSAGE"
-                                                :class "form"
-                                                "本文：")
-                                        (:textarea :class "form"
-                                                   :name "MESSAGE"
-                                                   :cols 60
-                                                   :rows 10
-                                                   :value ""
-                                                   :required t
-                                                   nil))
-                                   (:li :class "form"
-                                        (:button :type "submit"
-                                                 "送信")))
-                              (:input :name "bbs"
-                                      :value bbs
-                                      :type "hidden")
-                              (:input :name "key"
-                                      :value (format nil "~A" key)
-                                      :type "hidden")
-                              (:input :name "time"
-                                      :value (format nil "~A" time)
-                                      :type "hidden")
-                              (:input :name "submit"
-                                      :type "hidden"
-                                      :value "書き込む")))
-                (:footer :id "footer"
-                 (:nav
-                  (:ul
-                   (:li
-                    (:a :href (format nil "/~A" bbs)
-                        "板に戻る")))))))
+  (let ((default-name (cadr (get-default-name-from-name bbs))))
+    (main-content title bbs
+                  (:h1 :id "title"
+                       (raw title))
+                  (loop for i in thread
+                        for count from 1 to (1+ (length thread))
+                        collect (set-thread-row count i is-login key))
+                  (:div  (:h4 :class "form-title"
+                              "投稿フォーム")
+                         (:form :action "/test/bbs.cgi"
+                                :method "POST"
+                                (:ul :class "form"
+                                     (:li :class "form"
+                                          (:label :for "FROM"
+                                                  :class "form"
+                                                  "名前：")
+                                          (:input :name "FROM"
+                                                  :class "form"
+                                                  :type "text"
+                                                  :value default-name))
+                                     (:li :class "form"
+                                          (:label :for "mail"
+                                                  :class "form"
+                                                  "メールアドレス:")
+                                          (:input :name "mail"
+                                                  :type "text"
+                                                  :class "form"
+                                                  :value ""))
+                                     (:li :class "form"
+                                          (:label :for "MESSAGE"
+                                                  :class "form"
+                                                  "本文：")
+                                          (:textarea :class "form"
+                                                     :name "MESSAGE"
+                                                     :cols 60
+                                                     :rows 10
+                                                     :value ""
+                                                     :required t
+                                                     nil))
+                                     (:li :class "form"
+                                          (:button :type "submit"
+                                                   "送信")))
+                                (:input :name "bbs"
+                                        :value bbs
+                                        :type "hidden")
+                                (:input :name "key"
+                                        :value (format nil "~A" key)
+                                        :type "hidden")
+                                (:input :name "time"
+                                        :value (format nil "~A" time)
+                                        :type "hidden")
+                                (:input :name "submit"
+                                        :type "hidden"
+                                        :value "書き込む")))
+                  (:footer :id "footer"
+                           (:nav
+                            (:ul
+                             (:li
+                              (:a :href (format nil "/~A" bbs)
+                                  "板に戻る"))))))))
 
 
 (defun time-restrict-view (&key ipaddr bbs key minute mail)
