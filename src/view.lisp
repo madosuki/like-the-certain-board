@@ -64,7 +64,7 @@
 (setf djula:*djula-execute-package* (find-package :like-certain-board.djula))
 
 (defmacro base-html (title &body body)
-  `(html5
+  `(html5 :lang "ja"
     (:head
      (:meta :charset "utf-8")
      (:meta
