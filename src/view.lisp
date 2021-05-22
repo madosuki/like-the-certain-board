@@ -181,7 +181,7 @@
                                     (:textarea :name "MESSAGE"
                                                :value ""
                                                :cols 60
-                                               :rows 10
+                                               :rows 60
                                                :class "form"
                                                :required t
                                                nil)))
@@ -287,7 +287,7 @@
                                                   (:textarea :class "form"
                                                              :name "MESSAGE"
                                                              :cols 60
-                                                             :rows 10
+                                                             :rows 60
                                                              :value ""
                                                              :required t
                                                              nil)))

@@ -146,6 +146,8 @@ h2.form {
 
 textarea.form {
     vertical-align: top;
+    padding: 0.25rem;
+    font-family: Mona, Monapo, IPAMonaPGothic, "MS PGothic", "MS Pゴシック", sans-serif;
 }
 
 ul.form li.form {
