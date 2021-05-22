@@ -148,6 +148,8 @@ textarea.form {
     vertical-align: top;
     padding: 0.25rem;
     font-family: Mona, Monapo, IPAMonaPGothic, "MS PGothic", "MS Pゴシック", sans-serif;
+    font-size: 16px;
+    line-height: 18px;
 }
 
 ul.form li.form {
@@ -189,7 +191,10 @@ nav li {
 header {
     padding-bottom: 1rem;
     background-color: #EFEFEF;
+    border-bottom: 1px solid;
+    margin-bottom: 1rem;
 }
+
 
 .form-title {
     padding-top: 4rem;
