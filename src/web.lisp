@@ -33,6 +33,9 @@
   (let ((board-list-data (get-board-list)))
     (index-view board-list-data)))
 
+(defroute "/about" ()
+  "this is temoprary message")
+
 (defroute ("/:board-name/" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
     (if board-data
