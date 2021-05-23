@@ -25,7 +25,6 @@
 (clear-routing-rules *web*)
 
 
-
 ;;
 ;; Routing rules
 
@@ -222,7 +221,7 @@
          (board-data (get-a-board-name-from-name board-name)))
     (cond ((null board-data)
            (on-exception *web* 404))
-          ((or (null mode) (null (string= mode "login")) (null (string= mode "logout")))
+          ((or (null mode))
            (set-response-status 400)
            (next-route))
           ((equal mode "login")
@@ -234,10 +233,11 @@
                (progn
                  (setq user-name (create-safety-strings user-name))
                  (let ((login-check (login board-name user-name password date)))
-                   (cond ((eq login-check 'logged-in)
+                   (cond ((eq login-check :logged-in)
                           (login-view :board-name (getf board-data :name) :board-url-name board-name :is-login 'logged-in))
-                         ((eq login-check 'success)
-                          (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
+                         ((eq login-check :success)
+                          (setf (getf (response-headers *response*) :location)
+                           (concatenate 'string "/" board-name))
                           (set-response-status 302)
                           (next-route))
                          (t
@@ -293,14 +293,13 @@
            (set-response-status 400)
            "invalid param")
           ((numberp line-number)
-           (if (delete-line-in-dat key line-number)
-                 (let* ((filepath (format nil "~A/~A/~A.dat" *dat-path* board-name key))
-                        (dat-list (dat-to-keyword-list filepath))
-                        (title (cadr (member :title (car dat-list))))
-                        (current-unix-time (get-unix-time (get-universal-time)))
-                        (is-login (gethash *session-login-key* *session*)))
-                   (render #P "thread.html" (list :title title :thread dat-list :bbs board-name :key key :time current-unix-time :is-login is-login)))
-                 "faild delete."))
+           (if (delete-line-in-dat key board-name line-number)
+               (progn
+                 (set-response-status 302)
+                 (setf (getf (response-headers *response*) :location)
+                       (format nil "/test/read.cgi/~A/~A" board-name key))
+                 (next-route))
+               "faild delete."))
           (t
            (on-exception *web* 404)))))
 
@@ -312,8 +311,8 @@
         (board-data (get-a-board-name-from-name board-name)))
     (cond ((or (null mode)
                (null board-data)
-               ;; (null is-login)
-               ;; (null is-admin)
+               (null is-login)
+               (null is-admin)
                )
            (set-response-status 403)
            "Access Denied")
@@ -322,7 +321,7 @@
                     (check-exist-row (parse-integer key)))
                (let ((filepath (format nil "~A/~A/~A.dat" *dat-path* board-name key)))
                  (when (probe-file filepath)
-                   (delete-thread key board-name)
+                   (delete-thread key (getf board-data :id))
                    (delete-file filepath)
                    (setf (getf (response-headers *response*) :location) (concatenate 'string "/" board-name))
                    (set-response-status 302)

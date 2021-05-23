@@ -22,7 +22,8 @@
    :create-user
    :generate-dat-name
    :convert-bunch-of-thread-to-kakolog
-   :kakolog-process))
+   :kakolog-process
+   :delete-line-in-dat))
 (in-package :like-certain-board.webfunctions)
 
 (deftype mysql-true-type (n) `(= n 1))
@@ -102,8 +103,8 @@
                          :element-type '(unsigned-byte 8))
       (write-sequence (sb-ext:string-to-octets result :external-format :CP932) out))))
 
-(defun delete-line-in-dat (key line-number)
-  (let* ((path (concatenate 'string *dat-path* key ".dat"))
+(defun delete-line-in-dat (key bbs line-number)
+  (let* ((path (format nil "~A/~A/~A.dat" *dat-path* bbs key))
          (outpath (concatenate 'string path ".out"))
          (is-not-error nil))
     (handler-case (change-line-in-dat path outpath *delete-message* line-number)
@@ -537,20 +538,20 @@
          (checked (check-login-possible board-name user-name hash))
          (date (get-current-datetime universal-time)))
     (cond ((eq checked 'logged-in)
-           'logged-in)
+           :logged-in)
           ((eq checked t)
-           (let ((db-data (get-user-table board-name user-name))
-                 (is-admin (getf db-data :is-admin))
-                 (cap-text (getf db-data :cap-text)))
+           (let* ((db-data (get-user-table board-name user-name))
+                  (is-admin (getf db-data :is-admin))
+                  (cap-text (getf db-data :cap-text)))
              (when is-admin
                (setf (gethash *session-admin-key* *session*) t))
              (when (and (not (null cap-text)) (string/= cap-text ""))
                (setf (gethash *session-cap-text-key* *session*) cap-text)))
            (setf (gethash *session-login-key* *session*) t)
            (update-user-table board-name user-name date)
-           'success)
+           :success)
           (t
-           'invalid-username-or-password))))
+           :invalid-username-or-password))))
 
 (defun create-user (board-name user-name password date &optional (is-admin nil) (cap-text nil))
   (unless (or user-name password)

@@ -101,35 +101,32 @@
                                                       (getf i :name)))))))))
 
 (defun set-thread-table-row (item bbs is-login)
-  (let ((normal (markup
-                 (:tr
-                  (:td :class "cell-spacing"
-                       (:a :href (format nil "/test/read.cgi/~A/~A" bbs (getf item :unixtime))
-                           (raw (getf item :title))))
-                  (:td :class "cell-spacing"
-                       (getf item :create-date))
-                  (:td :class "cell-spacing"
-                       (getf item :last-modified-date))
-                  (:td :class "cell-spacing"
-                       (format nil "~A" (getf item :res-count)))
-                  (:td :class "cell-spacing"
-                       (format nil "~A" (getf item :max-line))))))
-        (special
-          (if is-login
-              (markup (:td :class "cell-spacing"
-                           (:form :action (format nil "/~A/api/thread" bbs)
-                                  :method "POST"
-                                  (:input :name "key"
-                                          :type "hidden"
-                                          :value (format nil "~A" (getf item :unixtime)))
-                                  (:input :name "mode"
-                                          :type "hidden"
-                                          :value "delete")
-                                  (:button :name "submit"
-                                           :type "submit"
-                                           "削除"))))
-              "")))
-    (concatenate 'string normal special)))
+  (markup
+   (:tr
+    (:td :class "cell-spacing"
+         (:a :href (format nil "/test/read.cgi/~A/~A" bbs (getf item :unixtime))
+             (raw (getf item :title))))
+    (:td :class "cell-spacing"
+         (getf item :create-date))
+    (:td :class "cell-spacing"
+         (getf item :last-modified-date))
+    (:td :class "cell-spacing"
+         (format nil "~A" (getf item :res-count)))
+    (:td :class "cell-spacing"
+         (format nil "~A" (getf item :max-line)))
+    (raw (when is-login
+           (markup (:td :class "cell-spacing"
+                        (:form :action (format nil "/~A/api/thread" bbs)
+                               :method "POST"
+                               (:input :name "key"
+                                       :type "hidden"
+                                       :value (format nil "~A" (getf item :unixtime)))
+                               (:input :name "mode"
+                                       :type "hidden"
+                                       :value "delete")
+                               (:button :name "submit"
+                                        :type "submit"
+                                        "削除")))))))))
 
 
 
@@ -204,7 +201,7 @@
   (let ((default-name (cadr (get-default-name-from-name bbs))))
     (main-content board-name bbs
                   (if is-login
-                      (:h2 "ログイン済み")
+                      (raw (markup (:h2 "ログイン済み")))
                       "")
                   (:h1 :style "text-align: center;"
                        board-name)
@@ -218,27 +215,27 @@
                            (:th "レス数")
                            (:th "最大行")
                            (when is-login
-                             (:th "削除ボタン")))
+                             (raw (markup (:th "削除ボタン")))))
                           (loop for i in thread-list
                                 collect (set-thread-table-row i bbs is-login)))
                   (raw (create-thread-form bbs time default-name)))))
 
 (declaim (inline set-thread-row))
-(defun set-thread-row (count item is-login key)
+(defun set-thread-row (count item bbs is-login key)
   (markup
    (:dl :id (format nil "~A" count)
         (when is-login
-          (:form :action (format nil "/~A/api/line" bbs)
-                 :method "POST"
-                 (:input :name "line"
-                         :type "hidden"
-                         :value (format nil "~A" count))
-                 (:input :name "key"
-                         :type "hidden"
-                         :value (format nil "~A" key))
-                 (:button :name "submit"
-                          :type "submit"
-                          (format nil "~A番目の行を削除" count))))
+          (raw (markup (:form :action (format nil "/~A/api/line" bbs)
+                              :method "POST"
+                              (:input :name "line"
+                                      :type "hidden"
+                                      :value (format nil "~A" count))
+                              (:input :name "key"
+                                      :type "hidden"
+                                      :value (format nil "~A" key))
+                              (:button :name "submit"
+                                       :type "submit"
+                                       (format nil "~A番目の行を削除" count))))))
         (:dt
          (format nil "~A 名前：" count)
          (:font
@@ -258,7 +255,7 @@
                        (raw title))
                   (loop for i in thread
                         for count from 1 to (1+ (length thread))
-                        collect (set-thread-row count i is-login key))
+                        collect (set-thread-row count i bbs is-login key))
                   (:div  (:h2 :class "form"
                               "投稿フォーム")
                          (:form :action "/test/bbs.cgi"

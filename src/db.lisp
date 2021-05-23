@@ -42,7 +42,9 @@
            :get-max-line
            :update-res-count-of-thread
            :user-table-struct
+           :make-user-table-struct
            :thread-table-struct
+           :make-thread-table-struct
            :get-default-name-from-name
            :get-default-name-from-id
            ))
