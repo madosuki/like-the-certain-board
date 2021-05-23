@@ -243,7 +243,10 @@
           (:b
            (raw (getf item :name)))
           (getf item :trip))
-         (format nil "[~A] 投稿日：~A ~A" (getf item :email) (getf item :date) (getf item :id)))
+         (let ((id (getf item :id)))
+           (if id
+               (format nil "[~A] 投稿日：~A ~A" (getf item :email) (getf item :date) id)
+               (format nil "[~A] 投稿日：~A" (getf item :email) (getf item :date)))))
         (:dd :class "thread_text"
              (raw (getf item :text))))))
 
