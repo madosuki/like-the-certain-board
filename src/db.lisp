@@ -38,6 +38,7 @@
            :create-thread-in-db
            :get-table-column-count
            :update-last-modified-date-of-thread
+           :update-last-dates-of-thread
            :get-res-count
            :get-max-line
            :update-res-count-of-thread
@@ -73,6 +74,7 @@
   (title "" :type string)
   (create-date "" :type string)
   (last-modified-date "" :type string)
+  (last-rise-date "" :type string)
   (res-count 1 :type integer)
   (unixtime 0 :type intger)
   (max 1000 :type integer))
@@ -113,7 +115,7 @@
   (with-connection (db)
     (retrieve-all
      (select :* (from :threads)
-             (order-by (:desc :last-modified-date))
+             (order-by (:desc :last-rise-date))
              (where (:= :board-id board-id))
              (limit *max-thread-list*)))))
 
@@ -154,7 +156,7 @@
      (select (fields :title :res-count :unixtime)
              (from :threads)
              (where (:= :board-id board-id))
-             (order-by (:desc :last-modified-date))))))
+             (order-by (:desc :last-rise-date))))))
 
 (defun delete-thread (key board-id)
   (with-connection (db)
@@ -234,6 +236,8 @@
                                  :not-null t)
                     (last-modified-date :type 'datetime
                                         :not-null t)
+                    (last-rise-date :type 'datetime
+                                   :not-null t)
                     (res-count :type 'integer
                                :not-null t
                                :default 1)
@@ -303,6 +307,7 @@
                     (set= :title title
                           :create-date date
                           :last-modified-date date
+                          :last-rise-date date
                           :res-count 1
                           :unixtime unixtime
                           :max-line (if (or (null max-line) (< max-line *default-max-length*))
@@ -322,6 +327,15 @@
     (execute
      (update :threads
              (set= :last-modified-date date)
+             (where (:and (:like :unixtime key)
+                          (:= :board-id board-id)))))))
+
+(defun update-last-dates-of-thread (&key date key board-id)
+  (with-connection (db)
+    (execute
+     (update :threads
+             (set= :last-modified-date date
+                   :last-rise-date date)
              (where (:and (:like :unixtime key)
                           (:= :board-id board-id)))))))
 

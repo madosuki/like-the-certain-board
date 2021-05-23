@@ -337,13 +337,17 @@
                       :ipaddr ipaddr
                       :date formatted-date)))
             (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input)
-            (update-last-modified-date-of-thread :date formatted-date :key key :board-id board-id)
+            (if (equal mail "sage")
+                (update-last-modified-date-of-thread :date formatted-date :key key :board-id board-id)
+                (update-last-dates-of-thread :date formatted-date :key key :board-id board-id))
             (update-res-count-of-thread :key key :board-id board-id)
             (when (>= (cadr (get-res-count :key key)) (cadr (get-max-line :key key)))
               (write-sequence
                (sb-ext:string-to-octets *1001* :external-format :sjis) input)
               (update-res-count-of-thread :key key :board-id board-id)
-              (update-last-modified-date-of-thread :date formatted-date :key key :board-id board-id))
+              (if (equal mail "sage")
+                  (update-last-modified-date-of-thread :date formatted-date :key key :board-id board-id)
+                  (update-last-dates-of-thread :date formatted-date :key key :board-id board-id)))
             (write-log :mode :changes-result
                        :message (format nil "insert: ~A" time))))))
     status))
