@@ -23,6 +23,10 @@ body {
     text-align: center;
 }
 
+#board-list h1 {
+    margin-bottom: 1rem;
+}
+
 #kakolog-thread h1 {
     padding-bottom: 2rem;
     padding-left: 1rem;
