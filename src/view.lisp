@@ -136,7 +136,7 @@
 
 (declaim (inine create-thread-form))
 (defun create-thread-form (bbs time default-name)
-  (html5  (:h2 :class "form"
+  (html5  (:h3 :class "form"
                 "新規スレッド作成フォーム")
            (:form :action "/test/bbs.cgi"
                   :method "POST"
@@ -208,7 +208,7 @@
                       "")
                   (:h1 :style "text-align: center;"
                        board-name)
-                  (:h4 :id "thread-content-title"
+                  (:h2 :id "thread-content-title"
                        "スレッド一覧")
                   (:table :id "thread-list"
                           (:tr

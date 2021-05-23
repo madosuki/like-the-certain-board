@@ -11,6 +11,9 @@ body {
     background-color: #EFEFEF;
 }
 
+#thread-content-title {
+    margin-left: 1rem;
+}
 
 #time-restrict {
     text-align: center;
@@ -139,7 +142,7 @@ table#thread-list {
     width: 98vw;
 }
 
-h2.form {
+h3.form {
     padding-top: 2rem;
     padding-left: 1rem;
 }
