@@ -518,9 +518,9 @@
     (unless db-data
       (return-from check-time-over-logged-in 'not-found))
     (let ((latest-date (getf db-data :latest-date))
-          (is-logged-in (getf db-data :is-logged-in))
-          (utc-current (- universal-time (* 9 60 60))))
-      (if (and (= is-logged-in 1) (> (abs (- utc-current latest-date)) (* 1 60 60)))
+          (is-logged-in (getf db-data :is-logged-in)))
+      (if (and (= is-logged-in 1)
+               (> (abs (- universal-time latest-date)) (* 1 60 60)))
           'time-over
           nil))))
 
