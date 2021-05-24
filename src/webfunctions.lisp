@@ -31,8 +31,6 @@
 (defvar *mysql-true* 1)
 (defvar *mysql-false* 0)
 
-(defvar *posted-table* "posted_table")
-
 
 (defmacro caddddr (v)
   `(caddr (cddr ,v)))

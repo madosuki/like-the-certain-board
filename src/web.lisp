@@ -196,8 +196,9 @@
         (on-exception *web* 404))))
 
 (defroute ("/:board-name/login" :method :GET) (&key board-name)
-  (let ((board-data (get-a-board-name-from-name board-name)))
-    (if board-data
+  (let ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
+        (board-data (get-a-board-name-from-name board-name)))
+    (if (or  (equal ipaddr *admin-ipaddr*) board-data)
         (login-view :board-url-name board-name
                     :board-name (getf board-data :name)
                     :is-login (if (gethash *session-login-key* *session*)

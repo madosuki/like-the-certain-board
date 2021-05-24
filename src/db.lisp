@@ -190,41 +190,6 @@
         t
         nil)))
 
-(defun get-posted-values (table-name session)
-  (with-connection (db)
-    (retrieve-one
-     (select (fields :count :appearance_date :is_penalty :wait_time)
-             (from (intern table-name))
-             (where (:like :session_data session))))))
-
-(defun set-posted-count-from-db (table-name session date n
-                                        &optional (is-penalty nil)
-                                          (wait-time *default-penalty-time*))
-  (with-connection (db)
-    (execute
-     (update (intern table-name)
-             (set= :count n
-                   :appearance_date date
-                   :is_penalty (if is-penalty 1 0)
-                   :wait_time wait-time)
-             (where (:like :session_data session))))))
-
-(defun insert-posted-from-db (table-name session date)
-  (with-connection (db)
-    (execute
-     (insert-into (intern table-name)
-                  (set= :session_data session
-                        :appearance_date date
-                        :is_penalty 0
-                        :count 1
-                        :wait_time *default-penalty-time*)))))
-
-(defun delete-posted-from-db (session)
-  (with-connection (db)
-    (execute
-     (delete-from :posted-table
-                  (where (:= :session_data session))
-                  (limit 1)))))
 
 (defun init-threads-table ()
   (with-connection (db)
