@@ -254,8 +254,8 @@
   (with-connection (db)
     (retrieve-one
      (select :*
-             (from :user_table)
-             (where (:and (:like :user_name user-name) (:like :board_name board-name)))))))
+             (from :user-table)
+             (where (:and (:like :user-name user-name) (:like :board-name board-name)))))))
 
 (defun insert-user-table (user-data)
   (let ((user-name (user-table-struct-user-name user-data))
@@ -267,22 +267,22 @@
         (cap-text (user-table-struct-cap-text user-data)))
     (with-connection (db)
       (execute
-       (insert-into :user_table
+       (insert-into :user-table
                     (set=
-                     :board_name board-name
-                     :user_name user-name
+                     :board-name board-name
+                     :user-name user-name
                      :hash hash
-                     :create_date create-date
-                     :latest_date latest-date
-                     :is_admin is-admin
-                     :cap_text cap-text))))))
+                     :create-date create-date
+                     :latest-date latest-date
+                     :is-admin is-admin
+                     :cap-text cap-text))))))
 
 (defun update-user-table (board-name user-name date)
   (with-connection (db)
     (execute
-     (update :user_table
-             (set= :latest_date date)
-             (where (:and (:like :user_name user-name) (:like :board_name board-name)))))))
+     (update :user-table
+             (set= :latest-date date)
+             (where (:and (:like :user-name user-name) (:like :board-name board-name)))))))
 
 (defun insert-kakolog-table (unixtime title board-id)
   (with-connection (db)
