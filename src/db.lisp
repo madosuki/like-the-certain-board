@@ -195,7 +195,10 @@
   (with-connection (db)
     (execute
      (create-table (:threads :if-exists-not t)
-                   ((title :type 'text
+                   ((id :type 'integer
+                        :primary-key t
+                        :auto-increment t)
+                    (title :type 'text
                            :not-null t)
                     (create-date :type 'datetime
                                  :not-null t)

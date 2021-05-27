@@ -452,3 +452,7 @@
                               (:li
                                (:a :href (format nil "/~A" board-name)
                                    "板に戻る")))))))))
+
+(defun about-page-view ()
+  (main-content "About"
+                (:p "アバウトページ")))
