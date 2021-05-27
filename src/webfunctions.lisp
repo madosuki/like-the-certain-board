@@ -127,7 +127,11 @@
 (defmacro hour-to-second (h)
   `(* ,h 60 60))
 
-(defun check-abuse-post (before-unixtime current-unixtime)
+(defun check-abuse-post (before-unixtime current-unixtime user-agent)
+  (unless user-agent
+    (return-from check-abuse-post nil))
+  (when (cl-ppcre:scan "Monazilla" user-agent)
+    (return-from check-abuse-post t))
   (unless before-unixtime
     (return-from check-abuse-post t))
   (if (< (- current-unixtime before-unixtime) 60)
