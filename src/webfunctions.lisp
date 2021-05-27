@@ -130,7 +130,7 @@
 (defun check-abuse-post (before-unixtime current-unixtime user-agent)
   (unless user-agent
     (return-from check-abuse-post nil))
-  (when (cl-ppcre:scan "Monazilla" user-agent)
+  (when (cl-ppcre:scan "Monazilla/1.00" user-agent)
     (return-from check-abuse-post t))
   (unless before-unixtime
     (return-from check-abuse-post t))
