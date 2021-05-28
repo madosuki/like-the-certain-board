@@ -17,6 +17,8 @@
    :read-file-string)
   (:import-from :like-certain-board.db
    :get-default-name-from-name)
+  (:import-from :like-certain-board.utils
+                :separate-numbers-from-key-for-kako)
   (:export :render
            :render-json
            :index-view
@@ -405,7 +407,7 @@
                          "Not Found"))))
 
 
-(defun kakolog-view (title html-path board-url-name key)
+(defun kakolog-view (title html-path board-url-name first second key)
   (main-content (format nil "過去ログ: ~A" title) nil
                 (:div :id "kakolog-thread"
                       (raw (read-file-string html-path))
@@ -418,19 +420,22 @@
                                                      "板に戻る")
                                                  (:a :href (format nil "/~A/kakolog" board-url-name)
                                                      "過去ログ倉庫に戻る")
-                                                 (:a :href (format nil "/~A/kakolog/dat/~A.dat" board-url-name key)
+                                                 (:a :href (format nil "/~A/kako/~A/~A/~A.dat"
+                                                                   board-url-name first second key)
                                                      :download (format nil "~A.dat" key)
                                                      "datをダウンロードする場合はこちら")))))))))))
 
 
 (defun kakolog-list-view (board-name &optional (data nil))
   (flet ((set-kakolog-list-table (columns)
-           (let ((unixtime (getf columns :unixtime))
-                 (title (getf columns :title)))
+           (let* ((unixtime (getf columns :unixtime))
+                  (title (getf columns :title))
+                  (separated (separate-numbers-from-key-for-kako unixtime)))
              (markup
               (:tr
                (:td :class "cell-spacing"
-                    (:a :href (format nil "/~A/kakolog/~A" board-name unixtime)
+                    (:a :href (format nil "/~A/kako/~A/~A/~A.html"
+                                      board-name (car separated) (cdr separated) unixtime)
                         title))
                (:td :class "cell-spacing"
                     unixtime))))))

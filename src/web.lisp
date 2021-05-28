@@ -10,7 +10,9 @@
         :cl-fad
         :generate-like-certain-board-strings)
   (:import-from :like-certain-board.utils
-                :write-log)
+                :write-log
+                :check-whether-integer
+                :separate-numbers-from-key-for-kako)
   (:export :*web*))
 (in-package :like-certain-board.web)
 
@@ -83,8 +85,9 @@
 (defroute ("/test/read.cgi/:board-name/:unixtime" :method :GET) (&key board-name unixtime)
   (let* ((dat-filepath (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime))
          (is-login (gethash *session-login-key* *session*))
-         (board-data (get-a-board-name-from-name board-name)))
-    (if board-data
+         (board-data (get-a-board-name-from-name board-name))
+         (is-number (check-whether-integer unixtime)))
+    (if (or board-data (eq is-number :integer-string))
         (if (probe-file dat-filepath)
             (let* ((dat-list (dat-to-keyword-list dat-filepath))
                    (title (cadr (member :title (car dat-list))))
@@ -95,27 +98,45 @@
                            :key unixtime
                            :time current-unix-time
                            :is-login is-login))
-            (let ((html-path (format nil "~A/~A/~A.html" *kakolog-html-path* board-name unixtime)))
+            (let* ((separated (separate-numbers-from-key-for-kako unixtime))
+                   (html-path (if (or (eq separated :small) (eq separated :not-numbers))
+                                  nil
+                                  (format nil "~A/~A/~A/~A/~A.html"
+                                          *kakolog-html-path* board-name
+                                          (car separated) (cdr separated)
+                                          unixtime))))
               (if (probe-file html-path)
                   (progn
                     (setf (getf (response-headers *response*) :location)
-                          (format nil "/~A/kakolog/~A" board-name unixtime))
+                          (format nil "/~A/kako/~A/~A/~A.html"
+                                  board-name (car separated) (cdr separated) unixtime))
                     (set-response-status 302)
                     (next-route))
                   (on-exception *web* 404))))
         (on-exception *web* 404))))
 
-(defroute ("/:board-name/kakolog/:unixtime" :method :GET) (&key board-name unixtime)
-  (let ((path (format nil "~A/~A/~A.html" *kakolog-html-path* board-name unixtime))
-        (board-data (get-a-board-name-from-name board-name)))
+(defroute ("/:board-name/kako/:four-digit-numbers/:five-digit-numbers/:unixtime.html" :method :GET) (&key board-name four-digit-numbers five-digit-numbers unixtime)
+  (let ((path (format nil "~A/~A/~A/~A/~A.html" *kakolog-html-path* board-name four-digit-numbers five-digit-numbers unixtime))
+        (board-data (get-a-board-name-from-name board-name))
+        (is-number-for-unixtime (check-whether-integer unixtime))
+        (is-number-for-four-digit-numbers (check-whether-integer four-digit-numbers))
+        (is-number-for-five-digit-numbers (check-whether-integer five-digit-numbers)))
+    (format t "~%~A, ~A, ~A~%~A~%"
+            is-number-for-unixtime
+            is-number-for-four-digit-numbers
+            is-number-for-five-digit-numbers
+            path)
     (if (and (not (null board-data))
+             (eq is-number-for-unixtime :integer-string)
+             (eq is-number-for-four-digit-numbers :integer-string)
+             (eq is-number-for-five-digit-numbers :integer-string)
              (probe-file path))
         (let* ((data (get-a-kakolog-thread unixtime (getf board-data :id)))
                (title (if data
                           (getf data :title)
                           nil)))
           (if title
-              (kakolog-view title path board-name unixtime)
+              (kakolog-view title path board-name four-digit-numbers five-digit-numbers unixtime)
               (on-exception *web* 404)))
         (on-exception *web* 404))))
 
@@ -171,25 +192,43 @@
 
 
 (defroute ("/:board-name/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
-  (let ((pathname (probe-file (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime)))
-        (board-data (get-a-board-name-from-name board-name)))
+  (let ((path (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime))
+        (board-data (get-a-board-name-from-name board-name))
+        (is-number (check-whether-integer unixtime)))
     (if (and (not (null board-data))
-             (not (null pathname)))
-        (progn
-          (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
-          (setf (response-body *response*) pathname))
+             (eq is-number :integer-string))
+        (if (probe-file path)
+            (progn (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
+                   (setf (response-body *response*) (pathname path)))
+            (let ((separated (separate-numbers-from-key-for-kako unixtime)))
+              (if (or (eq separated :small) (eq separated :not-numbers))
+                  (progn (set-response-status 404)
+                         "")
+                  (progn
+                    (setf (getf (response-headers *response*) :location)
+                          (format nil "/~A/kako/~A/~A/~A.dat"
+                                  board-name (car separated) (cdr separated) unixtime))
+                    (set-response-status 302)
+                    (next-route)))))
         (progn
           (set-response-status 404)
           ""))))
 
-(defroute ("/:board-name/kakolog/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
-  (let ((path (probe-file (format nil "~A/~A/~A.dat" *kakolog-dat-path* board-name unixtime)))
-        (board-data (get-a-board-name-from-name board-name)))
+(defroute ("/:board-name/kako/:four-digit-numbers/:five-digit-numbers/:unixtime.dat" :method :GET) (&key board-name four-digit-numbers five-digit-numbers unixtime)
+  (let ((path (format nil "~A/~A/~A/~A/~A.dat" *kakolog-dat-path* board-name four-digit-numbers five-digit-numbers unixtime))
+        (board-data (get-a-board-name-from-name board-name))
+        (is-number-for-unixtime (check-whether-integer unixtime))
+        (is-number-for-four-digit-numbers (check-whether-integer four-digit-numbers))
+        (is-number-for-five-digit-numbers (check-whether-integer five-digit-numbers)))
     (if (and (not (null board-data))
-             (not (null path)))
+             (eq is-number-for-unixtime :integer-string)
+             (eq is-number-for-four-digit-numbers :integer-string)
+             (eq is-number-for-five-digit-numbers :integer-string)
+             (probe-file path))
         (progn
           (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
-          (setf (response-body *response*) path))
+          (setf (response-body *response*) (pathname path))
+          (next-route))
         (on-exception *web* 404))))
 
 (defroute ("/:board-name/SETTING.TXT" :method :GET) (&key board-name)
@@ -317,8 +356,8 @@
         (board-data (get-a-board-name-from-name board-name)))
     (cond ((or (null mode)
                (null board-data)
-               (null is-login)
-               (null is-admin)
+               ;; (null is-login)
+               ;; (null is-admin)
                )
            (set-response-status 403)
            "Access Denied")

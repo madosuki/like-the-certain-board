@@ -9,7 +9,9 @@
         :cl-fad
    :generate-like-certain-board-strings)
   (:import-from :like-certain-board.utils
-                :write-log)
+                :write-log
+                :separate-numbers-from-key-for-kako
+                :check-whether-integer)
   (:export
    :put-thread-list
    :to-kakolog
@@ -592,12 +594,9 @@
           while line
           collect line)))
 
-(defun save-html (board-url-name unixtime html)
+(defun save-html (&key board-url-name html outpath)
   (handler-case
-      (progn (with-open-file (out-s (format nil "~A/~A/~A.html"
-                                            *kakolog-html-path*
-                                            board-url-name
-                                            unixtime)
+      (progn (with-open-file (out-s outpath
                                     :direction :output
                                     :if-does-not-exist :create
                                     :if-exists :supersede)
@@ -609,50 +608,88 @@
       nil)))
 
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
-(defun to-kakolog (board-url-name unixtime dat-file-path)
+(defun to-kakolog (board-url-name dat-file-path outpath)
   (let ((html (dat-to-html dat-file-path)))
-    (if (save-html board-url-name unixtime html)
+    (if (save-html :board-url-name board-url-name
+                   :html html
+                   :outpath outpath)
         'success
         nil)))
 
+
 (defun kakolog-process (&key key title board-url-name board-id)
-  (let* ((orig-dat-filepath (format nil "~A/~A/~A.dat" *dat-path* board-url-name key))
-         (kakolog-dat-dir-path (format nil "~A/~A" *kakolog-dat-path* board-url-name))
-         (kakolog-html-dir-path (format nil "~A/~A" *kakolog-html-path* board-url-name))
-         (kakolog-dat-filepath (format nil "~A/~A.dat" kakolog-dat-dir-path key))
-         (kakolog-html-filepath (format nil "~A/~A.html" kakolog-html-dir-path key)))
-    (if (probe-file orig-dat-filepath)
-            (if (to-kakolog board-url-name key orig-dat-filepath)
-                (let ((c nil))
-                  (unless (cl-fad:directory-exists-p kakolog-dat-dir-path)
-                    (ensure-directories-exist kakolog-dat-dir-path))
-                  (unless (cl-fad:directory-exists-p kakolog-html-dir-path)
-                    (ensure-directories-exist kakolog-html-dir-path))
-                  (handler-case (copy-file orig-dat-filepath kakolog-dat-filepath)
-                    (error (e)
-                      (write-log :mode :error
-                                 :message (format nil "Error in kakolog-process: ~A" e))
-                      (delete-file kakolog-dat-filepath)
-                      (delete-file kakolog-html-filepath)
-                      (setq c 'failed-copy-from-dat)))
-                  (if (null c)
-                      (if (delete-file orig-dat-filepath)
-                          (progn (delete-thread key board-id)
-                                 (insert-kakolog-table key title board-id)
-                                 'success)
-                          (progn
-                            (delete-file kakolog-dat-filepath)
-                            (delete-file kakolog-html-filepath)
-                            'failed-delete-dat))
-                      c))
-                (progn
-                  (write-log :mode :error
-                             :message (format nil "failed convert dat to html: ~A" orig-dat-filepath))
-                  'faild-convert-dat-to-html))
-            (progn
-              (write-log :mode :error
-                         :message (format nil "not exists dat file: ~A" orig-dat-filepath))
-              'not-exists-that-a-dat-file))))
+  (let ((separated (separate-numbers-from-key-for-kako key)))
+    (if (or (eq separated :not-numbers) (eq separated :small))
+        (progn
+          (write-log :mode :error
+                     :message separated)
+          :failed)
+        (let* ((1st (car separated))
+               (2nd (cdr separated))
+               (orig-dat-filepath (format nil "~A/~A/~A.dat"
+                                          *dat-path* board-url-name key))
+               (kakolog-dat-dir-root-path (format nil "~A/~A/" *kakolog-dat-path* board-url-name))
+               (kakolog-dat-dir-path-with-4digit (format nil "~A~A"
+                                                   kakolog-dat-dir-root-path
+                                                   1st))
+               (kakolog-dat-dir-path (format nil "~A/~A/"
+                                             kakolog-dat-dir-path-with-4digit
+                                             2nd))
+               (kakolog-dat-filepath (format nil "~A~A.dat" kakolog-dat-dir-path key))
+               (kakolog-html-dir-root-path (format nil "~A/~A/" *kakolog-html-path* board-url-name))
+               (kakolog-html-dir-path-with-4digit (format nil "~A~A/"
+                                                          kakolog-html-dir-root-path
+                                                          1st))
+               (kakolog-html-dir-path (format nil "~A~A/"
+                                             kakolog-html-dir-path-with-4digit
+                                             2nd))
+               (kakolog-html-filepath (format nil "~A~A.html" kakolog-html-dir-path key)))
+          (if (probe-file orig-dat-filepath)
+              (if (to-kakolog board-url-name orig-dat-filepath kakolog-html-filepath)
+                  (let ((c nil))
+                    (unless (cl-fad:directory-exists-p kakolog-dat-dir-root-path)
+                      (ensure-directories-exist kakolog-dat-dir-root-path))
+                    (unless (cl-fad:directory-exists-p kakolog-dat-dir-path-with-4digit)
+                      (ensure-directories-exist kakolog-dat-dir-path-with-4digit))
+                    (unless (cl-fad:directory-exists-p kakolog-dat-dir-path)
+                      (ensure-directories-exist kakolog-dat-dir-path))
+                    (unless (cl-fad:directory-exists-p kakolog-html-dir-root-path)
+                      (ensure-directories-exist kakolog-html-dir-root-path))
+                    (unless (cl-fad:directory-exists-p kakolog-html-dir-path-with-4digit)
+                      (ensure-directories-exist kakolog-html-dir-path-with-4digit))
+                    (unless (cl-fad:directory-exists-p kakolog-html-dir-path)
+                      (ensure-directories-exist kakolog-html-dir-path))
+                    (handler-case (copy-file orig-dat-filepath kakolog-dat-filepath)
+                      (error (e)
+                        (write-log :mode :error
+                                   :message (format nil "Error in kakolog-process: ~A" e))
+                        (when (probe-file kakolog-dat-filepath)
+                          (delete-file kakolog-dat-filepath))
+                        (when (probe-file kakolog-html-filepath)
+                          (delete-file kakolog-html-filepath))
+                        (setq c :failed-copy-from-dat)))
+                    (if (null c)
+                        (if (probe-file orig-dat-filepath)
+                            (progn
+                              (delete-file orig-dat-filepath)
+                              (delete-thread key board-id)
+                              (insert-kakolog-table key title board-id)
+                              :success)
+                            (progn
+                              (when (probe-file kakolog-dat-filepath)
+                                (delete-file kakolog-dat-filepath))
+                              (when (probe-file kakolog-html-filepath)
+                                (delete-file kakolog-html-filepath))
+                              :failed-delete-dat))
+                        c))
+                  (progn
+                    (write-log :mode :error
+                               :message (format nil "failed convert dat to html: ~A" orig-dat-filepath))
+                    :faild-convert-dat-to-html))
+              (progn
+                (write-log :mode :error
+                           :message (format nil "not exists dat file: ~A" orig-dat-filepath))
+                :not-exists-that-a-dat-file))))))
 
 (defun convert-bunch-of-thread-to-kakolog (board-id)
   (let ((thread-list (if board-id
@@ -667,3 +704,4 @@
              (title (getf x :title)))
         (push (cons key (kakolog-process :key key :title title :board-url-name board-url-name :board-id board-id)) result)))
     (nreverse result)))
+
