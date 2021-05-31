@@ -356,7 +356,7 @@
                        :message (format nil "insert: ~A" time))))))
     status))
 
-(defun put-thread-list (board-name board-title web)
+(defun put-thread-list (board-name board-title web url)
   (let ((board-list-data (get-a-board-name-from-name board-name)))
     (if board-list-data
         (progn
@@ -370,7 +370,8 @@
                         :bbs board-name
                         :time (get-unix-time (get-universal-time))
                         :thread-list result
-                        :is-login is-login)))
+                        :is-login is-login
+                        :url url)))
         (on-exception web 404))))
 
 (defun get-param (body)

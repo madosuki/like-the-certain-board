@@ -2,7 +2,10 @@
 (defpackage like-certain-board.view
   (:use :cl :cl-markup)
   (:import-from :like-certain-board.config
-   :*template-directory*)
+                :*template-directory*
+                :*domain-name*
+                :*http-root-path*
+                :*https-root-path*)
   (:import-from :caveman2
                 :*response*
                 :response-headers)
@@ -65,16 +68,21 @@
 
 (setf djula:*djula-execute-package* (find-package :like-certain-board.djula))
 
-(defmacro base-html (title &body body)
-  `(html5 :lang "ja"
+(defparameter *og-prefix* (format nil "og: ~A" *http-root-path*))
+
+(defmacro base-html (title url &body body)
+  `(html5 :lang "ja" :prefix *og-prefix*
     (:head
      (:meta :charset "utf-8")
      (:meta
       :name "viewport" :content "width=device-width,initial-scale=1")
-     (:meta :property "og:title"
-            :content ,title)
-     (:meta :propert "og:type"
-            :content "website")
+     (raw (when ,url
+            (markup (:meta :property "og:title"
+                           :content ,title)
+                    (:meta :propert "og:type"
+                           :content "website")
+                    (:meta :property "og:url"
+                           :content ,url))))
      (:link :rel "stylesheet"
             :type "text/css"
             :media "screen"
@@ -82,8 +90,8 @@
      (:title ,title))
     ,@body))
 
-(defmacro main-content (title board-url-name &body body)
-  `(base-html ,title
+(defmacro main-content (title board-url-name url &body body)
+  `(base-html ,title ,url
               (:body
                (:header
                 (:nav (:ul
@@ -97,8 +105,8 @@
                (:div :id "main"
                      ,@body))))
 
-(defun index-view (board-list)
-  (main-content "板一覧" nil
+(defun index-view (board-list url)
+  (main-content "板一覧" nil url
                 (:div :id "board-list"
                       (:h1 "板一覧")
                       (:ul
@@ -203,9 +211,9 @@
                           :value "新規スレッド作成"))))
 
 
-(defun board-view (&key is-login board-name bbs thread-list time)
+(defun board-view (&key is-login board-name bbs thread-list time url)
   (let ((default-name (cadr (get-default-name-from-name bbs))))
-    (main-content board-name bbs
+    (main-content board-name bbs url
                   (if is-login
                       (raw (markup (:h2 "ログイン済み")))
                       "")
@@ -257,9 +265,9 @@
              (raw (getf item :text))))))
 
 
-(defun thread-view (&key title thread bbs key time is-login)
+(defun thread-view (&key title thread bbs key time is-login url)
   (let ((default-name (cadr (get-default-name-from-name bbs))))
-    (main-content title bbs
+    (main-content title bbs url
                   (:h1 :id "title"
                        (raw title))
                   (loop for i in thread
@@ -320,8 +328,8 @@
                                   "板に戻る"))))))))
 
 
-(defun time-restrict-view (&key ipaddr bbs key minute mail)
-  (main-content "連投規制" bbs
+(defun time-restrict-view (&key ipaddr bbs key minute mail url)
+  (main-content "連投規制" bbs url
                 (:div :id "time-restrict"
                  (:h1 :id "alert-title"
                       "投稿規制")
@@ -344,8 +352,8 @@
                               "板に戻る")))))
 
 
-(defun login-view (&key board-name board-url-name is-login)
-  (main-content board-name board-url-name
+(defun login-view (&key board-name board-url-name is-login url)
+  (main-content board-name board-url-name url
                 (:h1 "ログインページ")
                 (raw (cond ((eq is-login 'logged-in)
                             (markup (:h2 "ログイン済みです")))
@@ -383,13 +391,14 @@
                             (:a :href (format nil "/~A" board-url-name)
                                 "板に戻る")))))))
 
-(defun write-result-view (&key board-url-name key error-type message)
+(defun write-result-view (&key board-url-name key error-type message url)
   (main-content (cond ((eq error-type 'write-error)
                        "書き込みエラー")
                       ((eq error-type 'create-error)
                        "新規スレッド作成エラー")
                       (t "何かのエラー"))
                 board-url-name
+                url
                 (:div :id "error-msg"
                       :style "text-align: center"
                       (:p message)
@@ -411,8 +420,8 @@
                          "Not Found"))))
 
 
-(defun kakolog-view (title html-path board-url-name first second key)
-  (main-content (format nil "過去ログ: ~A" title) nil
+(defun kakolog-view (&key title html-path board-url-name first second key url)
+  (main-content (format nil "過去ログ: ~A" title) nil url
                 (:div :id "kakolog-thread"
                       (raw (read-file-string html-path))
                       (raw (when board-url-name
@@ -430,7 +439,7 @@
                                                      "datをダウンロードする場合はこちら")))))))))))
 
 
-(defun kakolog-list-view (board-name &optional (data nil))
+(defun kakolog-list-view (board-name url &optional (data nil))
   (flet ((set-kakolog-list-table (columns)
            (let* ((unixtime (getf columns :unixtime))
                   (title (getf columns :title))
@@ -443,7 +452,7 @@
                         title))
                (:td :class "cell-spacing"
                     unixtime))))))
-    (main-content "過去ログ倉庫" nil
+    (main-content "過去ログ倉庫" nil url
                   (:div :id "kakolog-list-contents"
                    (:h1 "過去ログ倉庫")
                    (if data
@@ -462,6 +471,6 @@
                                (:a :href (format nil "/~A" board-name)
                                    "板に戻る")))))))))
 
-(defun about-page-view ()
-  (main-content "About"
+(defun about-page-view (url)
+  (main-content "About" url
                 (:p "アバウトページ")))

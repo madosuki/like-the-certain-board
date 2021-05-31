@@ -32,7 +32,7 @@
 
 (defroute "/" ()
   (let ((board-list-data (get-board-list)))
-    (index-view board-list-data)))
+    (index-view board-list-data "http://localhost:8080/")))
 
 (defroute "/about" ()
   "this is temoprary message")
@@ -40,23 +40,24 @@
 (defroute ("/:board-name/" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
     (if board-data
-        (put-thread-list board-name (getf board-data :name) *web*)
+        (put-thread-list board-name (getf board-data :name) *web* (format nil "/~A" board-name))
         (on-exception *web* 404))))
 
 (defroute ("/:board-name" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
     (if board-data
-        (put-thread-list board-name (getf board-data :name) *web*)
+        (put-thread-list board-name (getf board-data :name) *web* (format nil "/~A" board-name))
         (on-exception *web* 404))))
 
 (defroute ("/:board-name/kakolog" :method :GET) (&key board-name)
   (let* ((board-data (get-a-board-name-from-name board-name))
          (data (if board-data
                    (get-kakolog-thread-list (getf board-data :id))
-                   nil)))
+                   nil))
+         (url (format nil "/~A/kakolog" board-name)))
     (if data
-        (kakolog-list-view board-name data)
-        (kakolog-list-view board-name))))
+        (kakolog-list-view board-name url data)
+        (kakolog-list-view board-name url))))
 
 (defroute ("/:board-name/subject.txt" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
@@ -136,7 +137,12 @@
                           (getf data :title)
                           nil)))
           (if title
-              (kakolog-view title path board-name four-digit-numbers five-digit-numbers unixtime)
+              (kakolog-view :title title
+                            :html-path path
+                            :board-url-name board-name
+                            :first four-digit-numbers
+                            :second five-digit-numbers
+                            :key unixtime)
               (on-exception *web* 404)))
         (on-exception *web* 404))))
 

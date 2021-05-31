@@ -26,6 +26,9 @@
            :*kakolog-dat-path*
            :*log-path*
            :*settings-path*
+           :*https-root-path*
+           :*http-root-path*
+           :*domain-name*
            :appenv
            :developmentp
            :productionp))
@@ -45,6 +48,9 @@
 (defparameter *db-hostname* "127.0.0.1")
 (defparameter *docked-db-container-name* "db")
 (defparameter *solt* "")
+(defparameter *domain-name* "localhost:8080")
+(defparameter *http-root-path* (format nil "http://~A"))
+(defparameter *https-root-path* (format nil "https://~A"))
 
 (defparameter *settings-path* (uiop:getenv "BOARD_SETTINGS_PATH"))
 
