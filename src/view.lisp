@@ -71,6 +71,10 @@
      (:meta :charset "utf-8")
      (:meta
       :name "viewport" :content "width=device-width,initial-scale=1")
+     (:meta :property "og:title"
+            :content ,title)
+     (:meta :propert "og:type"
+            :content "website")
      (:link :rel "stylesheet"
             :type "text/css"
             :media "screen"
