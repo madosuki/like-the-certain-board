@@ -106,14 +106,16 @@ a:hover {
   text-decoration: underline;
 }
 
-#main {
+div#main {
     display: flex;
     flex-direction: column;
     align-items: left;
     flex-wrap: nowrap;
-    /* background-color: #EFEFEF; */
-    /* height: 100%; */
 }
+
+/* div#main *:nth-child(1n) { */
+/*     margin-left: 1rem; */
+/* } */
 
 td.cell-spacing {
     padding-right: 2rem;
@@ -125,12 +127,14 @@ tr.row-border {
     border: solid 0.1rem;
 }
 
-table {
-    margin-left: 1em;
-    margin-top: 1em;
-    margin-right: 1em;
-    margin-bottom: 0.1em;
-}
+/* tr:nth-child(2n) { */
+/*     background: rgba(0,0,255,0.1); */
+/* } */
+
+/* tr:nth-child(3n) { */
+/*     background: rgba(0,0,0,0.1); */
+/* } */
+
 
 table th, table td {
     border: solid 0.1rem black;
@@ -138,13 +142,18 @@ table th, table td {
 
 table#thread-list {
     border-collapse: collapse;
+    margin-left: 1em;
+    margin-top: 1em;
+    margin-right: 1em;
+    margin-bottom: 0.1em;
 }
-
 
 .form {
     display: block;
     width: 98vw;
 }
+
+
 
 h3.form {
     padding-top: 2rem;
@@ -162,17 +171,20 @@ textarea.form {
 ul.form li.form {
     list-style: none;
 }
- 
+
 li.form {
     display: flex;
     flex-direction: column;
     align-items: left;
-    padding-left: 1em;
 }
 
+
+.form li:nth-of-type(1n) {
+    margin-left: 1em;
+}
+ 
+
 label.form {
-    /* padding-top: 0.5rem; */
-    /* padding-right: 5rem; */
     order: 1;
 }
 
@@ -201,7 +213,6 @@ header {
     border-bottom: 1px solid;
     margin-bottom: 1rem;
 }
-
 
 .form-title {
     padding-top: 4rem;
