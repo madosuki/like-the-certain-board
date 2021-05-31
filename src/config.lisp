@@ -49,8 +49,8 @@
 (defparameter *docked-db-container-name* "db")
 (defparameter *solt* "")
 (defparameter *domain-name* "localhost:8080")
-(defparameter *http-root-path* (format nil "http://~A"))
-(defparameter *https-root-path* (format nil "https://~A"))
+(defparameter *http-root-path* (format nil "http://~A" *domain-name*))
+(defparameter *https-root-path* (format nil "https://~A" *domain-name*))
 
 (defparameter *settings-path* (uiop:getenv "BOARD_SETTINGS_PATH"))
 
