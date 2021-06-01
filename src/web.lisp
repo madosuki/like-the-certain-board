@@ -32,7 +32,7 @@
 
 (defroute "/" ()
   (let ((board-list-data (get-board-list)))
-    (index-view board-list-data "http://localhost:8080/")))
+    (index-view board-list-data)))
 
 (defroute "/about" ()
   "this is temoprary message")
@@ -40,13 +40,13 @@
 (defroute ("/:board-name/" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
     (if board-data
-        (put-thread-list board-name (getf board-data :name) *web* (format nil "/~A" board-name))
+        (put-thread-list board-name (getf board-data :name) *web* (format nil "~A/~A" *http-root-path* board-name))
         (on-exception *web* 404))))
 
 (defroute ("/:board-name" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
     (if board-data
-        (put-thread-list board-name (getf board-data :name) *web* (format nil "/~A" board-name))
+        (put-thread-list board-name (getf board-data :name) *web* (format nil "~A/~A" *http-root-path* board-name))
         (on-exception *web* 404))))
 
 (defroute ("/:board-name/kakolog" :method :GET) (&key board-name)
@@ -54,7 +54,7 @@
          (data (if board-data
                    (get-kakolog-thread-list (getf board-data :id))
                    nil))
-         (url (format nil "/~A/kakolog" board-name)))
+         (url (format nil "~A/~A/kakolog" *http-root-path* board-name)))
     (if data
         (kakolog-list-view board-name url data)
         (kakolog-list-view board-name url))))
@@ -98,7 +98,11 @@
                            :bbs board-name
                            :key unixtime
                            :time current-unix-time
-                           :is-login is-login))
+                           :is-login is-login
+                           :url (format nil "~A/test/read.cgi/~A/~A"
+                                        *http-root-path*
+                                        board-name
+                                        unixtime)))
             (let* ((separated (separate-numbers-from-key-for-kako unixtime))
                    (html-path (if (or (eq separated :small) (eq separated :not-numbers))
                                   nil
@@ -122,11 +126,6 @@
         (is-number-for-unixtime (check-whether-integer unixtime))
         (is-number-for-four-digit-numbers (check-whether-integer four-digit-numbers))
         (is-number-for-five-digit-numbers (check-whether-integer five-digit-numbers)))
-    (format t "~%~A, ~A, ~A~%~A~%"
-            is-number-for-unixtime
-            is-number-for-four-digit-numbers
-            is-number-for-five-digit-numbers
-            path)
     (if (and (not (null board-data))
              (eq is-number-for-unixtime :integer-string)
              (eq is-number-for-four-digit-numbers :integer-string)
@@ -142,7 +141,11 @@
                             :board-url-name board-name
                             :first four-digit-numbers
                             :second five-digit-numbers
-                            :key unixtime)
+                            :key unixtime
+                            :url (format nil "~A/~A/kako/~A/~A/~A.html"
+                                         *http-root-path* board-name
+                                         four-digit-numbers five-digit-numbers
+                                         unixtime))
               (on-exception *web* 404)))
         (on-exception *web* 404))))
 

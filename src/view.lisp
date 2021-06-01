@@ -79,7 +79,7 @@
      (raw (when ,url
             (markup (:meta :property "og:title"
                            :content ,title)
-                    (:meta :propert "og:type"
+                    (:meta :property "og:type"
                            :content "website")
                     (:meta :property "og:url"
                            :content ,url))))
@@ -105,8 +105,8 @@
                (:div :id "main"
                      ,@body))))
 
-(defun index-view (board-list url)
-  (main-content "板一覧" nil url
+(defun index-view (board-list)
+  (main-content "板一覧" nil *http-root-path*
                 (:div :id "board-list"
                       (:h1 "板一覧")
                       (:ul
