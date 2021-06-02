@@ -69,8 +69,9 @@
 (setf djula:*djula-execute-package* (find-package :like-certain-board.djula))
 
 (defparameter *og-prefix* (format nil "og: ~A" *http-root-path*))
+(defparameter *default-ogp-image-name* "ogp_image_sample.png")
 
-(defmacro base-html (title url &body body)
+(defmacro base-html (title url ogp-image-name &body body)
   `(html5 :lang "ja" :prefix *og-prefix*
     (:head
      (:meta :charset "utf-8")
@@ -84,8 +85,11 @@
                     (:meta :property "og:url"
                            :content ,url)
                     (:meta :property "og:image"
-                           :content (format nil "~A/images/ogp_image_sample.png"
-                                            *http-root-path*)))))
+                           :content (format nil "~A/images/~A"
+                                            *http-root-path*
+                                            (if,ogp-image-name
+                                             ,ogp-image-name
+                                             *default-ogp-image-name*))))))
      (:link :rel "stylesheet"
             :type "text/css"
             :media "screen"
@@ -93,8 +97,8 @@
      (:title ,title))
     ,@body))
 
-(defmacro main-content (title board-url-name url &body body)
-  `(base-html ,title ,url
+(defmacro main-content (title board-url-name url ogp-image-name &body body)
+  `(base-html ,title ,url ,ogp-image-name
               (:body
                (:header
                 (:nav (:ul
@@ -109,7 +113,7 @@
                      ,@body))))
 
 (defun index-view (board-list)
-  (main-content "板一覧" nil *http-root-path*
+  (main-content "板一覧" nil *http-root-path* nil
                 (:div :id "board-list"
                       (:h1 "板一覧")
                       (:ul
@@ -216,7 +220,7 @@
 
 (defun board-view (&key is-login board-name bbs thread-list time url)
   (let ((default-name (cadr (get-default-name-from-name bbs))))
-    (main-content board-name bbs url
+    (main-content board-name bbs url nil
                   (if is-login
                       (raw (markup (:h2 "ログイン済み")))
                       "")
@@ -270,7 +274,7 @@
 
 (defun thread-view (&key title thread bbs key time is-login url)
   (let ((default-name (cadr (get-default-name-from-name bbs))))
-    (main-content title bbs url
+    (main-content title bbs url nil
                   (:h1 :id "title"
                        (raw title))
                   (loop for i in thread
@@ -332,7 +336,7 @@
 
 
 (defun time-restrict-view (&key ipaddr bbs key minute mail url)
-  (main-content "連投規制" bbs url
+  (main-content "連投規制" bbs url nil
                 (:div :id "time-restrict"
                  (:h1 :id "alert-title"
                       "投稿規制")
@@ -356,7 +360,7 @@
 
 
 (defun login-view (&key board-name board-url-name is-login url)
-  (main-content board-name board-url-name url
+  (main-content board-name board-url-name url nil
                 (:h1 "ログインページ")
                 (raw (cond ((eq is-login 'logged-in)
                             (markup (:h2 "ログイン済みです")))
@@ -402,6 +406,7 @@
                       (t "何かのエラー"))
                 board-url-name
                 url
+                nil
                 (:div :id "error-msg"
                       :style "text-align: center"
                       (:p message)
@@ -414,7 +419,7 @@
                                   "スレッドに戻る")))))))
 
 (defun notfound-view ()
-  (base-html "404 Not Found"
+  (base-html "404 Not Found" nil nil
              (:style "#error { text-align: center; background-color: gray; height: 100vh;} #status { font-family: Times, serif; font-size: 10vw; } #message { font-family: Helvetica, sans-serif; font-size: 5vw; }")
              (:div :id "error"
                    (:div :id "status"
@@ -424,7 +429,7 @@
 
 
 (defun kakolog-view (&key title html-path board-url-name first second key url)
-  (main-content (format nil "過去ログ: ~A" title) nil url
+  (main-content (format nil "過去ログ: ~A" title) nil url nil
                 (:div :id "kakolog-thread"
                       (raw (read-file-string html-path))
                       (raw (when board-url-name
@@ -455,7 +460,7 @@
                         title))
                (:td :class "cell-spacing"
                     unixtime))))))
-    (main-content "過去ログ倉庫" nil url
+    (main-content "過去ログ倉庫" nil url nil
                   (:div :id "kakolog-list-contents"
                    (:h1 "過去ログ倉庫")
                    (if data
@@ -475,5 +480,5 @@
                                    "板に戻る")))))))))
 
 (defun about-page-view (url)
-  (main-content "About" url
+  (main-content "About" url nil
                 (:p "アバウトページ")))
