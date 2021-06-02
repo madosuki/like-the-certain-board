@@ -82,7 +82,10 @@
                     (:meta :property "og:type"
                            :content "website")
                     (:meta :property "og:url"
-                           :content ,url))))
+                           :content ,url)
+                    (:meta :property "og:image"
+                           :content (format nil "~A/images/ogp_image_sample.png"
+                                            *http-root-path*)))))
      (:link :rel "stylesheet"
             :type "text/css"
             :media "screen"
