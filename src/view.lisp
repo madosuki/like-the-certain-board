@@ -32,7 +32,8 @@
            :write-result-view
            :notfound-view
            :kakolog-view
-           :kakolog-list-view))
+           :kakolog-list-view)
+           :about-page-view)
 (in-package :like-certain-board.view)
 
 (djula:add-template-directory *template-directory*)
@@ -480,5 +481,5 @@
                                    "板に戻る")))))))))
 
 (defun about-page-view (url)
-  (main-content "About" url nil
+  (main-content "About" nil url nil
                 (:p "アバウトページ")))

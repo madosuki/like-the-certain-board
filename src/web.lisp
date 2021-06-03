@@ -35,7 +35,7 @@
     (index-view board-list-data)))
 
 (defroute "/about" ()
-  "this is temoprary message")
+  (about-page-view))
 
 (defroute ("/:board-name/" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
