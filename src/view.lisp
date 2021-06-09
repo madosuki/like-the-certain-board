@@ -32,8 +32,8 @@
            :write-result-view
            :notfound-view
            :kakolog-view
-           :kakolog-list-view)
-           :about-page-view)
+           :kakolog-list-view
+           :about-page-view))
 (in-package :like-certain-board.view)
 
 (djula:add-template-directory *template-directory*)
@@ -336,14 +336,14 @@
                                   "板に戻る"))))))))
 
 
-(defun time-restrict-view (&key ipaddr bbs key minute mail url)
+(defun time-restrict-view (&key ipaddr bbs key times mail url)
   (main-content "連投規制" bbs url nil
                 (:div :id "time-restrict"
                  (:h1 :id "alert-title"
                       "投稿規制")
                  (:p (format nil "Your IP Address: ~A" ipaddr))
                  (raw (if (<= minute 1440)
-                          (markup (:p (format nil "~A分経つまつで投稿できません．" minute)))
+                          (markup (:p (format nil "~A秒経つまつで投稿できません．" times)))
                           (progn
                             (markup (:p "BANされました")
                                     (:p (format nil

@@ -29,6 +29,7 @@
            :*https-root-path*
            :*http-root-path*
            :*domain-name*
+           :*session-post-count-key*
            :appenv
            :developmentp
            :productionp))
@@ -64,6 +65,7 @@
 (defvar *session-last-post-seconds* "last-post-seconds")
 (defvar *session-admin-key* "is-admin")
 (defvar *session-cap-text-key* "cap-text")
+(defvar *session-post-count-key* "post-count")
 (defvar *max-thread-list* 10000)
 (defvar *admin-ipaddr* "172.20.0.1")
 (defvar *dat-path* (uiop:getenv "DAT_DIR_PATH"))

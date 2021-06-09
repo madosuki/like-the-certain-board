@@ -129,16 +129,25 @@
 (defmacro hour-to-second (h)
   `(* ,h 60 60))
 
-(defun check-abuse-post (before-unixtime current-unixtime user-agent)
+(defun check-abuse-post (&key before-unixtime current-unixtime user-agent ipaddr session)
   (unless user-agent
     (return-from check-abuse-post nil))
   (when (cl-ppcre:scan "Monazilla/1.00" user-agent)
     (return-from check-abuse-post t))
   (unless before-unixtime
     (return-from check-abuse-post t))
-  (if (< (- current-unixtime before-unixtime) 60)
-      nil
-      t))
+  (let ((count (gethash *session-post-count-key* session)))
+    (if (and (< (- current-unixtime before-unixtime) 10) (numberp count) (< count 100))
+        (progn
+          (cond ((> count 99)
+                 ) ;; WIP add porocess of BAN to ip address here.
+                ((<= count 99)
+                 (setf (gethash *session-post-count-key* session) (1+ count)))
+                (t (setf (gethash *session-post-count-key* session) 1)))
+          nil)
+        (progn
+          (setf (gethash *session-post-count-key* session) 0)
+          t))))
 
 
 (defun format-datetime (date)

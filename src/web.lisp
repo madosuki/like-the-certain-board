@@ -157,7 +157,11 @@
          (current-unixtime (get-unix-time universal-time))
          (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*))))
     (if (and user-agent *session*)
-        (if (check-abuse-post last-post-seconds current-unixtime user-agent)
+        (if (check-abuse-post :before-unixtime last-post-seconds
+                              :current-unixtime current-unixtime
+                              :user-agent user-agent
+                              :ipaddr ipaddr
+                              :session *session*)
             (let* ((message (get-value-from-key "MESSAGE" _parsed))
                    (cookie (gethash "cookie" (request-headers *request*)))
                    (splited-cookie (if (null cookie)
@@ -186,14 +190,15 @@
               (if (and (null bbs) (null key))
                   (progn (set-response-status 400)
                          (write-result-view :error-type 'something :message "bad parameter: require key and bbs."))
-                  (progn (set-response-status 429)
-                         (time-restrict-view
-                          :ipaddr ipaddr
-                          :minute 1
-                          :bbs bbs
-                          :key (if key key nil)
-                          :mail "example@example.com")
-                         ))))
+                  (progn
+                    (set-response-status 429)
+                    (time-restrict-view
+                     :ipaddr ipaddr
+                     :times 10
+                     :bbs bbs
+                     :key (if key key nil)
+                     :mail "example@example.com")
+                    ))))
         (progn
           (set-response-status 403)
           "403 Forbidden"))))
@@ -365,8 +370,8 @@
         (board-data (get-a-board-name-from-name board-name)))
     (cond ((or (null mode)
                (null board-data)
-               ;; (null is-login)
-               ;; (null is-admin)
+               (null is-login)
+               (null is-admin)
                )
            (set-response-status 403)
            "Access Denied")

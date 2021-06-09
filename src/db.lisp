@@ -48,6 +48,9 @@
            :make-thread-table-struct
            :get-default-name-from-name
            :get-default-name-from-id
+           :update-time-restrict-count
+           :get-count-from-time-restrict
+           :insert-count-to-time-restirct-table
            ))
 (in-package :like-certain-board.db)
 
@@ -327,5 +330,27 @@
       (execute
        (update :threads
                (set= :res-count (1+  (cadr tmp)))
-               (where (:= (:like :unixtime key)
-                          (:= :board-id board-id))))))))
+               (where (:and (:like :unixtime key)
+                            (:= :board-id board-id))))))))
+
+(defun update-time-restrict-count (&key ipaddr count)
+  (with-connection (db)
+    (execute
+     (update :time-restrict
+             (set= :count count)
+             (where (:like :ipaddr ipaddr))))))
+
+(defun get-count-from-time-restrict (&key ipaddr)
+  (with-connection (db)
+    (retrieve-one
+     (select :count
+             (from :time-restrict)
+             (where (:like :ipaddr ipaddr))))))
+
+(defun insert-count-to-time-restirct-table (&key ipaddr)
+  (with-connection (db)
+    (execute
+     (insert-into :time-restrict
+                  (set=
+                   :count 1
+                   :ipaddr ipaddr)))))
