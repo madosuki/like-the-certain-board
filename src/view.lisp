@@ -336,19 +336,19 @@
                                   "板に戻る"))))))))
 
 
-(defun time-restrict-view (&key ipaddr bbs key times mail url)
+(defun time-restrict-view (&key ipaddr bbs key mode mail url)
   (main-content "連投規制" bbs url nil
                 (:div :id "time-restrict"
                  (:h1 :id "alert-title"
                       "投稿規制")
                  (:p (format nil "Your IP Address: ~A" ipaddr))
-                 (raw (if (<= minute 1440)
-                          (markup (:p (format nil "~A秒経つまつで投稿できません．" times)))
-                          (progn
-                            (markup (:p "BANされました")
-                                    (:p (format nil
-                                                "~AかTwitter公式アカウントにIPアドレスを記載して解除申請してくだされば対応します．但し，悪質な場合は永久BANとなり解除申請に応じられませんのであしからず．"
-                                                mail)))))))
+                 (raw (cond ((eq mode :restrict)
+                             (markup (:p "10秒経つまつで投稿できません．尚この状態で更に連投すればBANします．")))
+                            (t
+                             (markup (:p "BANされました")
+                                     (:p (format nil
+                                                 "~AかTwitter公式アカウントにIPアドレスを記載して解除申請してくだされば対応します．但し，悪質な場合は永久BANとなり解除申請に応じられませんのであしからず．"
+                                                 mail)))))))
                 (:footer :id "time-restrict"
                          (:nav
                           (raw (when key
