@@ -211,7 +211,6 @@
                                  t)))
     (when (string/= trip "")
       (setq trip (concatenate 'string "</b>" (string #\BLACK_DIAMOND) trip "<b>")))
-    (format t "~%~A~%" final-text)
     (if first
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" final-name trip mail datetime id final-text title)
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" final-name trip mail datetime id final-text))))
