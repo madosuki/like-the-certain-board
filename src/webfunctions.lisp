@@ -205,16 +205,13 @@
                    (generate-trip (subseq trip-key 1 (length trip-key)) "utf8")
                    ""))
          (final-text
-           (let* ((tmp (apply-dice (create-safety-strings (shape-text (replace-other-line-to-lf text)))))
-                  (r (apply-color tmp (length tmp))))
-             (if (eq r :error)
-                 tmp
-                 t))) ;; did convert-html-special-chars in shape-text function
+           (apply-color (apply-dice (create-safety-strings (shape-text (replace-other-line-to-lf text)))))) ;; did convert-html-special-chars in shape-text function
          (mail (create-safety-strings (convert-html-special-chars email)))
          (final-name (apply-dice (create-safety-strings (convert-html-special-chars name))
                                  t)))
     (when (string/= trip "")
       (setq trip (concatenate 'string "</b>" (string #\BLACK_DIAMOND) trip "<b>")))
+    (format t "~%~A~%" final-text)
     (if first
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" final-name trip mail datetime id final-text title)
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" final-name trip mail datetime id final-text))))
