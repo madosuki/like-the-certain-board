@@ -204,7 +204,7 @@
          (trip (if (and (stringp trip-key) (string/= trip-key ""))
                    (generate-trip (subseq trip-key 1 (length trip-key)) "utf8")
                    ""))
-         (final-text (apply-dice (replace-not-available-char-when-cp932 (shape-text (replace-other-line-to-lf text))))) ;; did convert-html-special-chars in shape-text function
+         (final-text (replace-not-available-char-when-cp932 (shape-text (replace-other-line-to-lf text)))) ;; did convert-html-special-chars in shape-text function
          (mail (replace-not-available-char-when-cp932 (convert-html-special-chars email)))
          (final-name (apply-dice (replace-not-available-char-when-cp932 (convert-html-special-chars name))
                                  t)))
