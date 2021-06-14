@@ -30,11 +30,11 @@
 ;;
 ;; Routing rules
 
-(defroute "/" ()
+(defroute ("/" :method :GET) ()
   (let ((board-list-data (get-board-list)))
     (index-view board-list-data)))
 
-(defroute "/about" ()
+(defroute ("/about" :method :GET) ()
   (about-page-view))
 
 (defroute ("/:board-name/" :method :GET) (&key board-name)
