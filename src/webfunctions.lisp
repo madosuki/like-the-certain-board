@@ -180,7 +180,7 @@
   `(concatenate 'string (write-to-string (cadr (member :unixtime ,l))) ".dat"))
 
 (defmacro create-safety-strings (s)
-  `(replace-not-available-char-when-cp932 (escape-sql-query ,s)))
+  `(replace-not-available-char-when-cp932 ,s))
 
 
 (defun create-dat (&key unixtime first-line board-url-name)
@@ -204,10 +204,9 @@
          (trip (if (and (stringp trip-key) (string/= trip-key ""))
                    (generate-trip (subseq trip-key 1 (length trip-key)) "utf8")
                    ""))
-         (final-text
-           (apply-color (apply-dice (create-safety-strings (shape-text (replace-other-line-to-lf text)))))) ;; did convert-html-special-chars in shape-text function
-         (mail (create-safety-strings (convert-html-special-chars email)))
-         (final-name (apply-dice (create-safety-strings (convert-html-special-chars name))
+         (final-text (apply-dice (replace-not-available-char-when-cp932 (shape-text (replace-other-line-to-lf text))))) ;; did convert-html-special-chars in shape-text function
+         (mail (replace-not-available-char-when-cp932 (convert-html-special-chars email)))
+         (final-name (apply-dice (replace-not-available-char-when-cp932 (convert-html-special-chars name))
                                  t)))
     (when (string/= trip "")
       (setq trip (concatenate 'string "</b>" (string #\BLACK_DIAMOND) trip "<b>")))
@@ -255,7 +254,7 @@
       (setq name (cadr (get-default-name-from-id board-id))))
     (if (stringp title)
         (progn
-          (setq title (create-safety-strings (convert-html-special-chars title)))
+          (setq title (replace-not-available-char-when-cp932 (convert-html-special-chars title)))
           (let ((tmp (separate-trip-from-input name)))
             (when (> (length tmp) 1)
               (setq trip-key (cadr tmp)))
