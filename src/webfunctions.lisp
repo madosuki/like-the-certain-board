@@ -461,15 +461,16 @@
                                  (getf board-list-data :id)
                                  nil)))
                  (key (get-value-from-key-on-list "key" form))
-                 (submit (get-value-from-key-on-list "submit" form)))
+                 (submit (get-value-from-key-on-list "submit" form))
+                 (check-key (check-whether-integer key)))
             (cond
               ((string= submit "書き込む")
-               (cond ((or (null key) (null bbs) (null board-id))
+               (cond ((or (null (eq check-key :integer-string)) (null board-id))
                       (set-response-status 400)
-                      (write-result-view :error 'unknown :message "bad parameter: require bbs and key params."))
+                      (write-result-view :error-type 'unknown :message "bad parameter"))
                      ((> (cadr (get-res-count :key key)) *default-max-length*)
                       (set-response-status 503)
-                      (write-result-view :error 'write-error :message "このスレッドはレス数が最大数に達しています．"))
+                      (write-result-view :error-type 'write-error :message "このスレッドはレス数が最大数に達しています．"))
                      (t
                       (let* ((status (insert-res form ipaddr universal-time board-id)))
                         (if (= status 200)
@@ -478,11 +479,11 @@
                               (set-response-status 302))
                             (progn
                               (set-response-status status)
-                              (write-result-view :error 'write-error :message "混雑等の理由で新規スレッド作成に失敗しました．")))))))
+                              (write-result-view :error-type 'write-error :message "混雑等の理由で新規スレッド作成に失敗しました．")))))))
               ((string= submit "新規スレッド作成")
-               (if (or (null bbs) (null board-id))
+               (if (null board-id)
                    (progn (set-response-status 400)
-                          (write-result-view :error 'create-error :message "bad parameter: require bbs param."))
+                          (write-result-view :error-type 'create-error :message "bad parameter: require bbs param."))
                    (let ((status (create-thread
                                   :_parsed form
                                   :date universal-time

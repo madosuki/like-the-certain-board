@@ -88,7 +88,7 @@
          (is-login (gethash *session-login-key* *session*))
          (board-data (get-a-board-name-from-name board-name))
          (is-number (check-whether-integer unixtime)))
-    (if (or board-data (eq is-number :integer-string))
+    (if (and board-data (eq is-number :integer-string))
         (if (probe-file dat-filepath)
             (let* ((dat-list (dat-to-keyword-list dat-filepath))
                    (title (cadr (member :title (car dat-list))))
@@ -185,7 +185,7 @@
                         (write-result-view :error-type 'something :message "bad parameter")))))
               (let ((bbs (cdr (assoc "bbs" _parsed :test #'string=)))
                     (key (cdr (assoc "key" _parsed :test #'string=))))
-                (if (and (null bbs) (null key))
+                (if (or (null bbs) (null key))
                     (progn (set-response-status 400)
                            (write-result-view :error-type 'something :message "bad parameter"))
                     (let ((is-exists-board (get-a-board-name-from-name bbs)))
@@ -193,7 +193,6 @@
                           (let ((thread (get-a-thread key (getf is-exists-board :id))))
                             (if thread
                                 (progn (set-response-status 429)
-                                       (format t "~%~A, ~A~%" bbs key)
                                        (time-restrict-view
                                         :ipaddr ipaddr
                                         :mode check-abuse-result
