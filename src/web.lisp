@@ -154,56 +154,63 @@
   (let* ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
          (universal-time (get-universal-time))
          (current-unixtime (get-unix-time universal-time))
-         (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*))))
-    (if (and user-agent *session*)
-        (let ((check-abuse-result (check-abuse-post :current-unixtime current-unixtime
-                                                    :user-agent user-agent
-                                                    :ipaddr ipaddr
-                                                    :session *session*)))
-          (if (eq check-abuse-result :ok)
-              (let* ((message (get-value-from-key "MESSAGE" _parsed))
-                     (cookie (gethash "cookie" (request-headers *request*)))
-                     (splited-cookie (if (null cookie)
-                                           nil
-                                           (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
-                                                   (cl-ppcre:split ";" cookie))))
-                     (raw-body (request-raw-body *request*))
-                     (content-length (request-content-length *request*))
-                     (tmp-array (make-array content-length :adjustable t :fill-pointer content-length))
-                     (is-e nil))
-                (handler-case (read-sequence tmp-array raw-body)
-                  (error (e)
-                    (write-log :mode :error
-                               :message (format nil "Error read squence in bbs.cgi: ~A" e))
-                    (setq is-e t)))
-                (if is-e
-                    (write-result-view :error-type 'something :message "bad parameter")
-                    (handler-case  (bbs-cgi-function tmp-array ipaddr universal-time)
-                      (error (e)
-                        (write-log :mode :error
-                                   :message (format nil "Error in bbs-cgi-function: ~A" e))
-                        (write-result-view :error-type 'something :message "bad parameter")))))
-              (let ((bbs (cdr (assoc "bbs" _parsed :test #'string=)))
-                    (key (cdr (assoc "key" _parsed :test #'string=))))
-                (if (or (null bbs) (null key))
-                    (progn (set-response-status 400)
-                           (write-result-view :error-type 'something :message "bad parameter"))
-                    (let ((is-exists-board (get-a-board-name-from-name bbs)))
-                      (if is-exists-board
-                          (let ((thread (get-a-thread key (getf is-exists-board :id))))
-                            (if thread
-                                (progn (set-response-status 429)
-                                       (time-restrict-view
-                                        :ipaddr ipaddr
-                                        :mode check-abuse-result
-                                        :bbs bbs
-                                        :key key
-                                        :mail "example@example.com"))
-                                (on-exception *web* 404)))
-                          (on-exception *web* 404)))))))
-        (progn
-          (set-response-status 403)
-          "403 Forbidden"))))
+         (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
+         (bbs (cdr (assoc "bbs" _parsed :test #'string=)))
+         (key (cdr (assoc "key" _parsed :test #'string=)))
+         (board-data (if bbs
+                         (get-a-board-name-from-name bbs)
+                         nil)))
+    (cond ((and (null board-data) (null key))
+           (set-response-status 400)
+           "")
+          ((and user-agent *session* board-data)
+           (let ((check-abuse-result (check-abuse-post :current-unixtime current-unixtime
+                                                       :user-agent user-agent
+                                                       :ipaddr ipaddr
+                                                       :session *session*)))
+             (if (eq check-abuse-result :ok)
+                 (let* ((message (get-value-from-key "MESSAGE" _parsed))
+                        (cookie (gethash "cookie" (request-headers *request*)))
+                        (splited-cookie (if (null cookie)
+                                            nil
+                                            (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
+                                                    (cl-ppcre:split ";" cookie))))
+                        (raw-body (request-raw-body *request*))
+                        (content-length (request-content-length *request*))
+                        (tmp-array (make-array content-length :adjustable t :fill-pointer content-length))
+                        (is-e nil))
+                   (handler-case (read-sequence tmp-array raw-body)
+                     (error (e)
+                       (write-log :mode :error
+                                  :message (format nil "Error read squence in bbs.cgi: ~A" e))
+                       (setq is-e t)))
+                   (if is-e
+                       (write-result-view :error-type 'something :message "bad parameter")
+                       (handler-case  (bbs-cgi-function tmp-array ipaddr universal-time)
+                         (error (e)
+                           (write-log :mode :error
+                                      :message (format nil "Error in bbs-cgi-function: ~A" e))
+                           (write-result-view :error-type 'something :message "bad parameter")))))
+                 (let ((thread (if key
+                                   (get-a-thread key (getf is-exists-board :id))
+                                   nil)))
+                   (if thread
+                       (progn (set-response-status 429)
+                              (time-restrict-view
+                               :ipaddr ipaddr
+                               :mode check-abuse-result
+                               :bbs bbs
+                               :key key
+                               :mail "example@example.com"))
+                       (progn (set-response-status 429)
+                              (time-restrict-view
+                               :ipaddr ipaddr
+                               :mode check-abuse-result
+                               :bbs bbs
+                               :mail "example@example.com")))))))
+          (t
+           (set-response-status 403)
+           "403 Forbidden"))))
 
 
 
