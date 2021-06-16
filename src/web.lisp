@@ -35,7 +35,7 @@
     (index-view board-list-data)))
 
 (defroute ("/about" :method :GET) ()
-  (about-page-view))
+  (about-page-view (format nil "~A/about" *http-root-path*)))
 
 (defroute ("/:board-name/" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
@@ -188,15 +188,20 @@
                 (if (and (null bbs) (null key))
                     (progn (set-response-status 400)
                            (write-result-view :error-type 'something :message "bad parameter"))
-                    (progn
-                      (set-response-status 429)
-                      (time-restrict-view
-                       :ipaddr ipaddr
-                       :mode check-abuse-result
-                       :bbs bbs
-                       :key (if key key nil)
-                       :mail "example@example.com")
-                      )))))
+                    (let ((is-exists-board (get-a-board-name-from-name bbs)))
+                      (if is-exists-board
+                          (let ((thread (get-a-thread key (getf is-exists-board :id))))
+                            (if thread
+                                (progn (set-response-status 429)
+                                       (format t "~%~A, ~A~%" bbs key)
+                                       (time-restrict-view
+                                        :ipaddr ipaddr
+                                        :mode check-abuse-result
+                                        :bbs bbs
+                                        :key key
+                                        :mail "example@example.com"))
+                                (on-exception *web* 404)))
+                          (on-exception *web* 404)))))))
         (progn
           (set-response-status 403)
           "403 Forbidden"))))
