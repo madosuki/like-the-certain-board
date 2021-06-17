@@ -33,6 +33,7 @@ ENV PATH /root/.roswell/bin:${PATH}
 
 RUN ros install fukamachi/caveman && \
     ros install fukamachi/ningle && \
+    ros install fukamachi/quri && \
     ros install cl-dbi && \
     ros install envy & \
     ros install datafly && \
