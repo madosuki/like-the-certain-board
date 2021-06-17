@@ -170,7 +170,7 @@
                          nil)))
     (cond ((null user-agent)
            (set-response-status 403)
-           (next-route))
+           "")
           ((and (null board-data) (null key))
            (set-response-status 400)
            "")
@@ -206,14 +206,14 @@
                                    (get-a-thread key (getf board-data :id))
                                    nil)))
                    (if thread
-                       (progn (set-response-status 429)
+                       (progn (set-response-status 200)
                               (time-restrict-view
                                :ipaddr ipaddr
                                :mode check-abuse-result
                                :bbs bbs
                                :key key
                                :mail "example@example.com"))
-                       (progn (set-response-status 429)
+                       (progn (set-response-status 200)
                               (time-restrict-view
                                :ipaddr ipaddr
                                :mode check-abuse-result
