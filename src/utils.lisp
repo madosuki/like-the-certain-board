@@ -29,10 +29,11 @@
 (defun check-whether-integer (n)
   (typecase n
     (integer :integer)
-    (t (let ((a (parse-integer n :junk-allowed t)))
-         (if a
-             :integer-string
-             :otherwise)))))
+    (string (let ((a (parse-integer n :junk-allowed t)))
+              (if a
+                  :integer-string
+                  :otherwise-string)))
+    (t :otherwise)))
 
 
 (defun separate-numbers-from-key-for-kako (key)

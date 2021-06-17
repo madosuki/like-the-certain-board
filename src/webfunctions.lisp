@@ -44,9 +44,6 @@
   `(cl-ppcre:register-groups-bind (,@var-list)
                                   (,regex-string ,target-string)
                                   ,@body))
-(defmacro escape-string (text)
-  `(escape-sql-query ,text))
-
 (defmacro set-response-status (status)
   `(setf (response-status *response*) ,status))
 
@@ -238,9 +235,9 @@
         (trip-key "")
         (text (get-value-from-key-on-list "MESSAGE" _parsed))
         (email (get-value-from-key-on-list "mail" _parsed))
-        (max-line (escape-string (get-value-from-key-on-list "max_line" _parsed)))
+        (max-line (get-value-from-key-on-list "max_line" _parsed))
         (unixtime (get-unix-time date))
-        (bbs (escape-string (get-value-from-key-on-list "bbs" _parsed)))
+        (bbs (get-value-from-key-on-list "bbs" _parsed))
         (is-cap nil))
     (when (or (null bbs) (eq bbs 'no-data) (null text) (eq text 'no-data))
       (return-from create-thread 400))
