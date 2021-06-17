@@ -46,7 +46,7 @@
   :one-time t
   :block-app (lambda (app env)
                (let ((user-agent (gethash "user-agent" (getf env :headers))))
-                 (if (cl-ppcre:scan "Monazilla/1.00" user-agent)
+                 (if (cl-ppcre:scan "^Monazilla/1.00" user-agent)
                      (funcall app env)
                      '(403
                        (:content-type "text/plain"

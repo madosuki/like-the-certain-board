@@ -3,10 +3,13 @@
   (:use :cl)
   (:import-from :like-certain-board.config
    :*log-path*)
+  (:import-from :cl-ppcre
+                :scan)
   (:export
    :write-log
    :separate-numbers-from-key-for-kako
-   :check-whether-integer))
+   :check-whether-integer
+   :detect-monazilla))
 (in-package :like-certain-board.utils)
 
 (defun write-file (&key filename message)
@@ -29,7 +32,7 @@
 (defun check-whether-integer (n)
   (typecase n
     (integer :integer)
-    (string (let ((a (parse-integer n :junk-allowed t)))
+    (string (let ((a (scan "^(?!0)[0-9]+$" n)))
               (if a
                   :integer-string
                   :otherwise-string)))
@@ -52,4 +55,5 @@
           (cons 1st 2nd)))))
 
 
-
+(defun detect-monazilla (user-agent)
+  (not (null (scan "^Monazilla/1.00" user-agent))))
