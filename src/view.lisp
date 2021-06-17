@@ -158,7 +158,7 @@
 
 (declaim (inine create-thread-form))
 (defun create-thread-form (bbs time default-name csrf-token)
-  (html5  (:h3 :class "form"
+  (html5  (:h2 :class "form"
                 "新規スレッド作成フォーム")
            (:form :action "/test/bbs.cgi"
                   :method "POST"
