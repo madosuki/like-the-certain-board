@@ -368,7 +368,7 @@
                        :message (format nil "insert: ~A" time))))))
     status))
 
-(defun put-thread-list (board-name board-title web url)
+(defun put-thread-list (board-name board-title web url csrf-token)
   (let ((board-list-data (get-a-board-name-from-name board-name)))
     (if board-list-data
         (progn
@@ -381,6 +381,7 @@
             (board-view :board-name board-title
                         :bbs board-name
                         :time (get-unix-time (get-universal-time))
+                        :csrf-token csrf-token
                         :thread-list result
                         :is-login is-login
                         :url url)))

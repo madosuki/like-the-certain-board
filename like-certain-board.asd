@@ -34,6 +34,7 @@
 
                ;; session
                "lack-session-store-dbi"
+               "lack-middleware-csrf"
 
                ;; utility
                "cl-fad"

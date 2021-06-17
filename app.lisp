@@ -36,13 +36,22 @@
      `(:backtrace
        :output ,(getf (config) :error-log))
      nil)
- ;; :session
  (:session
   :state (make-cookie-state
           :httponly t
-          :cookie-key "app.session"
+          :cookie-key "lack.session"
           :samesite :lax
           :expires 1800))
+ (:csrf
+  :one-time t
+  :block-app (lambda (app env)
+               (let ((user-agent (gethash "user-agent" (getf env :headers))))
+                 (if (cl-ppcre:scan "Monazilla/1.00" user-agent)
+                     (funcall app env)
+                     '(403
+                       (:content-type "text/plain"
+                        :content-length 9)
+                       ("Forbidden"))))))
  (if (productionp)
      nil
      (lambda (app)

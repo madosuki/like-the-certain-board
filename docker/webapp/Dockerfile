@@ -44,7 +44,8 @@ RUN ros install fukamachi/caveman && \
     ros install madosuki/generate-like-certain-board-strings && \
     ros install madosuki/clack && \
     ros install madosuki/cl-markup && \
-    ros install fukamachi/lack
+    ros install madosuki/lack/using-for-mysite # my custom lack
+    # ros install fukamachi/lack
 
 
 

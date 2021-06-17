@@ -122,7 +122,7 @@
                              collect (markup (:li (:a :href (format nil "/~A" (getf i :url-name))
                                                       (getf i :name)))))))))
 
-(defun set-thread-table-row (item bbs is-login)
+(defun set-thread-table-row (item bbs is-login csrf-token)
   (markup
    (:tr
     (:td :class "cell-spacing"
@@ -146,6 +146,9 @@
                                (:input :name "mode"
                                        :type "hidden"
                                        :value "delete")
+                               (:input :name "_csrf_token"
+                                       :type "hidden"
+                                       :value csrf-token)
                                (:button :name "submit"
                                         :type "submit"
                                         "削除")))))))))
@@ -154,7 +157,7 @@
 
 
 (declaim (inine create-thread-form))
-(defun create-thread-form (bbs time default-name)
+(defun create-thread-form (bbs time default-name csrf-token)
   (html5  (:h3 :class "form"
                 "新規スレッド作成フォーム")
            (:form :action "/test/bbs.cgi"
@@ -214,12 +217,15 @@
                   (:input :name "time"
                           :type "hidden"
                           :value time)
+                  (:input :name "_csrf_token"
+                          :type "hidden"
+                          :value csrf-token)
                   (:input :name "submit"
                           :type "hidden"
                           :value "新規スレッド作成"))))
 
 
-(defun board-view (&key is-login board-name bbs thread-list time url)
+(defun board-view (&key is-login board-name bbs thread-list time csrf-token url)
   (let ((default-name (cadr (get-default-name-from-name bbs))))
     (main-content board-name bbs url nil
                   (if is-login
@@ -239,11 +245,11 @@
                            (when is-login
                              (raw (markup (:th "削除ボタン")))))
                           (loop for i in thread-list
-                                collect (set-thread-table-row i bbs is-login)))
-                  (raw (create-thread-form bbs time default-name)))))
+                                collect (set-thread-table-row i bbs is-login csrf-token)))
+                  (raw (create-thread-form bbs time default-name csrf-token)))))
 
 (declaim (inline set-thread-row))
-(defun set-thread-row (count item bbs is-login key)
+(defun set-thread-row (count item bbs is-login key csrf-token)
   (markup
    (:dl :id (format nil "~A" count)
         (when is-login
@@ -255,6 +261,9 @@
                               (:input :name "key"
                                       :type "hidden"
                                       :value (format nil "~A" key))
+                              (:input :name "_csrf_token"
+                                      :type "hidden"
+                                      :value csrf-token)
                               (:button :name "submit"
                                        :type "submit"
                                        (format nil "~A番目の行を削除" count))))))
@@ -273,14 +282,14 @@
              (raw (getf item :text))))))
 
 
-(defun thread-view (&key title thread bbs key time is-login url)
+(defun thread-view (&key title thread bbs key time csrf-token is-login url)
   (let ((default-name (cadr (get-default-name-from-name bbs))))
     (main-content title bbs url nil
                   (:h1 :id "title"
                        (raw title))
                   (loop for i in thread
                         for count from 1 to (1+ (length thread))
-                        collect (set-thread-row count i bbs is-login key))
+                        collect (set-thread-row count i bbs is-login key csrf-token))
                   (:div  (:h2 :class "form"
                               "投稿フォーム")
                          (:form :action "/test/bbs.cgi"
@@ -325,6 +334,9 @@
                                 (:input :name "time"
                                         :value (format nil "~A" time)
                                         :type "hidden")
+                                (:input :name "_csrf_token"
+                                        :value csrf-token
+                                        :type "hidden")
                                 (:input :name "submit"
                                         :type "hidden"
                                         :value "書き込む")))
@@ -360,7 +372,7 @@
                               "板に戻る")))))
 
 
-(defun login-view (&key board-name board-url-name is-login url)
+(defun login-view (&key board-name board-url-name csrf-token is-login url)
   (main-content board-name board-url-name url nil
                 (:h1 "ログインページ")
                 (raw (cond ((eq is-login 'logged-in)
@@ -391,7 +403,10 @@
                                           "送信")))
                        (:input :name "mode"
                                :type "hidden"
-                               :value "login"))
+                               :value "login")
+                       (:input :name "_csrf_token"
+                               :type "hidden"
+                               :value csrf-token))
                 (:footer :id "footer"
                          (:nav
                           (:ul

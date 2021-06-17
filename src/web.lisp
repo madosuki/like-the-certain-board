@@ -13,6 +13,10 @@
                 :write-log
                 :check-whether-integer
                 :separate-numbers-from-key-for-kako)
+  (:import-from :lack.middleware.csrf
+                :csrf-token)
+  (:import-from :cl-ppcre
+                :scan)
   (:export :*web*))
 (in-package :like-certain-board.web)
 
@@ -23,9 +27,12 @@
 ;; Application
 
 (defclass <web> (<app>) ())
+;; (defmethod make-response ((app <web>) &optional status header body)
+;;   (let ((res (call-next-method)))
+;;     (setf (getf (response-headers res) :X-Content-Type-Options) "nosniff")
+;;     res))
 (defvar *web* (make-instance '<web>))
 (clear-routing-rules *web*)
-
 
 ;;
 ;; Routing rules
@@ -40,13 +47,13 @@
 (defroute ("/:board-name/" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
     (if board-data
-        (put-thread-list board-name (getf board-data :name) *web* (format nil "~A/~A" *http-root-path* board-name))
+        (put-thread-list board-name (getf board-data :name) *web* (format nil "~A/~A" *http-root-path* board-name) (csrf-token *session*))
         (on-exception *web* 404))))
 
 (defroute ("/:board-name" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
     (if board-data
-        (put-thread-list board-name (getf board-data :name) *web* (format nil "~A/~A" *http-root-path* board-name))
+        (put-thread-list board-name (getf board-data :name) *web* (format nil "~A/~A" *http-root-path* board-name) (csrf-token *session*))
         (on-exception *web* 404))))
 
 (defroute ("/:board-name/kakolog" :method :GET) (&key board-name)
@@ -98,6 +105,7 @@
                            :bbs board-name
                            :key unixtime
                            :time current-unix-time
+                           :csrf-token (csrf-token *session*)
                            :is-login is-login
                            :url (format nil "~A/test/read.cgi/~A/~A"
                                         *http-root-path*
@@ -160,7 +168,10 @@
          (board-data (if bbs
                          (get-a-board-name-from-name bbs)
                          nil)))
-    (cond ((and (null board-data) (null key))
+    (cond ((null user-agent)
+           (set-response-status 403)
+           (next-route))
+          ((and (null board-data) (null key))
            (set-response-status 400)
            "")
           ((and user-agent *session* board-data)
@@ -192,7 +203,7 @@
                                       :message (format nil "Error in bbs-cgi-function: ~A" e))
                            (write-result-view :error-type 'something :message "bad parameter")))))
                  (let ((thread (if key
-                                   (get-a-thread key (getf is-exists-board :id))
+                                   (get-a-thread key (getf board-data :id))
                                    nil)))
                    (if thread
                        (progn (set-response-status 429)
@@ -268,6 +279,7 @@
     (if (or  (equal ipaddr *admin-ipaddr*) board-data)
         (login-view :board-url-name board-name
                     :board-name (getf board-data :name)
+                    :csrf-token (csrf-token *session*)
                     :is-login (if (gethash *session-login-key* *session*)
                                   'logged-in
                                   nil))
@@ -380,8 +392,7 @@
     (cond ((or (null mode)
                (null board-data)
                (null is-login)
-               (null is-admin)
-               )
+               (null is-admin))
            (set-response-status 403)
            "Access Denied")
           ((string= mode "delete")
