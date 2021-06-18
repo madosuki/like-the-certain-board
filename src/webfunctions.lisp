@@ -215,7 +215,7 @@
 
 
 (defun decode-max-line-string (target)
-  (let ((regex-str "max_line=([0-9]+)"))
+  (let ((regex-str "max_line=(?!0)([0-9]+)"))
     (regex-group-bind (number)
                       regex-str target
                       (cond ((null number)
