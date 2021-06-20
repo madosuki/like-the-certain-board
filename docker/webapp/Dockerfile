@@ -44,9 +44,10 @@ RUN ros install fukamachi/caveman && \
     ros install trivial-utf-8 && \
     ros install madosuki/generate-like-certain-board-strings && \
     ros install madosuki/clack && \
-    ros install madosuki/cl-markup && \
-    ros install madosuki/lack/using-for-mysite # my custom lack
-    # ros install fukamachi/lack
+    ros install madosuki/cl-markup && \ 
+    ros install madosuki/lack/using-for-mysite && \
+    ros install madosuki/cl-crypt
+
 
 
 

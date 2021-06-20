@@ -12,6 +12,7 @@ ros update git clack
 ros update git generate-like-certain-board-strings
 ros update git cl-markup
 ros update git quri
+ros update git cl-crypt
 
 ros update quicklisp
 

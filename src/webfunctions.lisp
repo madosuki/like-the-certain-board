@@ -161,11 +161,11 @@
 
 
 
-(defun check-exists-threads-table-and-create-table-when-does-not ()
+(defun check-exists-threads-table ()
   (handler-case (check-exists-table "threads")
     (error (e)
       (declare (ignore e))
-      (init-threads-table))))
+      :not-exists)))
 
 (defmacro get-value-from-key (key target)
   `(cdr (assoc ,key ,target :test #'string=)))
@@ -196,10 +196,11 @@
         (write-sequence tmp i)))))
 
 (defun create-res (&key name trip-key email date text ipaddr (first nil) (title ""))
+  (format t "~%trip key: ~A~%" trip-key)
   (let* ((datetime (replace-hyphen-to-slash date))
          (id (generate-id :ipaddr ipaddr :date datetime :solt *solt*))
          (trip (if (and (stringp trip-key) (string/= trip-key ""))
-                   (generate-trip (subseq trip-key 1 (length trip-key)) "utf8")
+                   (generate-trip (subseq trip-key 1) "utf8")
                    ""))
          (final-text (replace-not-available-char-when-cp932 (shape-text (replace-other-line-to-lf text)))) ;; did convert-html-special-chars in shape-text function
          (mail (replace-not-available-char-when-cp932 (convert-html-special-chars email)))
@@ -210,8 +211,6 @@
     (if first
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~A~%" final-name trip mail datetime id final-text title)
         (format nil "~A~A<>~A<>~A ID:~A<>~A<>~%" final-name trip mail datetime id final-text))))
-
-
 
 
 (defun decode-max-line-string (target)
@@ -229,7 +228,8 @@
 
 
 (defun create-thread (&key _parsed date ipaddr board-id)
-  (check-exists-threads-table-and-create-table-when-does-not)
+  (when (eq (check-exists-threads-table) :no-exists)
+    (return-from create-thread 400))
   (let ((title (get-value-from-key-on-list "subject" _parsed))
         (name (get-value-from-key-on-list "FROM" _parsed))
         (trip-key "")
@@ -290,7 +290,16 @@
                            (progn (handler-case  (create-dat
                                                   :board-url-name bbs
                                                   :unixtime unixtime
-                                                  :first-line (create-res :name (if is-cap (gethash *session-cap-text-key* *session*) name) :trip-key trip-key :email email :text text :ipaddr ipaddr :date formatted-date :first t :title title))
+                                                  :first-line (create-res :name (if is-cap
+                                                                                    (gethash *session-cap-text-key* *session*)
+                                                                                    name)
+                                                                          :trip-key trip-key
+                                                                          :email email
+                                                                          :text text
+                                                                          :ipaddr ipaddr
+                                                                          :date formatted-date
+                                                                          :first t
+                                                                          :title title))
                                     (error (e)
                                       (write-log :mode :error
                                                  :message (format nil "Error failed create-dat function: ~A" e))
@@ -369,7 +378,8 @@
   (let ((board-list-data (get-a-board-name-from-name board-name)))
     (if board-list-data
         (progn
-          (check-exists-threads-table-and-create-table-when-does-not)
+          (when (eq (check-exists-threads-table) :not-exists)
+            (return-from put-thread-list 400))
           (let ((result (get-thread-list (getf board-list-data :id)))
                 (is-login (gethash *session-login-key* *session*)))
             (dolist (x result)

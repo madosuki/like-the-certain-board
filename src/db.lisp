@@ -28,13 +28,12 @@
            :delete-thread
            :delete-expire-threads
            :check-exists-table
-           :check-exist-row
+           :check-exists-row
            :insert-user-table
            :get-user-table
            :update-user-table
            :insert-kakolog-table
            :change-max-of-thread-in-db
-           :init-threads-table
            :create-thread-in-db
            :get-table-column-count
            :update-last-modified-date-of-thread
@@ -183,7 +182,7 @@
      (select :*
              (from (intern table-name))))))
 
-(defun check-exist-row (unixtime)
+(defun check-exists-row (unixtime)
   (let ((tmp (with-connection (db)
                (retrieve-one
                 (select :*
@@ -192,33 +191,6 @@
     (if tmp
         t
         nil)))
-
-
-(defun init-threads-table ()
-  (with-connection (db)
-    (execute
-     (create-table (:threads :if-exists-not t)
-                   ((id :type 'integer
-                        :primary-key t
-                        :auto-increment t)
-                    (title :type 'text
-                           :not-null t)
-                    (create-date :type 'datetime
-                                 :not-null t)
-                    (last-modified-date :type 'datetime
-                                        :not-null t)
-                    (last-rise-date :type 'datetime
-                                   :not-null t)
-                    (res-count :type 'integer
-                               :not-null t
-                               :default 1)
-                    (unixtime :type 'integer
-                              :primary-key t)
-                    (max-line :type 'integer
-                              :default *default-max-length*
-                              :not-null t)
-                    (board-id :type 'integer
-                              :not-null t))))))
 
 
 (defun get-user-table (board-name user-name)
