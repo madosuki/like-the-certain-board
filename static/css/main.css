@@ -201,6 +201,8 @@ header {
     padding-bottom: 1rem;
     background-color: #EFEFEF;
     border-bottom: 1px solid;
+    padding-bottom: 1rem;
+    padding-top: 1rem;
     margin-bottom: 1rem;
 }
 
