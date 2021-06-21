@@ -209,14 +209,12 @@
                    (if thread
                        (progn (set-response-status 200)
                               (time-restrict-view
-                               :ipaddr ipaddr
                                :mode check-abuse-result
                                :bbs bbs
                                :key key
                                :mail "example@example.com"))
                        (progn (set-response-status 200)
                               (time-restrict-view
-                               :ipaddr ipaddr
                                :mode check-abuse-result
                                :bbs bbs
                                :mail "example@example.com")))))))

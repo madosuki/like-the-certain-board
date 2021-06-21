@@ -348,7 +348,7 @@
                                   "板に戻る"))))))))
 
 
-(defun time-restrict-view (&key ipaddr bbs key mode mail url)
+(defun time-restrict-view (&key bbs key mode mail url)
   (main-content "連投規制" bbs url nil
                 (:div :id "time-restrict"
                  (:h1 :id "alert-title"
