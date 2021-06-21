@@ -4,13 +4,18 @@
   (:import-from :like-certain-board.config
    :*log-path*)
   (:import-from :cl-ppcre
-                :scan)
+   :scan)
+  (:import-from :generate-like-certain-board-strings
+                :get-unix-time)
   (:export
    :write-log
    :separate-numbers-from-key-for-kako
    :check-whether-integer
    :detect-monazilla))
 (in-package :like-certain-board.utils)
+
+(defmacro msg-format (stream msg)
+  `(format ,stream "~%webapp(~A): ~A~%" (get-unix-time (get-universal-time)) ,msg))
 
 (defun write-file (&key filename message)
   (with-open-file (o (format nil "~A/~A" *log-path* filename)
@@ -21,13 +26,13 @@
 
 (defun write-log (&key mode message)
   (if (equal *log-path* "")
-      (format t "~%~A~%" message)
+      (msg-format t message)
       (cond ((eq mode :error)
              (write-file :filename "error.txt"
-                         :message message))
+                         :message (msg-format nil message)))
             ((eq mode :change-result)
              (write-file :filename "changes.txt"
-                         :message message)))))
+                         :message (msg-format nil message))))))
 
 (defun check-whether-integer (n)
   (typecase n

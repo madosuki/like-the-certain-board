@@ -131,7 +131,7 @@
     (return-from check-abuse-post :restrict))
   (let* ((data (get-data-from-time-restrict :ipaddr ipaddr)))
     (unless data
-      (insert-to-time-restirct-table :ipaddr ipaddr
+      (insert-to-time-restrict-table :ipaddr ipaddr
                                      :last-unixtime current-unixtime)
       (return-from check-abuse-post :ok))
     (let* ((count (cadr (member :count data)))
@@ -143,22 +143,22 @@
             ((and (> diff 10) (< count 100))
              (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
                                                            :count 0
-                                                           :last-unixtime current-unixtime
-                                                           :penalty-count penalty-count)
+                                                           :penalty-count penalty-count
+                                                           :last-unixtime current-unixtime)
              :ok)
             ((and (>= count 100) (> diff *24-hour-seconds*))
              (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
                                                            :count 0
-                                                           :last-unixtime current-unixtime
-                                                           :penalty-count (1+ penalty-count))
+                                                           :penalty-count (1+ penalty-count)
+                                                           :last-unixtime current-unixtime)
              :ok)
             ((>= count 100)
              :restrict-24)
             ((< diff 10)
              (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
                                                            :count (1+ count)
-                                                           :last-unixtime current-unixtime
-                                                           :penalty-count penalty-count)
+                                                           :penalty-count penalty-count
+                                                           :last-unixtime current-unixtime)
              :restrict)))))
 
 

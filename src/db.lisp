@@ -49,7 +49,7 @@
            :get-default-name-from-id
            :update-time-restrict-count-and-last-unixtime
            :get-data-from-time-restrict
-           :insert-to-time-restirct-table
+           :insert-to-time-restrict-table
            ))
 (in-package :like-certain-board.db)
 
@@ -321,7 +321,7 @@
              (from :time-restrict)
              (where (:like :ipaddr ipaddr))))))
 
-(defun insert-to-time-restirct-table (&key ipaddr last-unixtime)
+(defun insert-to-time-restrict-table (&key ipaddr last-unixtime)
   (with-connection (db)
     (execute
      (insert-into :time-restrict
@@ -329,3 +329,4 @@
                    :count 1
                    :last-unixtime last-unixtime
                    :ipaddr ipaddr)))))
+

@@ -352,14 +352,15 @@
   (main-content "連投規制" bbs url nil
                 (:div :id "time-restrict"
                  (:h1 :id "alert-title"
-                      "投稿規制")
-                 (:p (format nil "Your IP Address: ~A" ipaddr))
+                      "連投規制")
                  (raw (cond ((eq mode :restrict)
-                             (markup (:p "10秒経つまつで投稿できません．尚この状態で更に連投すればBANします．")))
+                             (markup (:p "10秒経つまつで投稿できません．")))
+                            ((eq mode :restrict-24)
+                             (markup (:p "24時間経過するまで投稿できません．10回この画面が表示されるとBANされます．")))
                             (t
                              (markup (:p "BANされました")
                                      (:p (format nil
-                                                 "~AかTwitter公式アカウントにIPアドレスを記載して解除申請してくだされば対応します．但し，悪質な場合は永久BANとなり解除申請に応じられませんのであしからず．"
+                                                 "~AかTwitter公式アカウントのDMで解除申請してくだされば対応します．その際にグローバルIPアドレスの情報が必要になります．但し，悪質な場合は誠に申し訳ありませんが永久BANとなり解除申請に応じられません．"
                                                  mail)))))))
                 (:footer :id "time-restrict"
                          (:nav
