@@ -48,7 +48,7 @@
            :get-default-name-from-name
            :get-default-name-from-id
            :update-time-restrict-count-and-last-unixtime
-           :get-count-and-unixtime-from-time-restrict
+           :get-data-from-time-restrict
            :insert-to-time-restirct-table
            ))
 (in-package :like-certain-board.db)
@@ -305,18 +305,19 @@
                (where (:and (:like :unixtime key)
                             (:= :board-id board-id))))))))
 
-(defun update-time-restrict-count-and-last-unixtime (&key ipaddr count last-unixtime)
+(defun update-time-restrict-count-and-last-unixtime (&key ipaddr count last-unixtime penalty-count)
   (with-connection (db)
     (execute
      (update :time-restrict
              (set= :count count
-                   :last-unixtime last-unixtime)
+                   :last-unixtime last-unixtime
+                   :penalty-count penalty-count)
              (where (:like :ipaddr ipaddr))))))
 
-(defun get-count-and-unixtime-from-time-restrict (&key ipaddr)
+(defun get-data-from-time-restrict (&key ipaddr)
   (with-connection (db)
     (retrieve-one
-     (select (:count :last-unixtime)
+     (select (:count :last-unixtime :penalty-count)
              (from :time-restrict)
              (where (:like :ipaddr ipaddr))))))
 
