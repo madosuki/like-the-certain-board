@@ -164,6 +164,7 @@
          (universal-time (get-universal-time))
          (current-unixtime (get-unix-time universal-time))
          (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
+         (is-monazilla (detect-monazilla user-agent))
          (bbs (cdr (assoc "bbs" _parsed :test #'string=)))
          (key (cdr (assoc "key" _parsed :test #'string=)))
          (board-data (if bbs
@@ -208,16 +209,20 @@
                                    nil)))
                    (if thread
                        (progn (set-response-status 200)
-                              (time-restrict-view
-                               :mode check-abuse-result
-                               :bbs bbs
-                               :key key
-                               :mail "example@example.com"))
+                              (if is-monazilla
+                                  `(200 (:content-type "text/html" :content-length ,(car *time-error-10sec-msg*)) ,(cdr *time-error-10sec-msg*))
+                                  (time-restrict-view
+                                   :mode check-abuse-result
+                                   :bbs bbs
+                                   :key key
+                                   :mail "example@example.com")))
                        (progn (set-response-status 200)
-                              (time-restrict-view
-                               :mode check-abuse-result
-                               :bbs bbs
-                               :mail "example@example.com")))))))
+                              (if is-monazilla
+                                  `(200 (:content-type "text/html" :content-length ,(car *time-error-24h-msg*)) ,(cdr *time-error-24h-msg*))
+                                  (time-restrict-view
+                                   :mode check-abuse-result
+                                   :bbs bbs
+                                   :mail "example@example.com"))))))))
           (t
            (set-response-status 403)
            "403 Forbidden"))))
