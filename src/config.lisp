@@ -76,15 +76,9 @@
 (defvar *kakolog-dat-path* (uiop:getenv "KAKOLOG_DAT_DIR_PATH"))
 (defvar *log-path* "")
 (defvar *time-error-10sec-msg*
-  (let ((msg (sb-ext:string-to-octets
-              "<html><head><meta http-equive=\"Conent-Type\" content=\"text/html; charset=x-sjis\"></head><body><!-- 2ch_X:error -->10秒経つまで投稿できません．何度かこの画面が出ると24時間に規制時間が延びます．<br><hr>(Samba24-2.13)</body></html>"
-              :external-format :sjis)))
-    (cons (length msg) msg)))
+  "10秒経つまで投稿できません．何度かこの画面が出ると24時間に規制時間が延びます．")
 (defvar *time-error-24h-msg*
-  (let ((msg (sb-ext:string-to-octets
-              "<html><head><meta http-equive=\"Conent-Type\" content=\"text/html; charset=x-sjis\"></head><body><!-- 2ch_X:error -->24時間経つまで投稿できません．何度かこの画面が出るとBANとなり，管理者に連絡する必要があります．また悪質な場合は永久BANとなります．<br><hr>(Samba24-2.13)</body></html>"
-              :external-format :sjis)))
-    (cons (length msg) msg)))
+  "24時間経つまで投稿できません．何度かこの画面が出るとBANとなり，管理者に連絡する必要があります．また悪質な場合は永久BANとなります．")
 
 
 

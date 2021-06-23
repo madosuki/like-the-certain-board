@@ -210,7 +210,7 @@
                    (if thread
                        (progn (set-response-status 200)
                               (if is-monazilla
-                                  `(200 (:content-type "text/html" :content-length ,(car *time-error-10sec-msg*)) ,(cdr *time-error-10sec-msg*))
+                                  (time-error-msg *time-error-10sec-msg*)
                                   (time-restrict-view
                                    :mode check-abuse-result
                                    :bbs bbs
@@ -218,7 +218,7 @@
                                    :mail "example@example.com")))
                        (progn (set-response-status 200)
                               (if is-monazilla
-                                  `(200 (:content-type "text/html" :content-length ,(car *time-error-24h-msg*)) ,(cdr *time-error-24h-msg*))
+                                  (time-error-msg *time-error-24h-msg*)
                                   (time-restrict-view
                                    :mode check-abuse-result
                                    :bbs bbs
