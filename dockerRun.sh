@@ -16,5 +16,5 @@ ros update git cl-crypt
 
 ros update quicklisp
 
-cd /root/.roswell/local-projects/like-the-certain-board/ && clackup --server :woo --address 0.0.0.0 --port 8888 ./app.lisp
-# cd /root/.roswell/local-projects/like-the-certain-board/ && clackup --server :fcgi --address 0.0.0.0 --port 8888 ./app.lisp
+# cd /root/.roswell/local-projects/like-the-certain-board/ && clackup --server :woo --address 0.0.0.0 --port 8888 ./app.lisp
+cd /root/.roswell/local-projects/like-the-certain-board/ && clackup --server :fcgi --address 0.0.0.0 --port 8888 ./app.lisp

@@ -40,6 +40,7 @@
 
 (defroute ("/" :method :GET) ()
   (let ((board-list-data (get-board-list)))
+    (format t "~%~A~%" (caveman2:request-remote-addr caveman2:*request*))
     (index-view board-list-data)))
 
 (defroute ("/about" :method :GET) ()
