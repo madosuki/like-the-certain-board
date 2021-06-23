@@ -493,7 +493,8 @@
                         (if (= status 200)
                             (progn
                               (setf (getf (response-headers *response*) :location) (concatenate 'string "/test/read.cgi/" bbs "/" key))
-                              (set-response-status 302))
+                              (set-response-status 302)
+                              "書き込みに成功しました．遷移します．")
                             (progn
                               (set-response-status status)
                               (write-result-view :error-type 'write-error :message "混雑等の理由で新規スレッド作成に失敗しました．")))))))
@@ -509,7 +510,7 @@
                      (if (= status 200)
                          (progn (setf (getf (response-headers *response*) :location) (concatenate 'string "/" bbs))
                                 (set-response-status 302)
-                                (next-route))
+                                "スレッド作成に成功しました．遷移します．")
                          (progn
                            (set-response-status status)
                            (write-result-view :error-type 'create-error :message "混雑等の理由で新規スレッド作成に失敗しました．"))
