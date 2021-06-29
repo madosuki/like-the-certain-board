@@ -216,14 +216,14 @@
                                    :mode check-abuse-result
                                    :bbs bbs
                                    :key key
-                                   :mail "example@example.com")))
+                                   :mail *admin-mailaddr*)))
                        (progn (set-response-status 200)
                               (if is-monazilla
                                   (time-error-msg *time-error-24h-msg*)
                                   (time-restrict-view
                                    :mode check-abuse-result
                                    :bbs bbs
-                                   :mail "example@example.com"))))))))
+                                   :mail *admin-mailaddr*))))))))
           (t
            (set-response-status 403)
            "403 Forbidden"))))

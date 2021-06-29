@@ -21,6 +21,7 @@
            :*session-last-post-seconds*
            :*max-thread-list*
            :*admin-ipaddr*
+           :*admin-mailaddr*
            :*dat-path*
            :*kakolog-html-path*
            :*kakolog-dat-path*
@@ -71,6 +72,7 @@
 (defvar *session-post-count-key* "post-count")
 (defvar *max-thread-list* 10000)
 (defvar *admin-ipaddr* "172.20.0.1")
+(defvar *admin-mailaddr* "example@example.com")
 (defvar *dat-path* (uiop:getenv "DAT_DIR_PATH"))
 (defvar *kakolog-html-path* (uiop:getenv "KAKOLOG_HTML_DIR_PATH"))
 (defvar *kakolog-dat-path* (uiop:getenv "KAKOLOG_DAT_DIR_PATH"))
