@@ -562,10 +562,10 @@
 
 (defun check-login-possible (board-id user-name &optional (hash-string ""))
   (let ((data (get-user-table board-id user-name))
-        (session-is-login (gethash *session-login-key* *session*)))
+        (is-logged-in (gethash *session-login-key* *session*)))
     (unless data
       (return-from check-login-possible (cons :not-found :no-data)))
-    (when session-is-login
+    (when is-logged-in
       (return-from check-login-possible (cons :logged-in data)))
     (let ((db-hash-string (getf data :hash)))
       (if (string= hash-string db-hash-string)
