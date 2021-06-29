@@ -64,7 +64,7 @@
      ,@body))
 
 (defstruct user-table-struct
-  (board-name "" :type string)
+  (board-id "" :type integer)
   (user-name "" :type string)
   (hash "" :type string)
   (create-date "" :type string)
@@ -202,7 +202,7 @@
 
 (defun insert-user-table (user-data)
   (let ((user-name (user-table-struct-user-name user-data))
-        (board-name (user-table-struct-board-name user-data))
+        (board-id (user-table-struct-board-id user-data))
         (hash (user-table-struct-hash user-data))
         (create-date (user-table-struct-create-date user-data))
         (latest-date (user-table-struct-latest-date user-data))
@@ -212,7 +212,7 @@
       (execute
        (insert-into :user-table
                     (set=
-                     :board-name board-name
+                     :board-id board-id
                      :user-name user-name
                      :hash hash
                      :create-date create-date

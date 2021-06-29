@@ -595,18 +595,18 @@
           (t
            :failed))))
 
-(defun create-user (board-name user-name password date &optional (is-admin nil) (cap-text nil))
+(defun create-user (board-id user-name password date &optional (is-admin nil) (cap-text nil))
   (unless (or user-name password)
     (return-from create-user nil))
-  (when (get-user-table board-name user-name)
-    (return-from create-user 'exist-user))
+  (when (get-user-table board-id user-name)
+    (return-from create-user :exist-user))
   (let* ((hash (sha256 (concatenate 'string *solt* password)))
          (date (get-current-datetime date))
          (return-status t)
          (user-data (make-user-table-struct
                      :user-name user-name
                      :hash hash
-                     :board-name board-name
+                     :board-id board-id
                      :create-date date
                      :latest-date date
                      :is-admin (if is-admin 1 0)
@@ -615,7 +615,7 @@
       (error (e)
         (write-log :mode :error
                    :message (format nil "~%Error in create-user : ~A~%" e))
-        (setq return-status 'create-failed)))
+        (setq return-status :create-failed)))
     return-status))
 
 
