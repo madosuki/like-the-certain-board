@@ -287,7 +287,7 @@
                     :board-name (getf board-data :name)
                     :csrf-token (csrf-token *session*)
                     :is-login (if (gethash *session-login-key* *session*)
-                                  'logged-in
+                                  :logged-in
                                   nil))
         (on-exception *web* 404))))
 
@@ -322,7 +322,7 @@
                  "invalid")
                (progn
                  (setq user-name (create-safety-strings user-name))
-                 (let ((login-check (login board-name user-name password date)))
+                 (let ((login-check (login (getf board-data :board-id) user-name password date)))
                    (cond ((eq login-check :logged-in)
                           (login-view :board-name (getf board-data :name) :board-url-name board-name :is-login 'logged-in))
                          ((eq login-check :success)

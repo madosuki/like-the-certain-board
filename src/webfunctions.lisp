@@ -549,38 +549,40 @@
         (flexi-streams:octets-to-string tmp)))))
 
 
-(defun check-time-over-logged-in (board-name user-name universal-time)
-  (let ((db-data (get-user-table board-name user-name)))
+(defun check-time-over-logged-in (board-id user-name universal-time)
+  (let ((db-data (get-user-table board-id user-name)))
     (unless db-data
-      (return-from check-time-over-logged-in 'not-found))
+      (return-from check-time-over-logged-in :not-found))
     (let ((latest-date (getf db-data :latest-date))
           (is-logged-in (getf db-data :is-logged-in)))
       (if (and (= is-logged-in 1)
                (> (abs (- universal-time latest-date)) (* 1 60 60)))
-          'time-over
+          :time-over
           nil))))
 
-(defun check-login-possible (board-name user-name &optional (hash-string ""))
-  (let ((data (get-user-table board-name user-name))
+(defun check-login-possible (board-id user-name &optional (hash-string ""))
+  (let ((data (get-user-table board-id user-name))
         (session-is-login (gethash *session-login-key* *session*)))
     (unless data
-      (return-from check-login-possible 'not-found))
+      (return-from check-login-possible (cons :not-found :no-data)))
     (when session-is-login
-      (return-from check-login-possible 'logged-in))
+      (return-from check-login-possible (cons :logged-in data)))
     (let ((db-hash-string (getf data :hash)))
-      (string= hash-string db-hash-string))))
+      (if (string= hash-string db-hash-string)
+          (cons :success data)
+          (cons :failed :no-data)))))
 
-(defun login (board-name user-name password universal-time)
+(defun login (board-id user-name password universal-time)
   (when (or (null user-name) (null password))
     (return-from login nil))
   (let* ((hash (sha256 (concatenate 'string *solt* password)))
          (is-login nil)
-         (checked (check-login-possible board-name user-name hash))
+         (checked-v (check-login-possible board-id user-name hash))
          (date (get-current-datetime universal-time)))
-    (cond ((eq checked 'logged-in)
+    (cond ((eq (car checked-v) :logged-in)
            :logged-in)
-          ((eq checked t)
-           (let* ((db-data (get-user-table board-name user-name))
+          ((eq (car checked-v) :success)
+           (let* ((db-data (cdr checked-v))
                   (is-admin (getf db-data :is-admin))
                   (cap-text (getf db-data :cap-text)))
              (when is-admin
@@ -591,7 +593,7 @@
            (update-user-table board-name user-name date)
            :success)
           (t
-           :invalid-username-or-password))))
+           :failed))))
 
 (defun create-user (board-name user-name password date &optional (is-admin nil) (cap-text nil))
   (unless (or user-name password)

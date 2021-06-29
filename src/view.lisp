@@ -376,9 +376,9 @@
 (defun login-view (&key board-name board-url-name csrf-token is-login url)
   (main-content board-name board-url-name url nil
                 (:h1 "ログインページ")
-                (raw (cond ((eq is-login 'logged-in)
+                (raw (cond ((eq is-login :logged-in)
                             (markup (:h2 "ログイン済みです")))
-                           ((eq is-login 'failed)
+                           ((eq is-login :failed)
                             (markup (:h2 "ログインに失敗しました")))))
                 (:form :action (format nil "/~A/api/user" board-url-name)
                        :method "POST"

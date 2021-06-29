@@ -193,12 +193,12 @@
         nil)))
 
 
-(defun get-user-table (board-name user-name)
+(defun get-user-table (board-id user-name)
   (with-connection (db)
     (retrieve-one
      (select :*
              (from :user-table)
-             (where (:and (:like :user-name user-name) (:like :board-name board-name)))))))
+             (where (:and (:like :user-name user-name) (:= :board-id board-id)))))))
 
 (defun insert-user-table (user-data)
   (let ((user-name (user-table-struct-user-name user-data))
