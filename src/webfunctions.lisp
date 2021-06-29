@@ -19,7 +19,6 @@
    :get-value-from-key
    :check-abuse-post
    :set-response-status
-   :create-safety-strings
    :login
    :create-user
    :generate-dat-name
@@ -184,9 +183,6 @@
 
 (defmacro generate-dat-name (l)
   `(concatenate 'string (write-to-string (cadr (member :unixtime ,l))) ".dat"))
-
-(defmacro create-safety-strings (s)
-  `(replace-not-available-char-when-cp932 ,s))
 
 
 (defun create-dat (&key unixtime first-line board-url-name)
@@ -610,7 +606,9 @@
                      :create-date date
                      :latest-date date
                      :is-admin (if is-admin 1 0)
-                     :cap-text (if cap-text cap-text ""))))
+                     :cap-text (if cap-text
+                                   (convert-html-special-chars (replace-not-available-char-when-cp932 (format nil "~A★" cap-text)))
+                                   ""))))
     (handler-case (insert-user-table user-data)
       (error (e)
         (write-log :mode :error
