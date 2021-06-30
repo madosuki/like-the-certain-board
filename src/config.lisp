@@ -8,7 +8,7 @@
            :*application-root*
            :*static-directory*
            :*template-directory*
-           :*solt*
+           :*salt*
            :*default-max-length*
            :*1001*
            :*default-penalty-time*
@@ -52,7 +52,7 @@
 (defparameter *site-db-name* "")
 (defparameter *db-hostname* "127.0.0.1")
 (defparameter *docked-db-container-name* "db")
-(defparameter *solt* "")
+(defparameter *salt* "")
 (defparameter *domain-name* "localhost:8080")
 (defparameter *http-root-path* (format nil "http://~A" *domain-name*))
 (defparameter *https-root-path* (format nil "https://~A" *domain-name*))
@@ -95,7 +95,7 @@
             (user-name-in-db (cdr (assoc :user-name-in-db parsed)))
             (user-password-in-db (cdr (assoc :user-password-in-db parsed)))
             (db-hostname (cdr (assoc :db-hostname parsed)))
-            (solt (cdr (assoc :solt parsed)))
+            (salt (cdr (assoc :salt parsed)))
             (default-name (cdr (assoc :default-name parsed)))
             (log-path (cdr (assoc :log-path parsed))))
         (when site-db-name
@@ -106,8 +106,8 @@
           (setq *user-password-in-db* user-password-in-db))
         (when db-hostname
           (setq *db-hostname* db-hostname))
-        (when solt
-          (setq *solt* solt))
+        (when salt
+          (setq *salt* salt))
         (when log-path
           (setq *log-path* log-path))))))
 
