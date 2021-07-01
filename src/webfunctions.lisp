@@ -586,7 +586,7 @@
              (when (and (not (null cap-text)) (string/= cap-text ""))
                (setf (gethash *session-cap-text-key* *session*) cap-text)))
            (setf (gethash *session-login-key* *session*) t)
-           (update-user-table board-name user-name date)
+           (update-user-table board-id user-name date)
            :success)
           (t
            :failed))))

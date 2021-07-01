@@ -220,12 +220,12 @@
                      :is-admin is-admin
                      :cap-text cap-text))))))
 
-(defun update-user-table (board-name user-name date)
+(defun update-user-table (board-id user-name date)
   (with-connection (db)
     (execute
      (update :user-table
              (set= :latest-date date)
-             (where (:and (:like :user-name user-name) (:like :board-name board-name)))))))
+             (where (:and (:like :user-name user-name) (:like :board-id board-id)))))))
 
 (defun insert-kakolog-table (unixtime title board-id)
   (with-connection (db)

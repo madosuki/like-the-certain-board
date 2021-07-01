@@ -328,11 +328,13 @@
                           (setf (getf (response-headers *response*) :location)
                            (concatenate 'string "/" board-name))
                           (set-response-status 302)
-                          (next-route))
+                          "success!")
                          (t
-                          (set-response-status 401)
                           (login-view :board-name (getf board-data :name) :board-url-name board-name :is-login :failed)
-                          ))))))
+                          (setf (getf (response-headers *response*) :location)
+                                (format nil "/~A/login" board-name))
+                          (set-response-status 302)
+                          "failed login"))))))
            ((equal mode "logout")
             (let ((check (gethash *session-login-key* *session*)))
               (when check
