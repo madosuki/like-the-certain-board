@@ -2,16 +2,18 @@
 
 # this script is still WIP
 
-user_name="user"
-cap_text="★管理人"
+user_name=${1}
+cap_text=${2}
 
 mysql_host="127.0.0.1"
 mysql_dbname="mysite"
-mysql_username="sample"
+mysql_username="lain"
 
-user_password=${1}
-mysql_password=${2}
+user_password=${3}
+salt=${4}
 
-mysql -h ${mysql_host} -u ${user_name} -p ${mysql_password} <<EOF
-insert into ${mysql_dbname}.`user-table` (`board-id`, `user-name` hash, `create-date`, `latest-date`, `is-admin`, `cap-test`) values(0, ${user_name}, "", "1970-01-01", "1970-01-01", 1, ${cap_text})
-EOF
+target=${salt}${user_password}
+hash=`echo -n ${target} | sha256sum | awk '{ print $1 }'`
+
+mysql -h ${mysql_host} -u ${mysql_username} -p -e "insert into ${mysql_dbname}.\`user-table\` (\`board-id\`, \`user-name\`, hash, \`create-date\`, \`latest-date\`, \`is-admin\`, \`cap-text\`) values(0, '${user_name}', '${hash}', '1970-01-01', '1970-01-01', 1, '${cap_text}')"
+

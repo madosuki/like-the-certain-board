@@ -307,7 +307,7 @@
          (board-data (get-a-board-name-from-name board-name))
          (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*))))
     (when user-name
-      (setq user-name (replace-not-available-char-when-cp932 (convert-html-special-chars email))))
+      (setq user-name (replace-not-available-char-when-cp932 (convert-html-special-chars user-name))))
     (cond ((or (null board-data) (null mode))
            (set-response-status 400)
            "invalid parameter")
