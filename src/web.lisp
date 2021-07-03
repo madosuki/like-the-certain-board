@@ -89,9 +89,6 @@
                 `(200 (:content-type "text/plain" :content-length ,content-length) ,empty))))
         (on-exception *web* 404))))
 
-;; (defroute "/ipinfo" ()
-;;   (caveman2:request-remote-addr caveman2:*request*))
-
 (defroute ("/test/read.cgi/:board-name/:unixtime" :method :GET) (&key board-name unixtime)
   (let* ((dat-filepath (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime))
          (is-login (gethash *session-login-key* *session*))
@@ -302,11 +299,11 @@
          (password (get-value-from-key "password" _parsed))
          (is-admin (get-value-from-key "is_admin" _parsed))
          (cap-text (get-value-from-key "cap_text" _parsed))
-         (cookie (gethash "cookie" (request-headers *request*)))
-         (splited-cookie (if (null cookie)
-                             nil
-                             (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
-                                     (cl-ppcre:split ";" cookie))))
+         ;; (cookie (gethash "cookie" (request-headers *request*)))
+         ;; (splited-cookie (if (null cookie)
+         ;;                     nil
+         ;;                     (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
+         ;;                             (cl-ppcre:split ";" cookie))))
          (date (get-universal-time))
          (board-data (get-a-board-name-from-name board-name))
          (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*))))
@@ -327,14 +324,18 @@
                (progn
                  (let ((login-check (login (getf board-data :id) user-name password date)))
                    (cond ((eq login-check :logged-in)
-                          (login-view :board-name (getf board-data :name) :board-url-name board-name :is-login :logged-in))
+                          (login-view :board-name (getf board-data :name)
+                                      :board-url-name board-name
+                                      :is-login :logged-in))
                          ((eq login-check :success)
                           (setf (getf (response-headers *response*) :location)
                                 (concatenate 'string "/" board-name))
                           (set-response-status 302)
                           "success!")
                          (t
-                          (login-view :board-name (getf board-data :name) :board-url-name board-name :is-login :failed)
+                          (login-view :board-name (getf board-data :name)
+                                      :board-url-name board-name
+                                      :is-login :failed)
                           (setf (getf (response-headers *response*) :location)
                                 (format nil "/~A/login?condition=failed" board-name))
                           (set-response-status 302)
@@ -386,10 +387,10 @@
            "Forbidden")
           ((null is-login)
            (set-response-status 403)
-           "not was logged-in")
+           "Forbidden")
           ((null is-admin)
            (set-response-status 403)
-           "you are not admin")
+           "Forbidden")
           ((or (null line)
                (null key)
                (not (eq check-key :integer-string)))

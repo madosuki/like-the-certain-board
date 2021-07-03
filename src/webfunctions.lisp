@@ -570,7 +570,7 @@
 
 (defun login (board-id user-name password universal-time)
   (when (or (null user-name) (null password))
-    (return-from login nil))
+    (return-from login :failed))
   (let* ((hash (sha256 (concatenate 'string *salt* password)))
          (is-login nil)
          (checked-v (check-login-possible board-id user-name hash))
