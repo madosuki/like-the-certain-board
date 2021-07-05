@@ -40,7 +40,8 @@
   :state (make-cookie-state
           :httponly t
           :cookie-key "lack.session"
-          :samesite :lax
+          :samesite :strict
+          :secure t
           :expires 1800))
  (:csrf
   :one-time t
