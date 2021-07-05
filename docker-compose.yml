@@ -42,6 +42,7 @@ services:
       - ./docker/mysql/conf:/etc/mysql/conf.d
       - db-data-store:/var/lib/mysql
       - db-log-store:/var/log/mysql
+      
   nginx:
     image: nginx:latest
     container_name: nginx_on_docker
@@ -56,6 +57,7 @@ services:
       - 8081:443
     volumes:
       - ./docker/nginx/conf:/etc/nginx/conf.d/
+      - ../keys:/etc/keys/
       - ../nginx_log:/var/log/nginx/
 
 volumes:

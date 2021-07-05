@@ -279,18 +279,25 @@
   (let ((board-data (get-a-board-name-from-name board-name))
         (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
         (condition (get-value-from-key "condition" _parsed)))
-    (if (and board-data (null (detect-monazilla user-agent)))
-        (login-view :board-url-name board-name
-                    :board-name (getf board-data :name)
-                    :csrf-token (csrf-token *session*)
-                    :is-login (let ((hash (gethash *session-login-key* *session*)))
-                                (cond ((and condition (null hash))
-                                       :failed)
-                                      (hash
-                                       :success)
-                                      (t
-                                       nil))))
-        (on-exception *web* 404))))
+    (cond ((null board-data)
+           (on-exception *web* 404))
+          ((or (detect-monazilla user-agent) (/= 443 (request-server-port *request*)))
+           (set-response-status 403)
+           "Forbidden")
+          (board-data
+           (login-view :board-url-name board-name
+                       :board-name (getf board-data :name)
+                       :csrf-token (csrf-token *session*)
+                       :is-login (let ((hash (gethash *session-login-key* *session*)))
+                                   (cond ((and condition (null hash))
+                                          :failed)
+                                         (hash
+                                          :success)
+                                         (t
+                                          nil)))))
+          (t
+           (set-response-status 403)
+           "Forbidden"))))
 
 
 (defroute ("/:board-name/api/user" :method :POST) (&key board-name _parsed)
@@ -309,10 +316,12 @@
          (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*))))
     (when user-name
       (setq user-name (replace-not-available-char-when-cp932 (convert-html-special-chars user-name))))
-    (cond ((or (null board-data) (null mode))
+    (cond ((null board-data)
+           (on-exception *web* 404))
+          ((null mode)
            (set-response-status 400)
            "invalid parameter")
-          ((detect-monazilla user-agent)
+          ((or (detect-monazilla user-agent) (/= 443 (request-server-port *request*)))
            (set-response-status 403)
            "Forbidden")
           ((equal mode "login")
@@ -385,6 +394,9 @@
           ((detect-monazilla user-agent)
            (set-response-status 403)
            "Forbidden")
+          ((/= 443 (request-server-port *request*))
+           (set-response-status 403)
+           "Forbidden")
           ((null is-login)
            (set-response-status 403)
            "Forbidden")
@@ -416,11 +428,12 @@
         (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*))))
     (cond ((or (null mode)
                (null board-data)
+               (/= 443 (request-server-port *request*))
                (detect-monazilla user-agent)
                (null is-login)
                (null is-admin))
            (set-response-status 403)
-           "Access Denied")
+           "Forbidden")
           ((string= mode "delete")
            (if (and (not (null key))
                     (eq (check-whether-integer key) :integer-string)
