@@ -331,7 +331,7 @@
                  (set-response-status 400)
                  "invalid parameter")
                (progn
-                 (let ((login-check (login (getf board-data :id) user-name password date)))
+                 (let ((login-check (login (getf board-data :id) user-name password date *session*)))
                    (cond ((eq login-check :logged-in)
                           (login-view :board-name (getf board-data :name)
                                       :board-url-name board-name

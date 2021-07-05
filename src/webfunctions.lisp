@@ -556,9 +556,9 @@
           :time-over
           nil))))
 
-(defun check-login-possible (board-id user-name &optional (hash-string ""))
+(defun check-login-possible (board-id user-name session &optional (hash-string ""))
   (let ((data (get-user-table board-id user-name))
-        (is-logged-in (gethash *session-login-key* *session*)))
+        (is-logged-in (gethash *session-login-key* session)))
     (unless data
       (return-from check-login-possible (cons :not-found :no-data)))
     (when is-logged-in
@@ -568,12 +568,12 @@
           (cons :success data)
           (cons :failed :no-data)))))
 
-(defun login (board-id user-name password universal-time)
+(defun login (board-id user-name password universal-time session)
   (when (or (null user-name) (null password))
     (return-from login :failed))
   (let* ((hash (sha256 (concatenate 'string *salt* password)))
          (is-login nil)
-         (checked-v (check-login-possible board-id user-name hash))
+         (checked-v (check-login-possible board-id user-name session hash))
          (date (get-current-datetime universal-time)))
     (cond ((eq (car checked-v) :logged-in)
            :logged-in)
@@ -582,10 +582,10 @@
                   (is-admin (getf db-data :is-admin))
                   (cap-text (getf db-data :cap-text)))
              (when is-admin
-               (setf (gethash *session-admin-key* *session*) t))
+               (setf (gethash *session-admin-key* session) t))
              (when (and (not (null cap-text)) (string/= cap-text ""))
-               (setf (gethash *session-cap-text-key* *session*) cap-text)))
-           (setf (gethash *session-login-key* *session*) t)
+               (setf (gethash *session-cap-text-key* session) cap-text)))
+           (setf (gethash *session-login-key* session) t)
            (update-user-table board-id user-name date)
            :success)
           (t
