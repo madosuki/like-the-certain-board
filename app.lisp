@@ -1,7 +1,7 @@
 (ql:quickload :like-certain-board)
 
 (defpackage like-certain-board.app
-  (:use :cl :lack.middleware.session.state.cookie)
+  (:use :cl :lack.middleware.session.state.cookie :lack.session.store.dbi)
   (:import-from :lack.builder
    :builder)
   (:import-from :ppcre
@@ -37,6 +37,9 @@
        :output ,(getf (config) :error-log))
      nil)
  (:session
+  :store (make-dbi-store :connector (lambda ()
+                                      (apply #'dbi:connect
+                                             (like-certain-board.db:connection-settings))))
   :state (make-cookie-state
           :httponly t
           :cookie-key "lack.session"

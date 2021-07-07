@@ -35,8 +35,7 @@
            :*time-error-24h-msg*
            :appenv
            :developmentp
-           :productionp
-           ))
+           :productionp))
 (in-package :like-certain-board.config)
 
 (setf (config-env-var) "APP_ENV")
