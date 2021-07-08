@@ -69,7 +69,7 @@
 
 (setf djula:*djula-execute-package* (find-package :like-certain-board.djula))
 
-(defparameter *og-prefix* (format nil "og: ~A" *http-root-path*))
+(defparameter *og-prefix* (format nil "og: ~A" *https-root-path*))
 (defparameter *default-ogp-image-name* "ogp_image_sample.png")
 
 (defmacro base-html (title url ogp-image-name &body body)
@@ -87,7 +87,7 @@
                            :content ,url)
                     (:meta :property "og:image"
                            :content (format nil "~A/images/~A"
-                                            *http-root-path*
+                                            *https-root-path*
                                             (if,ogp-image-name
                                              ,ogp-image-name
                                              *default-ogp-image-name*))))))
@@ -114,7 +114,7 @@
                      ,@body))))
 
 (defun index-view (board-list)
-  (main-content "板一覧" nil *http-root-path* nil
+  (main-content "板一覧" nil *https-root-path* nil
                 (:div :id "board-list"
                       (:h1 "板一覧")
                       (:ul
