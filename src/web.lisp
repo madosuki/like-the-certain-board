@@ -44,18 +44,18 @@
     (index-view board-list-data)))
 
 (defroute ("/about" :method :GET) ()
-  (about-page-view (format nil "~A/about" *http-root-path*)))
+  (about-page-view (format nil "~A/about" *https-root-path*)))
 
 (defroute ("/:board-name/" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
     (if board-data
-        (put-thread-list board-name (getf board-data :name) *web* (format nil "~A/~A" *http-root-path* board-name) (csrf-token *session*))
+        (put-thread-list board-name (getf board-data :name) *web* (format nil "~A/~A" *https-root-path* board-name) (csrf-token *session*))
         (on-exception *web* 404))))
 
 (defroute ("/:board-name" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-name-from-name board-name)))
     (if board-data
-        (put-thread-list board-name (getf board-data :name) *web* (format nil "~A/~A" *http-root-path* board-name) (csrf-token *session*))
+        (put-thread-list board-name (getf board-data :name) *web* (format nil "~A/~A" *https-root-path* board-name) (csrf-token *session*))
         (on-exception *web* 404))))
 
 (defroute ("/:board-name/kakolog" :method :GET) (&key board-name)
@@ -63,7 +63,7 @@
          (data (if board-data
                    (get-kakolog-thread-list (getf board-data :id))
                    nil))
-         (url (format nil "~A/~A/kakolog" *http-root-path* board-name)))
+         (url (format nil "~A/~A/kakolog" *https-root-path* board-name)))
     (if data
         (kakolog-list-view board-name url data)
         (kakolog-list-view board-name url))))
@@ -107,7 +107,7 @@
                            :csrf-token (csrf-token *session*)
                            :is-login is-login
                            :url (format nil "~A/test/read.cgi/~A/~A"
-                                        *http-root-path*
+                                        *https-root-path*
                                         board-name
                                         unixtime)))
             (let* ((separated (separate-numbers-from-key-for-kako unixtime))
@@ -150,7 +150,7 @@
                             :second five-digit-numbers
                             :key unixtime
                             :url (format nil "~A/~A/kako/~A/~A/~A.html"
-                                         *http-root-path* board-name
+                                         *https-root-path* board-name
                                          four-digit-numbers five-digit-numbers
                                          unixtime))
               (on-exception *web* 404)))
