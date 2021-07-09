@@ -15,7 +15,7 @@
                 :separate-numbers-from-key-for-kako
                 :detect-monazilla)
   (:import-from :lack.middleware.csrf
-                :csrf-token)
+   :csrf-token)
   (:import-from :cl-ppcre
                 :scan)
   (:export :*web*))
@@ -39,6 +39,8 @@
 ;; Routing rules
 
 (defroute ("/" :method :GET) ()
+  ;; (setf (getf (getf (request-env *request*) :lack.session.options) :change-id) t)
+  ;; (format t "~%~A~%" (request-env *request*))
   (let ((board-list-data (get-board-list)))
     (format t "~%~A~%" (caveman2:request-remote-addr caveman2:*request*))
     (index-view board-list-data)))
@@ -352,7 +354,8 @@
           ((equal mode "logout")
            (let ((check (gethash *session-login-key* *session*)))
              (when check
-               (clrhash *session*))
+               (clrhash *session*)
+               (setf (getf (getf (request-env *request*) :lack.session.options) :expire) t))
              (setf (getf (response-headers *response*) :location)
                    (concatenate 'string "/" board-name))
              (set-response-status 302)

@@ -584,6 +584,7 @@
            (let* ((db-data (cdr checked-v))
                   (is-admin (getf db-data :is-admin))
                   (cap-text (getf db-data :cap-text)))
+             (setf (getf (getf (request-env *request*) :lack.session.options) :change-id) t)
              (when is-admin
                (setf (gethash *session-admin-key* session) t))
              (when (and (not (null cap-text)) (string/= cap-text ""))
