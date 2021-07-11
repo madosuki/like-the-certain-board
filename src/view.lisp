@@ -508,14 +508,14 @@
                       "書き込み確認"
                       "スレッド作成確認"))
         (key (if (eq mode :write)
-                 (cadr (member :key data))
+                 (cadr (member "key" data :test #'string=))
                  nil))
         (subject (if (eq mode :create)
-                     (cadr (member :subject data))
+                     (cadr (member "subject" data :test #'string=))
                      nil))
-        (FROM (cadr (member :FROM data)))
-        (mail (cadr (member :mail data)))
-        (MESSAGE (cadr (member :MESSAGE data))))
+        (FROM (cadr (member "FROM" data :test #'string=)))
+        (mail (cadr (member "mail" data :test #'string=)))
+        (MESSAGE (cadr (member "MESSAGE" data :test #'string=))))
     (main-content title board-name url nil
                   (:h1 title)
                   (:div :id "check-terms-of-use"
@@ -525,12 +525,12 @@
                   (:div :id "confirm-data"
                    (:p (format nil "板名: ~A" board-name))
                    (when key
-                     (raw (markup (:p (format nil "スレッドキー: ~A" (cadr (member :key data)))))))
+                     (raw (markup (:p (format nil "スレッドキー: ~A" key)))))
                    (when subject
-                     (raw (markup (:p (format nil "スレッド名: ~A" (cadr (member :subject data)))))))
+                     (raw (markup (:p (format nil "スレッド名: ~A" subject)))))
                    (:p (format nil "名前: ~A" FROM))
                    (:p (format nil "メール: ~A" mail))
-                   (:p (format nil "本文: ~A" (cadr (member :MESSAGE data)))))
+                   (:p (format nil "本文: ~A"  MESSAGE)))
                   (:form :action "/test/bbs.cgi"
                          :method "POST"
                          (:input :name "bbs"
@@ -547,16 +547,21 @@
                                  :type "hidden")
                          (when subject
                            (raw (markup (:input :name "subject"
-                                                :value (cadr (member :subject data))
+                                                :value subject
                                                 :type "hidden"))))
                          (:input :name "FROM"
-                                 :value (cadr (member :FROM data))
+                                 :value FROM
                                  :type "hidden")
                          (:input :name "mail"
-                                 :value (cadr (member :mail data))
+                                 :value (if (eq mail :NO-DATA)
+                                            ""
+                                            mail)
                                  :type "hidden")
                          (:input :name "MESSAGE"
-                                 :value (cadr (member :MESSAGE data))
+                                 :value MESSAGE
+                                 :type "hidden")
+                         (:input :name "confirm"
+                                 :value "t"
                                  :type "hidden")
                          (:input :name "_csrf_token"
                                  :type "hidden"

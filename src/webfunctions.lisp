@@ -11,7 +11,9 @@
   (:import-from :like-certain-board.utils
                 :write-log
                 :separate-numbers-from-key-for-kako
-                :check-whether-integer)
+   :check-whether-integer)
+  (:import-from :lack.middleware.csrf
+   :csrf-token)
   (:export
    :put-thread-list
    :to-kakolog
@@ -132,7 +134,7 @@
     (unless data
       (insert-to-time-restrict-table :ipaddr ipaddr
                                      :last-unixtime current-unixtime)
-      (return-from check-abuse-post :ok))
+      (return-from check-abuse-post :unknown))
     (let* ((count (cadr (member :count data)))
            (last-unixtime (cadr (member :last-unixtime data)))
            (penalty-count (cadr (member :penalty-count data)))
@@ -144,7 +146,7 @@
                                                            :count 0
                                                            :penalty-count penalty-count
                                                            :last-unixtime current-unixtime)
-             :ok)
+             :ok-but-increment-penalty)
             ((and (>= count 100) (> diff *24-hour-seconds*))
              (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
                                                            :count 0
@@ -159,6 +161,7 @@
                                                            :penalty-count penalty-count
                                                            :last-unixtime current-unixtime)
              :restrict)))))
+
 
 
 (defun format-datetime (date)
@@ -244,15 +247,15 @@
         (unixtime (get-unix-time date))
         (bbs (get-value-from-key-on-list "bbs" _parsed))
         (is-cap nil))
-    (when (or (null bbs) (eq bbs 'no-data) (null text) (eq text 'no-data))
+    (when (or (null bbs) (eq bbs :no-data) (null text) (eq text :no-data))
       (return-from create-thread 400))
     (when (and (gethash *session-login-key* *session*) (gethash *session-cap-text-key* *session*))
       (setq is-cap t))
-    (when (eq email 'no-data)
+    (when (eq email :no-data)
       (setq email ""))
-    (when (eq text 'no-data)
+    (when (eq text :no-data)
       (setq text ""))
-    (when (eq name 'no-data)
+    (when (eq name :no-data)
       (setq name (cadr (get-default-name-from-id board-id))))
     (if (stringp title)
         (progn
@@ -328,17 +331,17 @@
          (is-cap nil))
     (when (and (gethash *session-login-key* *session*) (gethash *session-cap-text-key* *session*))
       (setq is-cap t))
-    (when (or (null from) (eq from 'no-data))
+    (when (or (null from) (eq from :no-data))
       (setq from (cadr (get-default-name-from-id board-id))))
-    (when (or (null mail) (eq mail 'no-data))
+    (when (or (null mail) (eq mail :no-data))
       (setq mail ""))
     (when (or (null bbs)
               (null key)
               (null message)
-              (eq bbs 'no-data)
-              (eq key 'no-data)
-              (eq time 'no-data)
-              (eq message 'no-data))
+              (eq bbs :no-data)
+              (eq key :no-data)
+              (eq time :no-data)
+              (eq message :no-data))
       (return-from insert-res 400))
     (when (string= from "")
       (setq from (cadr (get-default-name-from-id board-id))))
@@ -455,7 +458,7 @@
         (sb-ext:string-to-octets confirm-html :external-format :UTF-8)
         (sb-ext:string-to-octets confirm-html :external-format :SJIS))))
 
-(defun bbs-cgi-function (body-text ipaddr universal-time &optional (error-count 0))
+(defun bbs-cgi-function (body-text ipaddr universal-time is-monazilla session &optional (error-count 0))
   (let ((decoded-query (sb-ext:octets-to-string (coerce body-text '(vector (unsigned-byte 8)))
                                                  :external-format :UTF-8))
         (form nil))
@@ -465,7 +468,7 @@
             (let ((key (car x))
                   (value (cadr x)))
               (if (null value)
-                  (setq form (nconc (list key 'no-data) form))
+                  (setq form (nconc (list key :no-data) form))
                   (setq form (nconc (list key (try-url-decode value)) form)))))
           (let* ((bbs (get-value-from-key-on-list "bbs" form))
                  (board-id (let ((board-list-data (get-a-board-name-from-name bbs)))
@@ -474,7 +477,31 @@
                                  nil)))
                  (key (get-value-from-key-on-list "key" form))
                  (submit (get-value-from-key-on-list "submit" form))
-                 (check-key (check-whether-integer key)))
+                 (check-key (check-whether-integer key))
+                 (confirm-param (get-value-from-key-on-list "confirm" form)))
+            (unless (or board-id submit)
+              (set-response-status 400)
+              (return-from bbs-cgi-function "bad parameter"))
+            (when (string= submit "書き込む")
+              (unless (eq check-key :integer-string)
+                (set-response-status 400)
+                (return-from bbs-cgi-function "bad parameter"))
+              (unless (get-a-thread key board-id)
+                (set-response-status 400)
+                (return-from bbs-cgi-function "bad parameter")))
+            (when (and (null (equal submit "書き込む"))
+                       (null (equal submit "新規スレッド作成")))
+              (set-response-status 400)
+              (return-from bbs-cgi-function "bad parameter"))
+            (when (and (null is-monazilla)
+                       (null confirm-param))
+              (return-from bbs-cgi-function (confirm-page-view :board-name bbs
+                                                               :url ""
+                                                               :mode (if (equal submit "書き込む")
+                                                                         :write
+                                                                         :create)
+                                                               :data form
+                                                               :csrf-token (csrf-token session))))
             (cond
               ((string= submit "書き込む")
                (cond ((or (null (eq check-key :integer-string)) (null board-id))

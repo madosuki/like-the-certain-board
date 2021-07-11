@@ -181,11 +181,11 @@
                                                        :session *session*)))
              (if (eq check-abuse-result :ok)
                  (let* ((message (get-value-from-key "MESSAGE" _parsed))
-                        (cookie (gethash "cookie" (request-headers *request*)))
-                        (splited-cookie (if (null cookie)
-                                            nil
-                                            (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
-                                                    (cl-ppcre:split ";" cookie))))
+                        ;; (cookie (gethash "cookie" (request-headers *request*)))
+                        ;; (splited-cookie (if (null cookie)
+                        ;;                     nil
+                        ;;                     (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
+                        ;;                             (cl-ppcre:split ";" cookie))))
                         (raw-body (request-raw-body *request*))
                         (content-length (request-content-length *request*))
                         (tmp-array (make-array content-length :adjustable t :fill-pointer content-length))
@@ -197,7 +197,7 @@
                        (setq is-e t)))
                    (if is-e
                        (write-result-view :error-type 'something :message "bad parameter")
-                       (handler-case  (bbs-cgi-function tmp-array ipaddr universal-time)
+                       (handler-case  (bbs-cgi-function tmp-array ipaddr universal-time is-monazilla *session*)
                          (error (e)
                            (write-log :mode :error
                                       :message (format nil "Error in bbs-cgi-function: ~A" e))
