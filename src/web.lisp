@@ -39,8 +39,6 @@
 ;; Routing rules
 
 (defroute ("/" :method :GET) ()
-  ;; (setf (getf (getf (request-env *request*) :lack.session.options) :change-id) t)
-  ;; (format t "~%~A~%" (request-env *request*))
   (let ((board-list-data (get-board-list)))
     (format t "~%~A~%" (caveman2:request-remote-addr caveman2:*request*))
     (index-view board-list-data)))
@@ -490,3 +488,11 @@
 (defmethod on-exception ((app <web>) (code (eql 404)))
   (declare (ignore app))
   (notfound-view))
+
+;; Tentative defroute, remove after some time.
+(defroute ("/:board-name/test" :method :GET) (&key board-name _parsed)
+  (confirm-page-view :board-name ""
+                     :url nil
+                     :mode :create
+                     :data '(:subject "<script>alert('xss')</script>")
+                     :csrf-token (csrf-token *session*)))

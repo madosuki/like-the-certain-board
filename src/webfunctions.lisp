@@ -428,7 +428,6 @@
          nil)))))
 
 
-
 (defun generate-confirme-page (bbs key is-utf8 form)
   (let* ((from (get-value-from-key-on-list "FROM" form))
          (message (get-value-from-key-on-list "MESSAGE" form))

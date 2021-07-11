@@ -33,7 +33,8 @@
            :notfound-view
            :kakolog-view
            :kakolog-list-view
-           :about-page-view))
+   :about-page-view
+   :confirm-page-view))
 (in-package :like-certain-board.view)
 
 (djula:add-template-directory *template-directory*)
@@ -499,3 +500,67 @@
 (defun about-page-view (url)
   (main-content "About" nil url nil
                 (:p "アバウトページ")))
+
+
+;; WIP add confirm of write page
+(defun confirm-page-view (&key board-name url mode data csrf-token)
+  (let ((title (if (eq mode :write)
+                      "書き込み確認"
+                      "スレッド作成確認"))
+        (key (if (eq mode :write)
+                 (cadr (member :key data))
+                 nil))
+        (subject (if (eq mode :create)
+                     (cadr (member :subject data))
+                     nil))
+        (FROM (cadr (member :FROM data)))
+        (mail (cadr (member :mail data)))
+        (MESSAGE (cadr (member :MESSAGE data))))
+    (main-content title board-name url nil
+                  (:h1 title)
+                  (:div :id "check-terms-of-use"
+                        (:h2 "本当に送信してよろしいですか？")
+                        (:p "送信する前に規約をお読みください．")
+                        (:p "送信すれば規約を了解した上で書き込みしたと見做します．"))
+                  (:div :id "confirm-data"
+                   (:p (format nil "板名: ~A" board-name))
+                   (when key
+                     (raw (markup (:p (format nil "スレッドキー: ~A" (cadr (member :key data)))))))
+                   (when subject
+                     (raw (markup (:p (format nil "スレッド名: ~A" (cadr (member :subject data)))))))
+                   (:p (format nil "名前: ~A" FROM))
+                   (:p (format nil "メール: ~A" mail))
+                   (:p (format nil "本文: ~A" (cadr (member :MESSAGE data)))))
+                  (:form :action "/test/bbs.cgi"
+                         :method "POST"
+                         (:input :name "bbs"
+                                 :value board-name
+                                 :type "hidden")
+                         (when key
+                           (raw (markup (:input :name "key"
+                                                :value key
+                                                :type "hidden"))))
+                         (:input :name "submit"
+                                 :value (if (eq mode :write)
+                                            "書き込む"
+                                            "新規スレッド作成")
+                                 :type "hidden")
+                         (when subject
+                           (raw (markup (:input :name "subject"
+                                                :value (cadr (member :subject data))
+                                                :type "hidden"))))
+                         (:input :name "FROM"
+                                 :value (cadr (member :FROM data))
+                                 :type "hidden")
+                         (:input :name "mail"
+                                 :value (cadr (member :mail data))
+                                 :type "hidden")
+                         (:input :name "MESSAGE"
+                                 :value (cadr (member :MESSAGE data))
+                                 :type "hidden")
+                         (:input :name "_csrf_token"
+                                 :type "hidden"
+                                 :value csrf-token)
+                         (:button :name "submit"
+                                  :type "submit"
+                                  "送信")))))
