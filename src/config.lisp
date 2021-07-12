@@ -33,6 +33,7 @@
            :*session-post-count-key*
            :*time-error-10sec-msg*
            :*time-error-24h-msg*
+           :*confirmed-key*
            :appenv
            :developmentp
            :productionp))
@@ -82,6 +83,7 @@
   "10秒経つまで投稿できません．何度かこの画面が出ると24時間に規制時間が延びます．")
 (defvar *time-error-24h-msg*
   "24時間経つまで投稿できません．何度かこの画面が出るとBANとなり，管理者に連絡する必要があります．また悪質な場合は永久BANとなります．")
+(defvar *confirmed-key* "confirmed")
 
 
 

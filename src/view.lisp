@@ -417,9 +417,9 @@
                                 "板に戻る")))))))
 
 (defun write-result-view (&key board-url-name key error-type message url)
-  (main-content (cond ((eq error-type 'write-error)
+  (main-content (cond ((eq error-type :write-error)
                        "書き込みエラー")
-                      ((eq error-type 'create-error)
+                      ((eq error-type :create-error)
                        "新規スレッド作成エラー")
                       (t "何かのエラー"))
                 board-url-name
@@ -515,7 +515,8 @@
                      nil))
         (FROM (cadr (member "FROM" data :test #'string=)))
         (mail (cadr (member "mail" data :test #'string=)))
-        (MESSAGE (cadr (member "MESSAGE" data :test #'string=))))
+        (MESSAGE (cadr (member "MESSAGE" data :test #'string=)))
+        (time (cadr (member "time" data :test #'string=))))
     (main-content title board-name url nil
                   (:h1 title)
                   (:div :id "check-terms-of-use"
@@ -529,7 +530,9 @@
                    (when subject
                      (raw (markup (:p (format nil "スレッド名: ~A" subject)))))
                    (:p (format nil "名前: ~A" FROM))
-                   (:p (format nil "メール: ~A" mail))
+                   (:p (format nil "メール: ~A" (if (eq mail :NO-DATA)
+                                                    ""
+                                                    mail)))
                    (:p (format nil "本文: ~A"  MESSAGE)))
                   (:form :action "/test/bbs.cgi"
                          :method "POST"
@@ -540,15 +543,15 @@
                            (raw (markup (:input :name "key"
                                                 :value key
                                                 :type "hidden"))))
-                         (:input :name "submit"
-                                 :value (if (eq mode :write)
-                                            "書き込む"
-                                            "新規スレッド作成")
-                                 :type "hidden")
                          (when subject
                            (raw (markup (:input :name "subject"
                                                 :value subject
                                                 :type "hidden"))))
+                         ;; (:input :name "submit"
+                         ;;         :value (if (eq mode :write)
+                         ;;                    "書き込む"
+                         ;;                    "新規スレッド作成")
+                         ;;         :type "hidden")
                          (:input :name "FROM"
                                  :value FROM
                                  :type "hidden")
@@ -560,12 +563,17 @@
                          (:input :name "MESSAGE"
                                  :value MESSAGE
                                  :type "hidden")
+                         (:input :name "time"
+                                 :value time
+                                 :type "hidden")
                          (:input :name "confirm"
                                  :value "t"
                                  :type "hidden")
                          (:input :name "_csrf_token"
                                  :type "hidden"
                                  :value csrf-token)
-                         (:button :name "submit"
-                                  :type "submit"
-                                  "送信")))))
+                         (:input :name "submit"
+                                 :type "submit"
+                                 :value  (if (eq mode :write)
+                                             "書き込む"
+                                             "新規スレッド作成"))))))

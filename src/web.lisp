@@ -175,11 +175,49 @@
            (set-response-status 400)
            "")
           ((and user-agent *session* board-data)
-           (let ((check-abuse-result (check-abuse-post :current-unixtime current-unixtime
-                                                       :user-agent user-agent
-                                                       :ipaddr ipaddr
-                                                       :session *session*)))
-             (if (eq check-abuse-result :ok)
+           (let* ((check-abuse-result (check-abuse-post :current-unixtime current-unixtime
+                                                        :user-agent user-agent
+                                                        :ipaddr ipaddr
+                                                        :session *session*))
+                  (check-status (cadr (member :status check-abuse-result)))
+                  (penalty-count (cadr (member :penalty-count check-abuse-result)))
+                  (post-count (cadr (member :post-count check-abuse-result))))
+             (cond ((eq check-status :ok)
+                    (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
+                                                                  :count 0
+                                                                  :penalty-count penalty-count
+                                                                  :last-unixtime current-unixtime))
+                   ((eq check-status :over-24)
+                    (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
+                                                                  :count 0
+                                                                  :penalty-count (1+ penalty-count)
+                                                                  :last-unixtime current-unixtime))
+                   ((eq check-status :restrict)
+                    (let ((is-confirmed (gethash *confirmed-key* *session*))
+                          (is-confirm-param-in-form (cdr (assoc "confirm" _parsed :test #'string=))))
+                      (cond ((or is-monazilla is-confirmed)
+                             (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
+                                                                           :count (1+ post-count)
+                                                                           :penalty-count penalty-count
+                                                                           :last-unixtime current-unixtime))
+                            ((not (null is-confirm-param-in-form))
+                             (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
+                                                                           :count 0
+                                                                           :penalty-count penalty-count
+                                                                           :last-unixtime current-unixtime)
+                             (setf (gethash *confirmed-key* *session*) :confirmed)
+                             (setq check-status :ok))
+                            (t
+                             (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
+                                                                           :count (1+ post-count)
+                                                                           :penalty-count penalty-count
+                                                                           :last-unixtime current-unixtime)))))
+                   ((eq check-status :first)
+                    (insert-to-time-restrict-table :ipaddr ipaddr
+                                                   :last-unixtime current-unixtime)))
+             (if (or (eq check-status :ok)
+                     (eq check-status :over-24)
+                     (eq check-status :first))
                  (let* ((message (get-value-from-key "MESSAGE" _parsed))
                         ;; (cookie (gethash "cookie" (request-headers *request*)))
                         ;; (splited-cookie (if (null cookie)
@@ -196,12 +234,12 @@
                                   :message (format nil "Error read squence in bbs.cgi: ~A" e))
                        (setq is-e t)))
                    (if is-e
-                       (write-result-view :error-type 'something :message "bad parameter")
+                       (write-result-view :error-type :something :message "bad parameter")
                        (handler-case  (bbs-cgi-function tmp-array ipaddr universal-time is-monazilla *session*)
                          (error (e)
                            (write-log :mode :error
                                       :message (format nil "Error in bbs-cgi-function: ~A" e))
-                           (write-result-view :error-type 'something :message "bad parameter")))))
+                           (write-result-view :error-type :something :message "bad parameter")))))
                  (let ((thread (if (eq (check-whether-integer key) :integer-string)
                                    (get-a-thread key (getf board-data :id))
                                    nil)))
@@ -210,7 +248,7 @@
                               (if is-monazilla
                                   (time-error-msg *time-error-10sec-msg*)
                                   (time-restrict-view
-                                   :mode check-abuse-result
+                                   :mode check-status
                                    :bbs bbs
                                    :key key
                                    :mail *admin-mailaddr*)))
@@ -218,7 +256,7 @@
                               (if is-monazilla
                                   (time-error-msg *time-error-24h-msg*)
                                   (time-restrict-view
-                                   :mode check-abuse-result
+                                   :mode check-status
                                    :bbs bbs
                                    :mail *admin-mailaddr*))))))))
           (t

@@ -129,38 +129,26 @@
 
 (defun check-abuse-post (&key current-unixtime user-agent ipaddr session)
   (unless user-agent
-    (return-from check-abuse-post :restrict))
+    (return-from check-abuse-post '(:status :restrict)))
   (let* ((data (get-data-from-time-restrict :ipaddr ipaddr)))
     (unless data
-      (insert-to-time-restrict-table :ipaddr ipaddr
-                                     :last-unixtime current-unixtime)
-      (return-from check-abuse-post :unknown))
+      (return-from check-abuse-post '(:status :first)))
     (let* ((count (cadr (member :count data)))
            (last-unixtime (cadr (member :last-unixtime data)))
            (penalty-count (cadr (member :penalty-count data)))
            (diff (- current-unixtime last-unixtime)))
-      (cond ((> penalty-count 10)
-             :ban)
-            ((and (> diff 10) (< count 100))
-             (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
-                                                           :count 0
-                                                           :penalty-count penalty-count
-                                                           :last-unixtime current-unixtime)
-             :ok-but-increment-penalty)
-            ((and (>= count 100) (> diff *24-hour-seconds*))
-             (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
-                                                           :count 0
-                                                           :penalty-count (1+ penalty-count)
-                                                           :last-unixtime current-unixtime)
-             :ok)
-            ((>= count 100)
-             :restrict-24)
-            ((< diff 10)
-             (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
-                                                           :count (1+ count)
-                                                           :penalty-count penalty-count
-                                                           :last-unixtime current-unixtime)
-             :restrict)))))
+      (list :status (cond ((> penalty-count 10)
+                           :ban)
+                          ((and (> diff 10) (< count 100))
+                           :ok)
+                          ((and (>= count 100) (> diff *24-hour-seconds*))
+                           :over-24)
+                          ((>= count 100)
+                           :restrict-24)
+                          ((< diff 10)
+                           :restrict))
+            :penalty-count penalty-count
+            :post-count count))))
 
 
 
@@ -478,23 +466,23 @@
                  (key (get-value-from-key-on-list "key" form))
                  (submit (get-value-from-key-on-list "submit" form))
                  (check-key (check-whether-integer key))
-                 (confirm-param (get-value-from-key-on-list "confirm" form)))
+                 (is-confirmed (gethash *confirmed-key* *session*)))
             (unless (or board-id submit)
               (set-response-status 400)
-              (return-from bbs-cgi-function "bad parameter"))
+              (return-from bbs-cgi-function "bad parameter: not found"))
             (when (string= submit "書き込む")
               (unless (eq check-key :integer-string)
                 (set-response-status 400)
-                (return-from bbs-cgi-function "bad parameter"))
+                (return-from bbs-cgi-function "bad parameter: key is not number"))
               (unless (get-a-thread key board-id)
                 (set-response-status 400)
-                (return-from bbs-cgi-function "bad parameter")))
+                (return-from bbs-cgi-function "bad parameter: not exists thread")))
             (when (and (null (equal submit "書き込む"))
                        (null (equal submit "新規スレッド作成")))
               (set-response-status 400)
-              (return-from bbs-cgi-function "bad parameter"))
+              (return-from bbs-cgi-function "bad parameter: unknown mode"))
             (when (and (null is-monazilla)
-                       (null confirm-param))
+                       (null is-confirmed))
               (return-from bbs-cgi-function (confirm-page-view :board-name bbs
                                                                :url ""
                                                                :mode (if (equal submit "書き込む")
@@ -506,10 +494,10 @@
               ((string= submit "書き込む")
                (cond ((or (null (eq check-key :integer-string)) (null board-id))
                       (set-response-status 400)
-                      (write-result-view :error-type 'unknown :message "bad parameter"))
+                      (write-result-view :error-type :unknown :message "bad parameter: not exists key"))
                      ((> (cadr (get-res-count :key key)) *default-max-length*)
                       (set-response-status 503)
-                      (write-result-view :error-type 'write-error :message "このスレッドはレス数が最大数に達しています．"))
+                      (write-result-view :error-type :write-error :message "このスレッドはレス数が最大数に達しています．"))
                      (t
                       (let* ((status (insert-res form ipaddr universal-time board-id)))
                         (if (= status 200)
@@ -519,11 +507,11 @@
                               "書き込みに成功しました．遷移します．")
                             (progn
                               (set-response-status status)
-                              (write-result-view :error-type 'write-error :message "混雑等の理由で新規スレッド作成に失敗しました．")))))))
+                              (write-result-view :error-type :write-error :message "混雑等の理由で新規スレッド作成に失敗しました．")))))))
               ((string= submit "新規スレッド作成")
                (if (null board-id)
                    (progn (set-response-status 400)
-                          (write-result-view :error-type 'create-error :message "bad parameter: require bbs param."))
+                          (write-result-view :error-type :create-error :message "bad parameter: require bbs param."))
                    (let ((status (create-thread
                                   :_parsed form
                                   :date universal-time
@@ -535,14 +523,14 @@
                                 "スレッド作成に成功しました．遷移します．")
                          (progn
                            (set-response-status status)
-                           (write-result-view :error-type 'create-error :message "混雑等の理由で新規スレッド作成に失敗しました．"))
+                           (write-result-view :error-type :create-error :message "混雑等の理由で新規スレッド作成に失敗しました．"))
                          ))))
               (t
                (set-response-status 400)
-               (write-result-view :error-type 'unknown :message "bad parameter: does not exists that mode.")))))
+               (write-result-view :error-type :unknown :message "bad parameter: does not exists that mode.")))))
         (progn
           (set-response-status 400)
-          (write-result-view :error-type 'something :message "bad parameter: missing params.")))))
+          (write-result-view :error-type :something :message "bad parameter: missing params.")))))
 
 (defun load-file-with-recursive (pathname start end)
   (with-open-file (input pathname
