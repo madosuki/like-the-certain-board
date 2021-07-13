@@ -6,7 +6,7 @@
   (:import-from :cl-ppcre
    :scan)
   (:import-from :generate-like-certain-board-strings
-                :get-unix-time)
+   :get-unix-time)
   (:export
    :write-log
    :separate-numbers-from-key-for-kako
@@ -16,6 +16,17 @@
 
 (defmacro msg-format (stream msg)
   `(format ,stream "~%webapp(~A): ~A~%" (get-unix-time (get-universal-time)) ,msg))
+
+(defun load-text-file (filename)
+  (unless (probe-file filename)
+    (return-from load-text-file '(:not-exists . nil)))
+  (with-open-file (i filename
+                     :direction :input)
+    (cons :some
+          (format nil "~{~A~}"
+                  (loop for l = (read-line i nil)
+                        while l
+                        collect l)))))
 
 (defun write-file (&key filename message)
   (with-open-file (o (format nil "~A/~A" *log-path* filename)
