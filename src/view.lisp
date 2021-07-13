@@ -574,6 +574,7 @@
                                  :value csrf-token)
                          (:input :name "submit"
                                  :type "submit"
+                                 :class "form"
                                  :value  (if (eq mode :write)
                                              "書き込む"
                                              "新規スレッド作成"))))))

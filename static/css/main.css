@@ -15,11 +15,7 @@ body {
     margin-left: 1rem;
 }
 
-#time-restrict {
-    text-align: center;
-}
-
-#board-list {
+#time-restrict, #board-list {
     text-align: center;
 }
 
@@ -88,7 +84,6 @@ footer#footer nav ul {
 .nav-item-in-footer {
     margin-right: 1rem;
 }
-
 
 
 a:link {

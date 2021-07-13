@@ -527,10 +527,9 @@
   (declare (ignore app))
   (notfound-view))
 
-;; Tentative defroute, remove after some time.
-(defroute ("/:board-name/test" :method :GET) (&key board-name _parsed)
-  (confirm-page-view :board-name ""
-                     :url nil
-                     :mode :create
-                     :data '(:subject "<script>alert('xss')</script>")
-                     :csrf-token (csrf-token *session*)))
+;; (defroute ("/:board-name/test" :method :GET) (&key board-name _parsed)
+;;   (confirm-page-view :board-name ""
+;;                      :url nil
+;;                      :mode :create
+;;                      :data '(:subject "<script>alert('xss')</script>")
+;;                      :csrf-token (csrf-token *session*)))
