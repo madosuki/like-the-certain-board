@@ -31,6 +31,8 @@ RUN apt-get install -y git build-essential automake autoconf make gcc libcurl4-o
 
 ENV PATH /root/.roswell/bin:${PATH}
 
+RUN yes | ros update quicklisp
+
 RUN ros install fukamachi/caveman && \
     ros install fukamachi/ningle && \
     ros install fukamachi/quri && \

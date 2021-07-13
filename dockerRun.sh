@@ -6,6 +6,8 @@ export KAKOLOG_DAT_DIR_PATH=/roswell/kakolog/dat/
 export DAT_DIR_PATH=/roswell/dat/
 export APP_ENV=production
 
+yes | ros update quicklisp
+
 ros update git lack
 ros update git ningle
 ros update git clack
