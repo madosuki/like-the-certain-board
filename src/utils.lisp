@@ -6,7 +6,8 @@
   (:import-from :cl-ppcre
    :scan)
   (:import-from :generate-like-certain-board-strings
-   :get-unix-time)
+   :get-unix-time
+   :get-current-datetime)
   (:export
    :write-log
    :separate-numbers-from-key-for-kako
@@ -14,8 +15,11 @@
    :detect-monazilla))
 (in-package :like-certain-board.utils)
 
+
 (defmacro msg-format (stream msg)
-  `(format ,stream "~%webapp(~A): ~A~%" (get-unix-time (get-universal-time)) ,msg))
+  `(format ,stream "~%webapp(~A): ~A~%"
+           (get-current-datetime (get-universal-time))
+           ,msg))
 
 (defun load-text-file (filename)
   (unless (probe-file filename)
