@@ -319,10 +319,12 @@
         (condition (get-value-from-key "condition" _parsed)))
     (cond ((null board-data)
            (on-exception *web* 404))
-          ((or (detect-monazilla user-agent) (/= 443 (request-server-port *request*)))
+          ((or (detect-monazilla user-agent)
+               (/= 443 (request-server-port *request*))
+               (null board-data))
            (set-response-status 403)
            "Forbidden")
-          (board-data
+          (t
            (login-view :board-url-name board-name
                        :board-name (getf board-data :name)
                        :csrf-token (csrf-token *session*)
@@ -332,11 +334,26 @@
                                          (hash
                                           :success)
                                          (t
-                                          nil)))))
-          (t
-           (set-response-status 403)
-           "Forbidden"))))
+                                          nil))))))))
 
+(defroute ("/:board-name/create-user" :method :GET) (&key board-name)
+  (let* ((board-data (get-a-board-name-from-name board-name))
+         (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
+         (is-monazilla (detect-monazilla user-agent))
+         (is-login (gethash *session-login-key* *session*))
+         (is-admin (gethash *session-admin-key* *session*)))
+    (cond ((or (null user-agent)
+               (null board-data)
+               is-monazilla
+               (/= 443 (request-server-port *request*))
+               (null is-login)
+               (null is-admin))
+           (set-response-status 403)
+           "Forbidden")
+          (t
+           (create-user-view :board-url-name board-name
+                             :board-name (getf board-data :name)
+                             :csrf-token (csrf-token *session*))))))
 
 (defroute ("/:board-name/api/user" :method :POST) (&key board-name _parsed)
   (let* ((mode (get-value-from-key "mode" _parsed))
@@ -397,6 +414,7 @@
              (set-response-status 302)
              (next-route)))
           ((equal mode "create")
+
            (if (and (gethash *session-login-key* *session*) (gethash *session-admin-key* *session*))
                (let ((create-result (create-user (getf board-data :id) user-name password date nil cap-text)))
                  (set-response-status 400)
@@ -404,7 +422,7 @@
                         "This user name is existed.")
                        ((eq create-result :create-failed)
                         "Error: failed create account.")
-                       ((eql create-result t)
+                       ((eql create-result :success)
                         (set-response-status 200)
                         "Finish Create that Account.")
                        (t

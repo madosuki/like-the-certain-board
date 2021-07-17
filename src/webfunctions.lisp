@@ -614,9 +614,13 @@
     (return-from create-user nil))
   (when (get-user-table board-id user-name)
     (return-from create-user :exist-user))
-  (let* ((hash (sha256 (concatenate 'string *salt* password)))
+  (let* ((hash (sha256-hmac
+                :target password
+                :key *salt*
+                :key-char-code :UTF-8
+                :char-code :UTF-8))
          (date (get-current-datetime date))
-         (return-status t)
+         (return-status :success)
          (user-data (make-user-table-struct
                      :user-name user-name
                      :hash hash

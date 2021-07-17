@@ -33,8 +33,9 @@
            :notfound-view
            :kakolog-view
            :kakolog-list-view
-   :about-page-view
-   :confirm-page-view))
+           :about-page-view
+           :confirm-page-view
+           :create-user-view))
 (in-package :like-certain-board.view)
 
 (djula:add-template-directory *template-directory*)
@@ -578,3 +579,52 @@
                                  :value  (if (eq mode :write)
                                              "書き込む"
                                              "新規スレッド作成"))))))
+
+(defun create-user-view (&key board-url-name board-name csrf-token)
+  (main-content "ユーザー作成ページ"  board-url-name (format nil "~A/~A/create-user" *https-root-path* board-url-name) nil
+                (:h1  :style "text-align: center"
+                      "ユーザー作成ページ")
+                (:form :action (format nil "https://localhost:8081/~A/api/user" board-url-name)
+                       :method "POST"
+                       (:ul :class "form"
+                            (:li :class "form"
+                                 (:label :for "user_name"
+                                         :class "form"
+                                         "ユーザーネーム："
+                                         (:input :name "user_name"
+                                                 :type "text"
+                                                 :value ""
+                                                 :class "form"
+                                                 :required t)))
+                            (:li :class "form"
+                                   (:label :for "password"
+                                         :class "form"
+                                         "パスワード："
+                                         (:input :name "password"
+                                                 :type "text"
+                                                 :value ""
+                                                 :class "form"
+                                                 :required t)))
+                            (:li :class "form"
+                                 (:label :for "cap_text"
+                                         :class "form"
+                                         "キャップ："
+                                         (:input :name "cap_text"
+                                                 :type "text"
+                                                 :value ""
+                                                 :class "form"
+                                                 :required t)))
+                            (:li :class "form"
+                                 (:button :name "submit"
+                                          :type "submit"
+                                          :class "form"
+                                          "作成")))
+                       (:input :name "mode"
+                               :input "text"
+                               :value "create"
+                               :type "hidden")
+                       (:input :name "_csrf_token"
+                               :input "text"
+                               :value csrf-token
+                               :type "hidden"))))
+
