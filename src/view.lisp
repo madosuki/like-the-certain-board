@@ -382,7 +382,7 @@
                             (markup (:h2 "ログイン済みです")))
                            ((eq is-login :failed)
                             (markup (:h2 "ログインに失敗しました")))))
-                (:form :action (format nil "/~A/api/user" board-url-name)
+                (:form :action (format nil "~A/~A/api/user" *https-root-path* board-url-name)
                        :method "POST"
                        (:ul :class "form"
                             (:li :class "form"
@@ -584,7 +584,7 @@
   (main-content "ユーザー作成ページ"  board-url-name (format nil "~A/~A/create-user" *https-root-path* board-url-name) nil
                 (:h1  :style "text-align: center"
                       "ユーザー作成ページ")
-                (:form :action (format nil "https://localhost:8081/~A/api/user" board-url-name)
+                (:form :action (format nil "~A/~A/api/user" *https-root-path* board-url-name)
                        :method "POST"
                        (:ul :class "form"
                             (:li :class "form"
