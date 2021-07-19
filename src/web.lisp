@@ -355,6 +355,27 @@
                              :board-name (getf board-data :name)
                              :csrf-token (csrf-token *session*))))))
 
+(defroute ("/:board-name/user-list" :method :GET) (&key board-name)
+  (let* ((board-data (get-a-board-name-from-name board-name))
+         (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
+         (is-monazilla (detect-monazilla user-agent))
+         (is-login (gethash *session-login-key* *session*))
+         (is-admin (gethash *session-admin-key* *session*)))
+    (if (or (null user-agent)
+            (null board-data)
+            is-monazilla
+            (/= 443 (request-server-port *request*))
+            (null is-login)
+            (null is-admin))
+        (progn (set-response-status 403)
+               "Forbidden")
+        (let ((user-list (get-user-list (getf board-data :id))))
+          (user-list-view :board-name (getf board-data :name)
+                          :board-url-name board-name
+                          :user-list user-list
+                          :csrf-token (csrf-token *session*))))))
+
+
 (defroute ("/:board-name/api/user" :method :POST) (&key board-name _parsed)
   (let* ((mode (get-value-from-key "mode" _parsed))
          (user-name (get-value-from-key "user_name" _parsed))

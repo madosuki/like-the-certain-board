@@ -31,6 +31,7 @@
            :check-exists-row
            :insert-user-table
            :get-user-table
+           :get-user-list
            :update-user-table
            :insert-kakolog-table
            :change-max-of-thread-in-db
@@ -199,6 +200,14 @@
      (select :*
              (from :user-table)
              (where (:and (:like :user-name user-name) (:= :board-id board-id)))))))
+
+(defun get-user-list (board-id)
+  (with-connection (db)
+    (retrieve-all
+     (select (fields :user-name :cap-text :is-admin)
+             (from :user-table)
+             (where (:= :board-id board-id))))))
+
 
 (defun insert-user-table (user-data)
   (let ((user-name (user-table-struct-user-name user-data))

@@ -35,7 +35,8 @@
            :kakolog-list-view
            :about-page-view
            :confirm-page-view
-           :create-user-view))
+           :create-user-view
+           :user-list-view))
 (in-package :like-certain-board.view)
 
 (djula:add-template-directory *template-directory*)
@@ -583,7 +584,8 @@
 (defun create-user-view (&key board-url-name board-name csrf-token)
   (main-content "ユーザー作成ページ"  board-url-name (format nil "~A/~A/create-user" *https-root-path* board-url-name) nil
                 (:h1  :style "text-align: center"
-                      "ユーザー作成ページ")
+                      (format nil "~A: ユーザー作成ページ"
+                              board-name))
                 (:form :action (format nil "~A/~A/api/user" *https-root-path* board-url-name)
                        :method "POST"
                        (:ul :class "form"
@@ -628,3 +630,11 @@
                                :value csrf-token
                                :type "hidden"))))
 
+
+(defun user-list-view (&key board-name board-url-name user-list csrf-token)
+  (main-content "ユーザーリスト" board-url-name (format nil "~A/~A/user-list" *https-root-path* board-url-name) nil
+                (:div :style "margin-left: 1rem"
+                 (:ul
+                  (loop for i in user-list
+                        collect (markup (:li
+                                         (:p (getf i :user-name)))))))))
