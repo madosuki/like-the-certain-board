@@ -435,7 +435,6 @@
              (set-response-status 302)
              (next-route)))
           ((equal mode "create")
-
            (if (and (gethash *session-login-key* *session*) (gethash *session-admin-key* *session*))
                (let ((create-result (create-user (getf board-data :id) user-name password date nil cap-text)))
                  (set-response-status 400)
@@ -448,6 +447,23 @@
                         "Finish Create that Account.")
                        (t
                         "invalid parameter.")))
+               (progn
+                 (set-response-status 403)
+                 "Forbidden")))
+          ((equal mode "delete")
+           (if (and (gethash *session-login-key* *session*) (gethash *session-admin-key* *session*))
+               (let* ((board-id (getf board-data :id))
+                      (is-exists-user (get-user-table board-id user-name)))
+                 (if is-exists-user
+                     (let ((is-success (handler-case (progn (delete-user board-id user-name)
+                                                            :success)
+                                         (error (e)
+                                           (declare (ignore e))
+                                           :failed))))
+                       (if is-success
+                           "Success"
+                           "Failed"))
+                     "Failed"))
                (progn
                  (set-response-status 403)
                  "Forbidden")))

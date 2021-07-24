@@ -637,4 +637,21 @@
                  (:ul
                   (loop for i in user-list
                         collect (markup (:li
-                                         (:p (getf i :user-name)))))))))
+                                         (:p (getf i :user-name))
+                                         (:form :action (format nil "~A/~A/api/user" *https-root-path* board-url-name)
+                                                :method "POST"
+                                                (:input :name "mode"
+                                                        :type "hidden"
+                                                        :input "text"
+                                                        :value "delete")
+                                                (:input :name "user_name"
+                                                        :type "hidden"
+                                                        :input "text"
+                                                        :value (getf i :user-name))
+                                                (:input :name "_csrf_token"
+                                                        :input "text"
+                                                        :type "hidden"
+                                                        :value csrf-token)
+                                                (:button :name "submit"
+                                                         :type "submit"
+                                                         "削除")))))))))

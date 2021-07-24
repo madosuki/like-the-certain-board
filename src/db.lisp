@@ -31,6 +31,7 @@
            :check-exists-row
            :insert-user-table
            :get-user-table
+           :delete-user
            :get-user-list
            :update-user-table
            :insert-kakolog-table
@@ -235,6 +236,13 @@
      (update :user-table
              (set= :latest-date date)
              (where (:and (:like :user-name user-name) (:like :board-id board-id)))))))
+
+(defun delete-user (board-id user-name)
+  (with-connection (db)
+    (execute
+     (delete-from :user-table
+                  (where (:and (:like :user-name user-name) (:like :board-id board-id)))))))
+
 
 (defun insert-kakolog-table (unixtime title board-id)
   (with-connection (db)
