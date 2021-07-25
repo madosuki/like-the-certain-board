@@ -267,6 +267,9 @@
                               (:input :name "_csrf_token"
                                       :type "hidden"
                                       :value csrf-token)
+                              (:input :name "mode"
+                                      :type "hidden"
+                                      :value "delete")
                               (:button :name "submit"
                                        :type "submit"
                                        (format nil "~A番目の行を削除" count))))))

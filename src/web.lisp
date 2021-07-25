@@ -460,8 +460,14 @@
                                          (error (e)
                                            (declare (ignore e))
                                            :failed))))
-                       (if is-success
-                           "Success"
+                       (if (eq :success is-success)
+                           (progn
+                             (set-response-status 302)
+                             (setf (getf (response-headers *response*) :location)
+                                   (format nil "~A/~A/user-list"
+                                           *https-root-path*
+                                           board-name))
+                             "Success")
                            "Failed"))
                      "Failed"))
                (progn
@@ -476,6 +482,7 @@
   (let* ((key (get-value-from-key "key" _parsed))
          (check-key (check-whether-integer key))
          (line (get-value-from-key "line" _parsed))
+         (mode (get-value-from-key "mode" _parsed))
          (line-number (if (eq check-key :integer-string)
                           (parse-integer line :junk-allowed t)
                           nil))
@@ -503,13 +510,16 @@
            (set-response-status 400)
            "invalid param")
           ((numberp line-number)
-           (if (delete-line-in-dat key board-name line-number)
-               (progn
-                 (set-response-status 302)
-                 (setf (getf (response-headers *response*) :location)
-                       (format nil "/test/read.cgi/~A/~A" board-name key))
-                 (next-route))
-               "faild delete."))
+           (cond ((string= mode "delete")
+                  (if (delete-line-in-dat key board-name line-number)
+                      (progn
+                        (set-response-status 302)
+                        (setf (getf (response-headers *response*) :location)
+                              (format nil "~A/test/read.cgi/~A/~A" *https-root-path* board-name key))
+                        "success")
+                      "faild delete."))
+                 (t
+                  "unknown mode")))
           (t
            (on-exception *web* 404)))))
 
