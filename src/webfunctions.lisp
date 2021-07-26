@@ -56,13 +56,10 @@
       (let ((base (car a)))
         (let ((l (car base))
               (r (cdr base)))
-          (if result
-              (setq result (list r l))
-              (progn
-                (push l result)
-                (push r result)))
+          (push l result)
+          (push r result)
           (flatten (cdr a) result)))
-      (reverse result)))
+      (cdr (reverse result))))
 
 (defun get-session-from-cookie (request)
   (let ((cookie (gethash "cookie" (request-headers *request*))))
@@ -76,7 +73,7 @@
         (write-log :mode :error
                    :message (format nil "not reach latest length cookie"))
         (return-from get-session-from-cookie nil))
-      (let ((session (member "app.session" splited-cookie :test #'equal)))
+      (let ((session (member "lack.session" splited-cookie :test #'equal)))
         (if session
             (cadr session)
             nil)))))
@@ -758,4 +755,5 @@
              (title (getf x :title)))
         (push (cons key (kakolog-process :key key :title title :board-url-name board-url-name :board-id board-id)) result)))
     (nreverse result)))
+
 
