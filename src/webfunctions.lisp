@@ -26,7 +26,8 @@
    :generate-dat-name
    :convert-bunch-of-thread-to-kakolog
    :kakolog-process
-   :delete-line-in-dat))
+   :delete-line-in-dat
+   :process-on-root-of-board))
 (in-package :like-certain-board.webfunctions)
 
 (deftype mysql-true-type (n) `(= n 1))
@@ -757,3 +758,9 @@
     (nreverse result)))
 
 
+
+(defun process-on-root-of-board (web session board-name)
+  (let ((board-data (get-a-board-name-from-name board-name)))
+    (if board-data
+        (put-thread-list board-name (getf board-data :name) web (format nil "~A/~A" *https-root-path* board-name) (csrf-token session))
+        (on-exception *web* 404))))

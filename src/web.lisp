@@ -40,23 +40,16 @@
 
 (defroute ("/" :method :GET) ()
   (let ((board-list-data (get-board-list)))
-    (format t "~%~A~%" (caveman2:request-remote-addr caveman2:*request*))
     (index-view board-list-data)))
 
 (defroute ("/about" :method :GET) ()
   (about-page-view (format nil "~A/about" *https-root-path*)))
 
 (defroute ("/:board-name/" :method :GET) (&key board-name)
-  (let ((board-data (get-a-board-name-from-name board-name)))
-    (if board-data
-        (put-thread-list board-name (getf board-data :name) *web* (format nil "~A/~A" *https-root-path* board-name) (csrf-token *session*))
-        (on-exception *web* 404))))
+  (process-on-root-of-board *web* *session* board-name))
 
 (defroute ("/:board-name" :method :GET) (&key board-name)
-  (let ((board-data (get-a-board-name-from-name board-name)))
-    (if board-data
-        (put-thread-list board-name (getf board-data :name) *web* (format nil "~A/~A" *https-root-path* board-name) (csrf-token *session*))
-        (on-exception *web* 404))))
+  (process-on-root-of-board *web* *session* board-name))
 
 (defroute ("/:board-name/kakolog" :method :GET) (&key board-name)
   (let* ((board-data (get-a-board-name-from-name board-name))
@@ -219,11 +212,6 @@
                      (eq check-status :over-24)
                      (eq check-status :first))
                  (let* ((message (get-value-from-key "MESSAGE" _parsed))
-                        ;; (cookie (gethash "cookie" (request-headers *request*)))
-                        ;; (splited-cookie (if (null cookie)
-                        ;;                     nil
-                        ;;                     (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
-                        ;;                             (cl-ppcre:split ";" cookie))))
                         (raw-body (request-raw-body *request*))
                         (content-length (request-content-length *request*))
                         (tmp-array (make-array content-length :adjustable t :fill-pointer content-length))
@@ -382,11 +370,6 @@
          (password (get-value-from-key "password" _parsed))
          (is-admin (get-value-from-key "is_admin" _parsed))
          (cap-text (get-value-from-key "cap_text" _parsed))
-         ;; (cookie (gethash "cookie" (request-headers *request*)))
-         ;; (splited-cookie (if (null cookie)
-         ;;                     nil
-         ;;                     (mapcar #'(lambda (v) (cl-ppcre:split "=" v))
-         ;;                             (cl-ppcre:split ";" cookie))))
          (date (get-universal-time))
          (board-data (get-a-board-name-from-name board-name))
          (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*))))
