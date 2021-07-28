@@ -662,10 +662,12 @@
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
 (defun to-kakolog (board-url-name dat-file-path outpath)
   (let ((html (dat-to-html dat-file-path)))
-    (if (save-html :board-url-name board-url-name
-                   :html html
-                   :outpath outpath)
-        'success
+    (if (null (eq html :no-valid-dat))
+        (if (save-html :board-url-name board-url-name
+                       :html html
+                       :outpath outpath)
+            :success
+            nil)
         nil)))
 
 
