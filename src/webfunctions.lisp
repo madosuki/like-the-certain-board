@@ -11,7 +11,8 @@
   (:import-from :like-certain-board.utils
                 :write-log
                 :separate-numbers-from-key-for-kako
-   :check-whether-integer)
+                :flatten
+                :check-whether-integer)
   (:import-from :lack.middleware.csrf
    :csrf-token)
   (:export
@@ -51,17 +52,6 @@
 
 
 ;; Functions
-
-(defun flatten (a &optional (result (list nil)))
-  (if a
-      (let ((base (car a)))
-        (let ((l (car base))
-              (r (cdr base)))
-          (push l result)
-          (push r result)
-          (flatten (cdr a) result)))
-      (cdr (reverse result))))
-
 (defun get-session-from-cookie (request)
   (let ((cookie (gethash "cookie" (request-headers *request*))))
     (unless cookie
@@ -112,8 +102,6 @@
         (rename-file outpath path)
         (setq is-not-error t)))
     is-not-error))
-
-
 
 
 (defun get-detail-time-from-universal-time (time &optional (is-utc t))
@@ -648,16 +636,17 @@
 
 (defun save-html (&key board-url-name html outpath)
   (handler-case
-      (progn (with-open-file (out-s outpath
-                                    :direction :output
-                                    :if-does-not-exist :create
-                                    :if-exists :supersede)
-               (write-line html out-s))
-             'success)
+      (with-open-file (out-s outpath
+                               :direction :output
+                               :if-does-not-exist :create
+                               :if-exists :supersede)
+          (write-line html out-s))
     (error (e)
       (write-log :mode :error
                  :message (format nil "Error in save-html: ~A" e))
-      nil)))
+      nil)
+    (:no-error
+      :success)))
 
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
 (defun to-kakolog (board-url-name dat-file-path outpath)
@@ -758,7 +747,6 @@
              (title (getf x :title)))
         (push (cons key (kakolog-process :key key :title title :board-url-name board-url-name :board-id board-id)) result)))
     (nreverse result)))
-
 
 
 (defun process-on-root-of-board (web session board-name)

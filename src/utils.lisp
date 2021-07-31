@@ -12,7 +12,8 @@
    :write-log
    :separate-numbers-from-key-for-kako
    :check-whether-integer
-   :detect-monazilla))
+   :detect-monazilla
+   :flatten))
 (in-package :like-certain-board.utils)
 
 
@@ -77,3 +78,13 @@
 
 (defun detect-monazilla (user-agent)
   (not (null (scan "^Monazilla/1.00" user-agent))))
+
+(defun flatten (a &optional (result (list nil)))
+  (if a
+      (let ((base (car a)))
+        (let ((l (car base))
+              (r (cdr base)))
+          (push l result)
+          (push r result)
+          (flatten (cdr a) result)))
+      (cdr (reverse result))))
