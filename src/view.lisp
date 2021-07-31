@@ -386,7 +386,7 @@
                             (markup (:h2 "ログイン済みです")))
                            ((eq is-login :failed)
                             (markup (:h2 "ログインに失敗しました")))))
-                (:form :action (format nil "~A/~A/api/user" *https-root-path* board-url-name)
+                (:form :action (format nil "/~A/api/user" board-url-name)
                        :method "POST"
                        (:ul :class "form"
                             (:li :class "form"

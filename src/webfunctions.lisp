@@ -645,7 +645,8 @@
       (write-log :mode :error
                  :message (format nil "Error in save-html: ~A" e))
       nil)
-    (:no-error
+    (:no-error (c)
+      (declare (ignore c))
       :success)))
 
 ;; WIP implement, convert dat to html when reach max number of save thread in db.
