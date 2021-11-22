@@ -8,7 +8,6 @@
            :*application-root*
            :*static-directory*
            :*template-directory*
-           :*salt*
            :*default-max-length*
            :*1001*
            :*default-penalty-time*
@@ -52,7 +51,6 @@
 (defparameter *site-db-name* "")
 (defparameter *db-hostname* "127.0.0.1")
 (defparameter *docked-db-container-name* "db")
-(defparameter *salt* "")
 (defparameter *domain-name* "localhost")
 (defparameter *specific-http-port* ":8080")
 (defparameter *specific-https-port* ":8081")

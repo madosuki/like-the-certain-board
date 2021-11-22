@@ -13,6 +13,8 @@
                 :separate-numbers-from-key-for-kako
                 :flatten
                 :check-whether-integer)
+  (:import-from :cl-string-generator
+                :generate)
   (:import-from :lack.middleware.csrf
    :csrf-token)
   (:export
@@ -556,14 +558,11 @@
           :time-over
           nil))))
 
-(defun check-login-possible (board-id user-name session &optional (hash-string ""))
-  (let ((data (get-user-table board-id user-name))
-        (is-logged-in (gethash *session-login-key* session)))
-    (unless data
-      (return-from check-login-possible (cons :not-found :no-data)))
+(defun check-login-possible (table-data session &optional (hash-string ""))
+  (let ((is-logged-in (gethash *session-login-key* session)))
     (when is-logged-in
-      (return-from check-login-possible (cons :logged-in data)))
-    (let ((db-hash-string (getf data :hash)))
+      (return-from check-login-possible (cons :logged-in table-data)))
+    (let ((db-hash-string (getf table-data :hash)))
       (if (string= hash-string db-hash-string)
           (cons :success data)
           (cons :failed :no-data)))))
@@ -571,38 +570,43 @@
 (defun login (board-id user-name password universal-time session)
   (when (or (null user-name) (null password))
     (return-from login :failed))
-  (let* ((hash (sha256-hmac :target password
-                            :key *salt*
-                            :key-char-code :UTF-8
-                            :char-code :UTF-8))
-         (is-login nil)
-         (checked-v (check-login-possible board-id user-name session hash))
-         (date (get-current-datetime universal-time)))
-    (cond ((eq (car checked-v) :logged-in)
-           :logged-in)
-          ((eq (car checked-v) :success)
-           (let* ((db-data (cdr checked-v))
-                  (is-admin (getf db-data :is-admin))
-                  (cap-text (getf db-data :cap-text)))
-             (setf (getf (getf (request-env *request*) :lack.session.options) :change-id) t)
-             (when is-admin
-               (setf (gethash *session-admin-key* session) t))
-             (when (and (not (null cap-text)) (string/= cap-text ""))
-               (setf (gethash *session-cap-text-key* session) cap-text)))
-           (setf (gethash *session-login-key* session) t)
-           (update-user-table board-id user-name date)
-           :success)
-          (t
-           :failed))))
+  (let ((table-data (get-user-table board-id user-name)))
+    (unless data
+      (return-from login :failed))
+    (let* ((salt (getf table-data :salt))
+           (hash (sha256-hmac :target password
+                              :key salt
+                              :key-char-code :UTF-8
+                              :char-code :UTF-8))
+           (is-login nil)
+           (checked-v (check-login-possible table-data session hash))
+           (date (get-current-datetime universal-time)))
+      (cond ((eq (car checked-v) :logged-in)
+             :logged-in)
+            ((eq (car checked-v) :success)
+             (let* ((db-data (cdr checked-v))
+                    (is-admin (getf db-data :is-admin))
+                    (cap-text (getf db-data :cap-text)))
+               (setf (getf (getf (request-env *request*) :lack.session.options) :change-id) t)
+               (when is-admin
+                 (setf (gethash *session-admin-key* session) t))
+               (when (and (not (null cap-text)) (string/= cap-text ""))
+                 (setf (gethash *session-cap-text-key* session) cap-text)))
+             (setf (gethash *session-login-key* session) t)
+             (update-user-table board-id user-name date)
+             :success)
+            (t
+             :failed)))))
 
 (defun create-user (board-id user-name password date &optional (is-admin nil) (cap-text nil))
   (unless (or user-name password)
     (return-from create-user nil))
   (when (get-user-table board-id user-name)
     (return-from create-user :exist-user))
-  (let* ((hash (sha256-hmac
+  (let* ((salt (generate "[0-9A-Za-z]" :min-length 100 :max-length 100))
+         (hash (sha256-hmac
                 :target password
-                :key *salt*
+                :key salt
                 :key-char-code :UTF-8
                 :char-code :UTF-8))
          (date (get-current-datetime date))

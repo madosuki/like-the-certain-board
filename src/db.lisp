@@ -72,7 +72,8 @@
   (create-date "" :type string)
   (latest-date "" :type string)
   (is-admin nil :type integer)
-  (cap-text "" :type string))
+  (cap-text "" :type string)
+  (salt "" :type string))
 
 (defstruct thread-table-struct
   (title "" :type string)
@@ -205,7 +206,7 @@
 (defun get-user-list (board-id)
   (with-connection (db)
     (retrieve-all
-     (select (fields :user-name :cap-text :is-admin)
+     (select (fields :user-name :cap-text :is-admin :salt)
              (from :user-table)
              (where (:= :board-id board-id))))))
 
@@ -217,7 +218,8 @@
         (create-date (user-table-struct-create-date user-data))
         (latest-date (user-table-struct-latest-date user-data))
         (is-admin (user-table-struct-is-admin user-data))
-        (cap-text (user-table-struct-cap-text user-data)))
+        (cap-text (user-table-struct-cap-text user-data))
+        (salt (user-table-struct-salt user-data)))
     (with-connection (db)
       (execute
        (insert-into :user-table
@@ -228,7 +230,8 @@
                      :create-date create-date
                      :latest-date latest-date
                      :is-admin is-admin
-                     :cap-text cap-text))))))
+                     :cap-text cap-text
+                     :salt salt))))))
 
 (defun update-user-table (board-id user-name date)
   (with-connection (db)
