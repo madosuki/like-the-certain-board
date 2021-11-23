@@ -96,7 +96,6 @@
             (user-name-in-db (cdr (assoc :user-name-in-db parsed)))
             (user-password-in-db (cdr (assoc :user-password-in-db parsed)))
             (db-hostname (cdr (assoc :db-hostname parsed)))
-            (salt (cdr (assoc :salt parsed)))
             (default-name (cdr (assoc :default-name parsed)))
             (log-path (cdr (assoc :log-path parsed))))
         (when site-db-name
@@ -107,8 +106,6 @@
           (setq *user-password-in-db* user-password-in-db))
         (when db-hostname
           (setq *db-hostname* db-hostname))
-        (when salt
-          (setq *salt* salt))
         (when log-path
           (setq *log-path* log-path))))))
 
