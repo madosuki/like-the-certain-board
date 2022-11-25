@@ -593,6 +593,7 @@
                (when (and (not (null cap-text)) (string/= cap-text ""))
                  (setf (gethash *session-cap-text-key* session) cap-text)))
              (setf (gethash *session-login-key* session) t)
+             (setf (gethash *session-user-id* session) (getf (cadr checked-v) :id))
              (update-user-table board-id user-name date)
              :success)
             (t
@@ -623,7 +624,7 @@
                                    ""))))
     (handler-case (insert-user-table user-data)
       (error (e)
-        (write-log :mode :error
+        (write-lo g:mode :error
                    :message (format nil "~%Error in create-user : ~A~%" e))
         (setq return-status :create-failed)))
     return-status))

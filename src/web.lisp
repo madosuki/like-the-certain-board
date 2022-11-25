@@ -433,12 +433,39 @@
                (progn
                  (set-response-status 403)
                  "Forbidden")))
-          ((equal mode "delete")
-           (if (and (gethash *session-login-key* *session*) (gethash *session-admin-key* *session*))
+          ((equal mode "delete_self")
+           (if (and (gethash *session-login-key* *session*) (gethash *session-user-id* *session*))
                (let* ((board-id (getf board-data :id))
-                      (is-exists-user (get-user-table board-id user-name)))
+                      (is-exists-user (get-user-table-from-id board-id user-id)))
                  (if is-exists-user
-                     (let ((is-success (handler-case (progn (delete-user board-id user-name)
+                     (let ((is-success (handler-case (progn (delete-user-from-id board-id (getf is-exists-user :id))
+                                                            :success)
+                                         (error (e)
+                                           (declare (ignore e))
+                                           :failed))))
+                       (if (eq :success is-success)
+                           (progn
+                             (set-response-status 302)
+                             (setf (getf (response-headers *response*) :location)
+                                   (format nil "~A/~A/user-list"
+                                           *https-root-path*
+                                           board-name))
+                             "Success")
+                           "Failed"))
+                     "Failed"))
+               (progn
+                 (set-response-status 403)
+                 "Forbidden")))
+          ((equal mode "delete_other")
+           (if (and (gethash *session-login-key* *session*) (gethash *session-admin-key* *session*) (gethash *session-user-id*))
+               (let* ((board-id (getf board-data :id))
+                      (is-exists-user (get-user-table board-id user-name))
+                      (admin (get-user-table-from-id board-id (gethash *session-user-id*)))
+                      (is-admin (if admin
+                                    (getf admin :is-admin)
+                                    nil)))
+                 (if (and is-admin is-exists-user)
+                     (let ((is-success (handler-case (progn (delete-user-from-id board-id (getf is-exists-user :id))
                                                             :success)
                                          (error (e)
                                            (declare (ignore e))

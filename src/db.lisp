@@ -203,6 +203,14 @@
              (from :user-table)
              (where (:and (:like :user-name user-name) (:= :board-id board-id)))))))
 
+(defun get-user-table-from-id (board-id user-id)
+  (with-connection (db)
+    (retrieve-one
+     (select :*
+             (from :user-table)
+             (where (:and (:like :id user-id) (:= :board-id board-id)))))))
+
+
 (defun get-user-list (board-id)
   (with-connection (db)
     (retrieve-all
@@ -245,6 +253,13 @@
     (execute
      (delete-from :user-table
                   (where (:and (:like :user-name user-name) (:like :board-id board-id)))))))
+
+(defun delete-user-from-id (board-id user-id)
+  (with-connection (db)
+    (execute
+     (delete-from :user-table
+                  (where (:and (:like :id user-id) (:like :board-id board-id)))))))
+
 
 
 (defun insert-kakolog-table (unixtime title board-id)
