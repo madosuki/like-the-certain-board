@@ -7,7 +7,7 @@
         :like-certain-board.db
         :quri
         :cl-fad
-   :generate-like-certain-board-strings)
+        :generate-like-certain-board-strings)
   (:import-from :like-certain-board.utils
                 :write-log
                 :separate-numbers-from-key-for-kako
@@ -179,10 +179,11 @@
       (let ((tmp (sb-ext:string-to-octets first-line :external-format :sjis)))
         (write-sequence tmp i)))))
 
-(defun create-res (&key name trip-key email date text ipaddr (first nil) (title ""))
+;; sec-key is secret key for generate id. That is WIP.
+(defun create-res (&key name trip-key email date text ipaddr (first nil) (title "") (sec-key ""))
   (format t "~%trip key: ~A~%" trip-key)
   (let* ((datetime (replace-hyphen-to-slash date))
-         (id (generate-id :ipaddr ipaddr :date datetime :salt *salt*))
+         (id (generate-id :ipaddr ipaddr :date datetime :sec-key sec-key))
          (trip (if (and (stringp trip-key) (string/= trip-key ""))
                    (generate-trip (subseq trip-key 1) "utf8")
                    ""))
