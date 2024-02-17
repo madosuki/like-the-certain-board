@@ -624,7 +624,7 @@
                                    ""))))
     (handler-case (insert-user-table user-data)
       (error (e)
-        (write-lo g:mode :error
+        (write-log :mode :error
                    :message (format nil "~%Error in create-user : ~A~%" e))
         (setq return-status :create-failed)))
     return-status))

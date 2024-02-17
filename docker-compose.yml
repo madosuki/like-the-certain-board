@@ -1,7 +1,7 @@
 version: '3.4'
 services:
   webapp:
-    image: debian:bullseye-slim
+    image: debian:bookworm-slim
     container_name: like_the_certain_board
     build:
       context: ./docker/webapp

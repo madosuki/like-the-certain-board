@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 WORKDIR /roswell
 
@@ -15,7 +15,7 @@ RUN apt-get clean && apt-get update
 RUN apt-get install -y tzdata
 ENV TZ=Asia/Tokyo
 
-RUN apt-get install -y git build-essential automake autoconf make gcc libcurl4-openssl-dev curl libglib2.0-dev default-libmysqlclient-dev libmariadb-dev-compat libfcgi-dev libev-dev && \
+RUN apt-get install -y git build-essential automake autoconf make gcc libcurl4-openssl-dev curl libglib2.0-dev default-libmysqlclient-dev libmariadb-dev-compat libev-dev&& \
     cd ${work_dir} && \
     git clone --depth=1 -b release https://github.com/roswell/roswell.git && \
     cd roswell && \
@@ -49,8 +49,6 @@ RUN ros install fukamachi/caveman && \
     ros install madosuki/cl-markup && \ 
     ros install madosuki/lack/using-for-mysite && \
     ros install madosuki/cl-crypt
-
-
 
 
 COPY ./roswell/init.lisp /root/.roswell/
