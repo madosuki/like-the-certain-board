@@ -622,7 +622,8 @@
                      :is-admin (if is-admin 1 0)
                      :cap-text (if cap-text
                                    (convert-html-special-chars (replace-not-available-char-when-cp932 (format nil "~A★" cap-text)))
-                                   ""))))
+                                   "")
+                     :salt salt)))
     (handler-case (insert-user-table user-data)
       (error (e)
         (write-log :mode :error
