@@ -36,6 +36,8 @@ RUN yes | ros update quicklisp
 RUN ros install fukamachi/caveman && \
     ros install fukamachi/ningle && \
     ros install fukamachi/quri && \
+    ros install fukamachi/lack && \
+    ros install fukamachi/clack && \
     ros install cl-dbi && \
     ros install envy & \
     ros install datafly && \
@@ -45,9 +47,7 @@ RUN ros install fukamachi/caveman && \
     ros install sxql && \
     ros install trivial-utf-8 && \
     ros install madosuki/generate-like-certain-board-strings && \
-    ros install madosuki/clack && \
     ros install madosuki/cl-markup && \ 
-    ros install madosuki/lack/using-for-mysite && \
     ros install madosuki/cl-crypt
 
 
