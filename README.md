@@ -14,7 +14,10 @@ This program is like 2ちゃん program.
 ## Run
 do before first run
 ```
+ros install madosuki/cl-markup
+ros install madosuki/cl-crypt
 ros install madosuki/generate-like-certain-board-strings
+
 ros install clack
 ```
 
