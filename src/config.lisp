@@ -112,9 +112,9 @@
 (set-settings)
 
 (defconfig :common
-    `(:databases ((:maindb :mysql
+    `(:databases ((:maindb :postgres
                    :host ,*db-hostname*
-                   :port 3306
+                   :port 5432
                    :database-name ,*site-db-name*
                    :username ,*user-name-in-db*
                    :password ,*user-password-in-db*))))

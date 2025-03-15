@@ -1,0 +1,1 @@
+create table if not exists threads (id serial, title text not null, "create-date" timestamp not null, "last-modified-date" timestamp not null, "last-rise-date" timestamp not null, "res-count" integer not null default 1, unixtime bigint, "max-line" integer default 1000 not null, "board-id" integer not null, primary key(id, unixtime))

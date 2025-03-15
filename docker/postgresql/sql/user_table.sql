@@ -1,0 +1,1 @@
+create table if not exists "user-table" (id serial, "board-id" integer, "user-name" text not null, hash char(64) not null, "create-date" timestamp not null, "latest-date" timestamp null, "is-admin" bool default false not null, "cap-text" text, salt char(101) not null, primary key (id));

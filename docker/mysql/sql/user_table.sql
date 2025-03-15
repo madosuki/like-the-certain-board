@@ -1,1 +1,0 @@
-create table if not exists mysite.`user-table` (id int primary key auto_increment, `board-id` integer, `user-name` text not null, hash char(64) binary not null, `create-date` datetime not null, `latest-date` datetime null, `is-admin` bool default 0 not null, `cap-text` text, salt char(101) not null);

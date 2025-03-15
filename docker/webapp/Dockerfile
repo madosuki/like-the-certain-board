@@ -15,7 +15,7 @@ RUN apt-get clean && apt-get update
 RUN apt-get install -y tzdata
 ENV TZ=Asia/Tokyo
 
-RUN apt-get install -y git build-essential automake autoconf make gcc libcurl4-openssl-dev curl libglib2.0-dev default-libmysqlclient-dev libmariadb-dev-compat libev-dev&& \
+RUN apt-get install -y git build-essential automake autoconf make gcc libcurl4-openssl-dev curl libglib2.0-dev postgresql-client libev-dev&& \
     cd ${work_dir} && \
     git clone --depth=1 -b release https://github.com/roswell/roswell.git && \
     cd roswell && \
@@ -26,8 +26,6 @@ RUN apt-get install -y git build-essential automake autoconf make gcc libcurl4-o
     cd .. && \
     rm -rf roswell && \
     ros run -q
-
-# RUN cd /usr/lib/x86_64-gnu-linux && ln -s libmysqlclient.so.21 libmysqlclient_r.so && cd /roswell
 
 ENV PATH /root/.roswell/bin:${PATH}
 

@@ -6,7 +6,6 @@ services:
       context: ./docker/webapp
       dockerfile: Dockerfile
       network: host
-    # tty: true
     restart: "no"
     entrypoint: "/root/.roswell/local-projects/like-the-certain-board/dockerRun.sh"
     depends_on:
@@ -15,32 +14,31 @@ services:
       - 8888
     volumes:
       - ./:/root/.roswell/local-projects/like-the-certain-board/
-      - ../dat/:/roswell/dat/
-      - ../kakolog/html/:/roswell/kakolog/html/
-      - ../kakolog/dat/:/roswell/kakolog/dat/
-      - ../settings/:/roswell/settings/
+      - ../like_the_certain_board_dirs/dat/:/roswell/dat/
+      - ../like_the_certain_board_dirs/kakolog/html/:/roswell/kakolog/html/
+      - ../like_the_certain_board_dirs/kakolog/dat/:/roswell/kakolog/dat/
+      - ../like_the_certain_board_dirs/settings/:/roswell/settings/
 
   db:
-    image: mysql:latest
-    container_name: mysql_docker
+    image: postgres:17
+    container_name: postgresql_docker
     build:
-      context: ./docker/mysql
+      context: ./docker/postgresql
       dockerfile: Dockerfile
     restart: "no"
     environment:
-      MYSQL_ROOT_PASSWORD: root_pass
-      MYSQL_DATABASE: mysite
-      MYSQL_USER: lain
-      MYSQL_PASSWORD: user_pass
+      POSTGRES_USER: lain
+      POSTGRES_PASSWORD: user_pass
+      POSTGRES_DB: mysite
     expose:
-      - 3306
+      - 5432
     ports:
-      - 3306:3306
+      - 5432:5432
     volumes:
-      - ./docker/mysql/sql:/docker-entrypoint-initdb.d
-      - ./docker/mysql/conf:/etc/mysql/conf.d
-      - db-data-store:/var/lib/mysql
-      - db-log-store:/var/log/mysql
+      - ./docker/postgresql/sql:/docker-entrypoint-initdb.d
+      - ./docker/postgresql/conf:/etc/postgresql/postgresql.conf
+      - db-data-store:/log
+      # - db-log-store:/var/log/postgresql/logs
       
   nginx:
     image: nginx:latest
@@ -56,8 +54,8 @@ services:
       - 8081:443
     volumes:
       - ./docker/nginx/conf:/etc/nginx/conf.d/
-      - ../keys:/etc/keys/
-      - ../nginx_log:/var/log/nginx/
+      - ../like_the_certain_board_dirs/keys:/etc/keys/
+      - ../like_the_certain_board_dirs/nginx_log:/var/log/nginx/
 
 volumes:
   db-data-store:

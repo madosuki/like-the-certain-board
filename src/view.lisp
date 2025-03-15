@@ -13,7 +13,7 @@
                 :add-template-directory
                 :compile-template*
                 :render-template*
-                :*djula-execute-package*)
+                :*template-package*)
   (:import-from :datafly
    :encode-json)
   (:import-from :uiop
@@ -70,7 +70,7 @@
   (:import-from :caveman2
                 :url-for))
 
-(setf djula:*djula-execute-package* (find-package :like-certain-board.djula))
+(setf djula:*template-package* (find-package :like-certain-board.djula))
 
 (defparameter *og-prefix* (format nil "og: ~A" *https-root-path*))
 (defparameter *default-ogp-image-name* "ogp_image_sample.png")

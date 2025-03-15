@@ -165,13 +165,15 @@
 
 
 (defun create-dat (&key unixtime first-line board-url-name)
-  (let* ((dat-dir (format nil "~A/~A" *dat-path* board-url-name))
+  ;; must be set / to tail on directory. because "ensure-directories-exist"  is does not detect as directory if not end / on path.
+  (let* ((dat-dir (format nil "~A/~A/" *dat-path* board-url-name))
          (filename (concatenate 'string (write-to-string unixtime) ".dat"))
          (path (format nil "~A/~A" dat-dir filename)))
     (unless (cl-fad:directory-exists-p *dat-path*)
       (ensure-directories-exist *dat-path*))
     (unless (cl-fad:directory-exists-p dat-dir)
       (ensure-directories-exist dat-dir))
+    (format t "exists dat path: ~A~%" (cl-fad:directory-exists-p dat-dir))
     (with-open-file (i path
                        :direction :output
                        :if-does-not-exist :create
@@ -761,4 +763,4 @@
   (let ((board-data (get-a-board-name-from-name board-name)))
     (if board-data
         (put-thread-list board-name (getf board-data :name) web (format nil "~A/~A" *https-root-path* board-name) (csrf-token session))
-        (on-exception *web* 404))))
+        (on-exception web 404))))
