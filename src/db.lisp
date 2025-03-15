@@ -347,14 +347,14 @@
              (set= :count count
                    :last-unixtime last-unixtime
                    :penalty-count penalty-count)
-             (where (:like :ipaddr ipaddr))))))
+             (where (:= :ipaddr ipaddr))))))
 
 (defun get-data-from-time-restrict (&key ipaddr)
   (with-connection (db)
     (retrieve-one
      (select (:count :last-unixtime :penalty-count)
              (from :time-restrict)
-             (where (:like :ipaddr ipaddr))))))
+             (where (:= :ipaddr ipaddr))))))
 
 (defun insert-to-time-restrict-table (&key ipaddr last-unixtime)
   (with-connection (db)

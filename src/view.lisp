@@ -9,11 +9,9 @@
   (:import-from :caveman2
                 :*response*
                 :response-headers)
-  (:import-from :djula
-                :add-template-directory
-                :compile-template*
-                :render-template*
-                :*template-package*)
+  ;; (:import-from :compile-template*
+  ;;               :render-template*
+  ;;               :*template-package*)
   (:import-from :datafly
    :encode-json)
   (:import-from :uiop
@@ -22,8 +20,7 @@
    :get-default-name-from-name)
   (:import-from :like-certain-board.utils
                 :separate-numbers-from-key-for-kako)
-  (:export :render
-           :render-json
+  (:export :render-json
            :index-view
            :board-view
            :thread-view
@@ -39,23 +36,22 @@
            :user-list-view))
 (in-package :like-certain-board.view)
 
-(djula:add-template-directory *template-directory*)
+;; (djula:add-template-directory *template-directory*)
 
-(defparameter *template-registry* (make-hash-table :test 'equal))
+;; (defparameter *template-registry* (make-hash-table :test 'equal))
 
-(defun render (template-path &optional env)
-  (let ((template (gethash template-path *template-registry*)))
-    (unless template
-      (setf template (djula:compile-template* (princ-to-string template-path)))
-      (setf (gethash template-path *template-registry*) template))
-    (apply #'djula:render-template*
-           template nil
-           env)))
+;; (defun render (template-path &optional env)
+;;   (let ((template (gethash template-path *template-registry*)))
+;;     (unless template
+;;       (setf template (djula:compile-template* (princ-to-string template-path)))
+;;       (setf (gethash template-path *template-registry*) template))
+;;     (apply #'djula:render-template*
+;;            template nil
+;;            env)))
 
 (defun render-json (object)
   (setf (getf (response-headers *response*) :content-type) "application/json")
   (encode-json object))
-
 
 ;;
 ;; Execute package definition
@@ -110,6 +106,8 @@
                             "トップに戻る")
                        (:li (:a :href "/about"
                                 "このサイトについて"))
+                       (:li (:a :href (format nil "/~A" ,board-url-name)
+                                "板に戻る"))
                        (raw (when ,board-url-name
                               (markup (:li (:a :href (format nil "/~A/kakolog" ,board-url-name)
                                                "過去ログ倉庫"))))))))
@@ -117,6 +115,7 @@
                      ,@body))))
 
 (defun index-view (board-list)
+  (declare (type (list string) board-list))
   (main-content "板一覧" nil *https-root-path* nil
                 (:div :id "board-list"
                       (:h1 "板一覧")
@@ -126,6 +125,9 @@
                                                       (getf i :name)))))))))
 
 (defun set-thread-table-row (item bbs is-login csrf-token)
+  (declare (type string bbs)
+           (type boolean is-login)
+           (type string csrf-token))
   (markup
    (:tr
     (:td :class "cell-spacing"
@@ -161,74 +163,84 @@
 
 (declaim (inine create-thread-form))
 (defun create-thread-form (bbs time default-name csrf-token)
+  (declare (type string bbs)
+           (type integer time)
+           (type string default-name)
+           (type string csrf-token))
   (html5  (:h2 :class "form"
-                "新規スレッド作成フォーム")
-           (:form :action "/test/bbs.cgi"
-                  :method "POST"
-                  (:ul :class "form"
-                       (:li :class "form"
-                            (:label :for "subject"
-                                    :class "form"
-                                    "スレッドタイトル："
-                                    (:input :name "subject"
-                                            :type "text"
-                                            :value ""
-                                            :class "form"
-                                            :required t)))
-                       (:li :class "form"
-                            (:label :for "FROM"
-                                    :class "form"
-                                    "名前:"
-                                    (:input :name "FROM"
-                                            :type "text"
-                                            :value default-name
-                                            :class "form")))
-                       (:li :class "form"
-                            (:label :for "mail"
-                                    :class "form"
-                                    "メールアドレス:"
-                                    (:input :name "mail"
-                                            :type "text"
-                                            :value ""
-                                            :class "form")))
-                       (:li :class "form"
-                            (:label :for "max_line"
-                                    :class "form"
-                                    "最大行指定（＊1001〜10000まで有効．それより下を指定した場合，1000になり，超えた場合は10000として扱います．）："
-                                    (:input :name "max_line"
-                                            :type "number"
-                                            :value "1000"
-                                            :class "form")))
-                       (:li :class "form"
-                            (:label :for "MESSAGE"
-                                    :class "form"
-                                    "本文:"
-                                    (:textarea :name "MESSAGE"
-                                               :value ""
-                                               :cols 60
-                                               :rows 60
-                                               :class "form"
-                                               :required t
-                                               nil)))
-                       (:li :class "form"
-                            (:button
-                             :type "submit"
-                             "新規スレッド作成")))
-                  (:input :name "bbs"
-                          :type "hidden"
-                          :value bbs)
-                  (:input :name "time"
-                          :type "hidden"
-                          :value time)
-                  (:input :name "_csrf_token"
-                          :type "hidden"
-                          :value csrf-token)
-                  (:input :name "submit"
-                          :type "hidden"
-                          :value "新規スレッド作成"))))
+               "新規スレッド作成フォーム")
+          (:form :action "/test/bbs.cgi"
+                 :method "POST"
+                 (:ul :class "form"
+                      (:li :class "form"
+                           (:label :for "subject"
+                                   :class "form"
+                                   "スレッドタイトル："
+                                   (:input :name "subject"
+                                           :type "text"
+                                           :value ""
+                                           :class "form"
+                                           :required t)))
+                      (:li :class "form"
+                           (:label :for "FROM"
+                                   :class "form"
+                                   "名前:"
+                                   (:input :name "FROM"
+                                           :type "text"
+                                           :value default-name
+                                           :class "form")))
+                      (:li :class "form"
+                           (:label :for "mail"
+                                   :class "form"
+                                   "メールアドレス:"
+                                   (:input :name "mail"
+                                           :type "text"
+                                           :value ""
+                                           :class "form")))
+                      (:li :class "form"
+                           (:label :for "max_line"
+                                   :class "form"
+                                   "最大行指定（＊1001〜10000まで有効．それより下を指定した場合，1000になり，超えた場合は10000として扱います．）："
+                                   (:input :name "max_line"
+                                           :type "number"
+                                           :value "1000"
+                                           :class "form")))
+                      (:li :class "form"
+                           (:label :for "MESSAGE"
+                                   :class "form"
+                                   "本文:"
+                                   (:textarea :name "MESSAGE"
+                                              :value ""
+                                              :cols 60
+                                              :rows 60
+                                              :class "form"
+                                              :required t
+                                              nil)))
+                      (:li :class "form"
+                           (:button
+                            :type "submit"
+                            "新規スレッド作成")))
+                 (:input :name "bbs"
+                         :type "hidden"
+                         :value bbs)
+                 (:input :name "time"
+                         :type "hidden"
+                         :value time)
+                 (:input :name "_csrf_token"
+                         :type "hidden"
+                         :value csrf-token)
+                 (:input :name "submit"
+                         :type "hidden"
+                         :value "新規スレッド作成"))))
 
 
 (defun board-view (&key is-login board-name bbs thread-list time csrf-token url)
+  (declare (type boolean is-login)
+           (type string board-name)
+           (type string bbs)
+           (type integer time)
+           (type string csrf-token)
+           (type string url))
   (let ((default-name (cadr (get-default-name-from-name bbs))))
     (main-content board-name bbs url nil
                   (if is-login
@@ -510,8 +522,8 @@
 ;; WIP add confirm of write page
 (defun confirm-page-view (&key board-name url mode data csrf-token)
   (let ((title (if (eq mode :write)
-                      "書き込み確認"
-                      "スレッド作成確認"))
+                   "書き込み確認"
+                   "スレッド作成確認"))
         (key (if (eq mode :write)
                  (cadr (member "key" data :test #'string=))
                  nil))
@@ -552,11 +564,6 @@
                            (raw (markup (:input :name "subject"
                                                 :value subject
                                                 :type "hidden"))))
-                         ;; (:input :name "submit"
-                         ;;         :value (if (eq mode :write)
-                         ;;                    "書き込む"
-                         ;;                    "新規スレッド作成")
-                         ;;         :type "hidden")
                          (:input :name "FROM"
                                  :value FROM
                                  :type "hidden")

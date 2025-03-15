@@ -6,7 +6,7 @@
 }
 
 body {
-    font-family: 'Noto Sans JP', 'Yu Gothic Medium', YuGothic, Meiryo, 'MS PGothic', 'Myriad Pro', Calibri, Helvetica, Arial, sans-serif;
+    font-family: sans-serif;
     height: 100%;
     background-color: #EFEFEF;
 }
