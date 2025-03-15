@@ -61,9 +61,14 @@
 (defun db (&optional (db :maindb))
   (apply #'connect-cached (connection-settings db)))
 
+;; (defmacro with-connection (conn &body body)
+;;   `(let ((*connection* ,conn))
+;;      ,@body))
 (defmacro with-connection (conn &body body)
   `(let ((*connection* ,conn))
-     ,@body))
+     (unwind-protect
+          (progn ,@body)
+       (dbi:disconnect *connection*))))
 
 (defstruct user-table-struct
   (board-id "" :type integer)
