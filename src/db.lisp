@@ -81,7 +81,7 @@
   (last-modified-date "" :type string)
   (last-rise-date "" :type string)
   (res-count 1 :type integer)
-  (unixtime 0 :type intger)
+  (unixtime 0 :type integer)
   (max 1000 :type integer))
 
 
@@ -190,7 +190,7 @@
                (retrieve-one
                 (select :*
                         (from :threads)
-                        (where (:like :unixtime unixtime)))))))
+                        (where (:= :unixtime unixtime)))))))
     (if tmp
         t
         nil)))
@@ -305,7 +305,7 @@
     (execute
      (update :threads
              (set= :last-modified-date date)
-             (where (:and (:like :unixtime key)
+             (where (:and (:= :unixtime key)
                           (:= :board-id board-id)))))))
 
 (defun update-last-dates-of-thread (&key date key board-id)
@@ -314,7 +314,7 @@
      (update :threads
              (set= :last-modified-date date
                    :last-rise-date date)
-             (where (:and (:like :unixtime key)
+             (where (:and (:= :unixtime key)
                           (:= :board-id board-id)))))))
 
 (defun get-res-count (&key key)
@@ -322,14 +322,14 @@
     (retrieve-one
      (select :res-count
              (from :threads)
-             (where (:like :unixtime key))))))
+             (where (:= :unixtime key))))))
 
 (defun get-max-line (&key key)
   (with-connection (db)
     (retrieve-one
      (select :max-line
              (from :threads)
-             (where (:like :unixtime key))))))
+             (where (:= :unixtime key))))))
 
 (defun update-res-count-of-thread (&key key board-id)
   (let ((tmp (get-res-count :key key)))
@@ -337,7 +337,7 @@
       (execute
        (update :threads
                (set= :res-count (1+  (cadr tmp)))
-               (where (:and (:like :unixtime key)
+               (where (:and (:= :unixtime key)
                             (:= :board-id board-id))))))))
 
 (defun update-time-restrict-count-and-last-unixtime (&key ipaddr count last-unixtime penalty-count)
