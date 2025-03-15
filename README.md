@@ -51,6 +51,7 @@ and do
 ```
 ./create_board.sh db_user_name db_name
 ```
+Note: that script is example of create board process.  
 
 then
 ```
