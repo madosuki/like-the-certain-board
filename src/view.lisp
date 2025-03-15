@@ -20,20 +20,23 @@
    :get-default-name-from-name)
   (:import-from :like-certain-board.utils
                 :separate-numbers-from-key-for-kako)
+  (:import-from :generate-like-certain-board-strings
+                :convert-html-special-chars
+                :shape-text)
   (:export :render-json
-           :index-view
+   :index-view
            :board-view
-           :thread-view
+   :thread-view
            :time-restrict-view
-           :login-view
+   :login-view
            :write-result-view
-           :notfound-view
+   :notfound-view
            :kakolog-view
-           :kakolog-list-view
+   :kakolog-list-view
            :about-page-view
-           :confirm-page-view
+   :confirm-page-view
            :create-user-view
-           :user-list-view))
+   :user-list-view))
 (in-package :like-certain-board.view)
 
 ;; (djula:add-template-directory *template-directory*)
@@ -56,17 +59,17 @@
 ;;
 ;; Execute package definition
 
-(defpackage like-certain-board.djula
-  (:use :cl)
-  (:import-from :like-certain-board.config
-                :config
-                :appenv
-                :developmentp
-                :productionp)
-  (:import-from :caveman2
-                :url-for))
+;; (defpackage like-certain-board.djula
+;;   (:use :cl)
+;;   (:import-from :like-certain-board.config
+;;                 :config
+;;                 :appenv
+;;                 :developmentp
+;;                 :productionp)
+;;   (:import-from :caveman2
+;;                 :url-for))
 
-(setf djula:*template-package* (find-package :like-certain-board.djula))
+;; (setf djula:*template-package* (find-package :like-certain-board.djula))
 
 (defparameter *og-prefix* (format nil "og: ~A" *https-root-path*))
 (defparameter *default-ogp-image-name* "ogp_image_sample.png")
@@ -552,11 +555,12 @@
                      (raw (markup (:p (format nil "スレッドキー: ~A" key)))))
                    (when subject
                      (raw (markup (:p (format nil "スレッド名: ~A" subject)))))
-                   (:p (format nil "名前: ~A" FROM))
+                   (:p (format nil "名前: ~A" (convert-html-special-chars FROM)))
                    (:p (format nil "メール: ~A" (if (eq mail :NO-DATA)
                                                     ""
-                                                    mail)))
-                   (:div :class "thread_text" (format nil "本文: ~A"  MESSAGE)))
+                                                    (convert-html-special-chars mail))))
+                   (:p "本文：")
+                   (:div :class "thread_text" (raw (shape-text (convert-html-special-chars MESSAGE)))))
                   (:form :action "/test/bbs.cgi"
                          :method "POST"
                          (:input :name "bbs"
