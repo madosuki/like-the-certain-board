@@ -97,7 +97,7 @@
      (:title ,title))
     ,@body))
 
-(defmacro main-content (title board-url-name url ogp-image-name &body body)
+(defmacro main-content (title board-url-name url ogp-image-name is-thread thread-key &body body)
   `(base-html ,title ,url ,ogp-image-name
               (:body
                (:header
@@ -106,8 +106,12 @@
                             "トップに戻る")
                        (:li (:a :href "/about"
                                 "このサイトについて"))
-                       (:li (:a :href (format nil "/~A" ,board-url-name)
-                                "板に戻る"))
+                       (raw (when ,is-thread
+                              (markup (:li (:a :href (format nil "/~A" ,board-url-name)
+                                               "板に戻る")))))
+                       (raw (when ,thread-key
+                              (markup (:li (:a :href (format nil "/test/read.cgi/~A/~A" ,board-url-name ,thread-key)
+                                               "スレッドに戻る")))))
                        (raw (when ,board-url-name
                               (markup (:li (:a :href (format nil "/~A/kakolog" ,board-url-name)
                                                "過去ログ倉庫"))))))))
@@ -116,7 +120,7 @@
 
 (defun index-view (board-list)
   (declare (type (list string) board-list))
-  (main-content "板一覧" nil *https-root-path* nil
+  (main-content "板一覧" nil *https-root-path* nil nil nil
                 (:div :id "board-list"
                       (:h1 "板一覧")
                       (:ul
@@ -242,7 +246,7 @@
            (type string csrf-token)
            (type string url))
   (let ((default-name (cadr (get-default-name-from-name bbs))))
-    (main-content board-name bbs url nil
+    (main-content board-name bbs url nil nil nil
                   (if is-login
                       (raw (markup (:h2 "ログイン済み")))
                       "")
@@ -302,7 +306,7 @@
 
 (defun thread-view (&key title thread bbs key time csrf-token is-login url)
   (let ((default-name (cadr (get-default-name-from-name bbs))))
-    (main-content title bbs url nil
+    (main-content title bbs url nil t nil
                   (:h1 :id "title"
                        (raw title))
                   (loop for i in thread
@@ -367,7 +371,7 @@
 
 
 (defun time-restrict-view (&key bbs key mode mail url)
-  (main-content "連投規制" bbs url nil
+  (main-content "連投規制" bbs url nil t key
                 (:div :id "time-restrict"
                  (:h1 :id "alert-title"
                       "連投規制")
@@ -392,7 +396,7 @@
 
 
 (defun login-view (&key board-name board-url-name csrf-token is-login url)
-  (main-content board-name board-url-name url nil
+  (main-content board-name board-url-name url nil t nil
                 (:h1 "ログインページ")
                 (raw (cond ((eq is-login :logged-in)
                             (markup (:h2 "ログイン済みです")))
@@ -442,6 +446,8 @@
                 board-url-name
                 url
                 nil
+                t
+                key
                 (:div :id "error-msg"
                       :style "text-align: center"
                       (:p message)
@@ -464,7 +470,7 @@
 
 
 (defun kakolog-view (&key title html-path board-url-name first second key url)
-  (main-content (format nil "過去ログ: ~A" title) nil url nil
+  (main-content (format nil "過去ログ: ~A" title) nil url nil t key
                 (:div :id "kakolog-thread"
                       (raw (read-file-string html-path))
                       (raw (when board-url-name
@@ -495,7 +501,7 @@
                         title))
                (:td :class "cell-spacing"
                     unixtime))))))
-    (main-content "過去ログ倉庫" nil url nil
+    (main-content "過去ログ倉庫" nil url nil t nil
                   (:div :id "kakolog-list-contents"
                    (:h1 "過去ログ倉庫")
                    (if data
@@ -515,7 +521,7 @@
                                    "板に戻る")))))))))
 
 (defun about-page-view (url)
-  (main-content "About" nil url nil
+  (main-content "About" nil url nil nil nil
                 (:p "アバウトページ")))
 
 
@@ -534,7 +540,7 @@
         (mail (cadr (member "mail" data :test #'string=)))
         (MESSAGE (cadr (member "MESSAGE" data :test #'string=)))
         (time (cadr (member "time" data :test #'string=))))
-    (main-content title board-name url nil
+    (main-content title board-name url nil (if (eq mode :write) t nil) key
                   (:h1 title)
                   (:div :id "check-terms-of-use"
                         (:h2 "本当に送信してよろしいですか？")
@@ -592,7 +598,7 @@
                                              "新規スレッド作成"))))))
 
 (defun create-user-view (&key board-url-name board-name csrf-token)
-  (main-content "ユーザー作成ページ"  board-url-name (format nil "~A/~A/create-user" *https-root-path* board-url-name) nil
+  (main-content "ユーザー作成ページ"  board-url-name (format nil "~A/~A/create-user" *https-root-path* board-url-name) nil t nil
                 (:h1  :style "text-align: center"
                       (format nil "~A: ユーザー作成ページ"
                               board-name))
@@ -642,7 +648,7 @@
 
 
 (defun user-list-view (&key board-name board-url-name user-list csrf-token)
-  (main-content "ユーザーリスト" board-url-name (format nil "~A/~A/user-list" *https-root-path* board-url-name) nil
+  (main-content "ユーザーリスト" board-url-name (format nil "~A/~A/user-list" *https-root-path* board-url-name) nil t nil
                 (:div :style "margin-left: 1rem"
                  (:ul
                   (loop for i in user-list
