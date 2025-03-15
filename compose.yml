@@ -37,8 +37,8 @@ services:
     volumes:
       - ./docker/postgresql/sql:/docker-entrypoint-initdb.d
       - ./docker/postgresql/conf:/etc/postgresql/postgresql.conf
-      - db-data-store:/log
-      # - db-log-store:/var/log/postgresql/logs
+      - db-data-store:/var/lib/postgresql/data
+      - db-log-store:/log
       
   nginx:
     image: nginx:latest

@@ -538,7 +538,7 @@
                    (:p (format nil "メール: ~A" (if (eq mail :NO-DATA)
                                                     ""
                                                     mail)))
-                   (:p (format nil "本文: ~A"  MESSAGE)))
+                   (:div :class "thread_text" (format nil "本文: ~A"  MESSAGE)))
                   (:form :action "/test/bbs.cgi"
                          :method "POST"
                          (:input :name "bbs"

@@ -33,7 +33,7 @@ dl {
     white-space: nowrap;
 }
 
-#kakolog-thread dd, dd.thread_text {
+#kakolog-thread dd, dd.thread_text, .thread_text {
     font-family: Mona, Monapo, IPAMonaPGothic, MS PGothic, "MS Pゴシック", sans-serif;
     font-size: 16px;
     line-height: 18px;
