@@ -60,14 +60,13 @@
   (cdr (assoc db (config :databases))))
 
 (defun db (&optional (db :maindb))
-  (config :database))
-
-(defun db (&optional (db :maindb))
   (apply #'connect-cached (connection-settings db)))
 
 (defmacro with-connection (conn &body body)
   `(let ((*connection* ,conn))
-     ,@body))
+     (unwind-protect
+          ,@body
+       dbi:disconnect *connection*)))
 
 (defstruct user-table-struct
   (board-id "" :type integer)
