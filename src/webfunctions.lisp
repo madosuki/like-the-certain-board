@@ -1,20 +1,20 @@
 (in-package :cl-user)
 (defpackage like-certain-board.webfunctions
   (:use :cl
-        :caveman2
+   :caveman2
         :like-certain-board.config
-        :like-certain-board.view
+   :like-certain-board.view
         :like-certain-board.db
-        :quri
+   :quri
         :cl-fad
-        :generate-like-certain-board-strings)
+   :generate-like-certain-board-strings)
   (:import-from :like-certain-board.utils
-                :write-log
+   :write-log
                 :separate-numbers-from-key-for-kako
-                :flatten
+   :flatten
                 :check-whether-integer)
   (:import-from :cl-string-generator
-                :generate)
+   :generate)
   (:import-from :lack.middleware.csrf
    :csrf-token)
   (:export
@@ -30,7 +30,8 @@
    :convert-bunch-of-thread-to-kakolog
    :kakolog-process
    :delete-line-in-dat
-   :process-on-root-of-board))
+   :process-on-root-of-board
+   :try-update-restrict-time-info))
 (in-package :like-certain-board.webfunctions)
 
 (deftype mysql-true-type (n) `(= n 1))
@@ -117,7 +118,13 @@
 (defun check-abuse-post (&key current-unixtime user-agent ipaddr session)
   (unless user-agent
     (return-from check-abuse-post '(:status :restrict)))
-  (let ((data (get-data-from-time-restrict :ipaddr ipaddr)))
+  (let ((data (handler-case (get-data-from-time-restrict :ipaddr ipaddr)
+                (error (e)
+                  (declare (ignore e))
+                  :failed)
+                (:no-error (v) v))))
+    (when (equal data :failed)
+      (return-from check-abuse-post nil))
     (unless data
       (return-from check-abuse-post '(:status :first)))
     (let* ((count (cadr (member :count data)))
@@ -146,12 +153,12 @@
     (format nil "~A/~2,'0d/~2,'0d ~2,'0d:~2,'0d:~2,'0d" year month date hour minute second)))
 
 
-
 (defun check-exists-threads-table ()
   (handler-case (check-exists-table "threads")
     (error (e)
       (declare (ignore e))
-      :not-exists)))
+      :not-exists)
+    (:no-error (v) v)))
 
 (defmacro get-value-from-key (key target)
   `(cdr (assoc ,key ,target :test #'string=)))
@@ -345,17 +352,25 @@
                       :ipaddr ipaddr
                       :date formatted-date)))
             (write-sequence (sb-ext:string-to-octets res :external-format :sjis) input)
-            (if (equal mail "sage")
-                (update-last-modified-date-of-thread :date formatted-date :key key :board-id board-id)
-                (update-last-dates-of-thread :date formatted-date :key key :board-id board-id))
-            (update-res-count-of-thread :key key :board-id board-id)
+            (handler-case (progn
+                            (if (equal mail "sage")
+                                (update-last-modified-date-of-thread :date formatted-date :key key :board-id board-id)
+                                (update-last-dates-of-thread :date formatted-date :key key :board-id board-id))
+                            (update-res-count-of-thread :key key :board-id board-id))
+              (error (e)
+                (declare (ignore e))
+                (setq status 400)))
             (when (>= (cadr (get-res-count :key key)) (cadr (get-max-line :key key)))
               (write-sequence
                (sb-ext:string-to-octets *1001* :external-format :sjis) input)
-              (update-res-count-of-thread :key key :board-id board-id)
-              (if (equal mail "sage")
-                  (update-last-modified-date-of-thread :date formatted-date :key key :board-id board-id)
-                  (update-last-dates-of-thread :date formatted-date :key key :board-id board-id)))
+              (handler-case (progn
+                              (update-res-count-of-thread :key key :board-id board-id)
+                              (if (equal mail "sage")
+                                  (update-last-modified-date-of-thread :date formatted-date :key key :board-id board-id)
+                                  (update-last-dates-of-thread :date formatted-date :key key :board-id board-id)))
+                (error (e)
+                  (declare (ignore e))
+                  (setq status 400))))
             (write-log :mode :changes-result
                        :message (format nil "insert: ~A" time))))))
     status))
@@ -363,8 +378,8 @@
 (defun put-thread-list (board-name board-title web url csrf-token)
   (let ((board-list-data (get-a-board-name-from-name board-name)))
     (if board-list-data
-        (progn
-          (when (eq (check-exists-threads-table) :not-exists)
+        (let ((is-exists (check-exists-threads-table)))
+          (when (eq is-exists :not-exists)
             (return-from put-thread-list 400))
           (let ((result (get-thread-list (getf board-list-data :id)))
                 (is-login (gethash *session-login-key* *session*)))
@@ -378,7 +393,7 @@
                         :thread-list result
                         :is-login is-login
                         :url url)))
-        (on-exception web 404))))
+        nil)))
 
 (defun get-param (body)
   (let ((tmp (cl-ppcre:split "&" body))
@@ -438,7 +453,7 @@
 
 (defun bbs-cgi-function (body-text ipaddr universal-time is-monazilla session &optional (error-count 0))
   (let ((decoded-query (sb-ext:octets-to-string (coerce body-text '(vector (unsigned-byte 8)))
-                                                 :external-format :UTF-8))
+                                                :external-format :UTF-8))
         (form nil))
     (if decoded-query
         (let ((parsed-param (get-param decoded-query)))
@@ -528,7 +543,7 @@
                          :element-type '(unsigned-byte 8))
     (let ((file-size (file-length input)))
       (when (or (> 0 start) (< file-size end) (> 0 end))
-               (return-from load-file-with-recursive nil))
+        (return-from load-file-with-recursive nil))
       (let ((buf (make-array (if (= end 0)
                                  file-size
                                  end)
@@ -550,7 +565,11 @@
 
 
 (defun check-time-over-logged-in (board-id user-name universal-time)
-  (let ((db-data (get-user-table board-id user-name)))
+  (let ((db-data (handler-case (get-user-table board-id user-name)
+                   (error (e)
+                     (declare (ignore e))
+                     nil)
+                   (:no-error (v) v))))
     (unless db-data
       (return-from check-time-over-logged-in :not-found))
     (let ((latest-date (getf db-data :latest-date))
@@ -572,7 +591,11 @@
 (defun login (board-id user-name password universal-time session)
   (when (or (null user-name) (null password))
     (return-from login :failed))
-  (let ((table-data (get-user-table board-id user-name)))
+  (let ((table-data (handler-case (get-user-table board-id user-name)
+                      (error (e)
+                        (declare (ignore e))
+                        nil)
+                      (:no-error (v) v))))
     (unless data
       (return-from login :failed))
     (let* ((salt (getf table-data :salt))
@@ -645,10 +668,10 @@
 (defun save-html (&key board-url-name html outpath)
   (handler-case
       (with-open-file (out-s outpath
-                               :direction :output
-                               :if-does-not-exist :create
-                               :if-exists :supersede)
-          (write-line html out-s))
+                             :direction :output
+                             :if-does-not-exist :create
+                             :if-exists :supersede)
+        (write-line html out-s))
     (error (e)
       (write-log :mode :error
                  :message (format nil "Error in save-html: ~A" e))
@@ -682,8 +705,8 @@
                                           *dat-path* board-url-name key))
                (kakolog-dat-dir-root-path (format nil "~A/~A/" *kakolog-dat-path* board-url-name))
                (kakolog-dat-dir-path-with-4digit (format nil "~A~A"
-                                                   kakolog-dat-dir-root-path
-                                                   1st))
+                                                         kakolog-dat-dir-root-path
+                                                         1st))
                (kakolog-dat-dir-path (format nil "~A/~A/"
                                              kakolog-dat-dir-path-with-4digit
                                              2nd))
@@ -693,8 +716,8 @@
                                                           kakolog-html-dir-root-path
                                                           1st))
                (kakolog-html-dir-path (format nil "~A~A/"
-                                             kakolog-html-dir-path-with-4digit
-                                             2nd))
+                                              kakolog-html-dir-path-with-4digit
+                                              2nd))
                (kakolog-html-filepath (format nil "~A~A.html" kakolog-html-dir-path key)))
           (if (probe-file orig-dat-filepath)
               (if (to-kakolog board-url-name orig-dat-filepath kakolog-html-filepath)
@@ -722,11 +745,15 @@
                         (setq c :failed-copy-from-dat)))
                     (if (null c)
                         (if (probe-file orig-dat-filepath)
-                            (progn
-                              (delete-file orig-dat-filepath)
-                              (delete-thread key board-id)
-                              (insert-kakolog-table key title board-id)
-                              :success)
+                            (handler-case (progn
+                                            (delete-file orig-dat-filepath)
+                                            (delete-thread key board-id)
+                                            (insert-kakolog-table key title board-id))
+                              (error (e)
+                                (write-log :mode :error :message "Failed remove thread in kakolog-process")
+                                :failed-delete-dat)
+                              (:no-error ()
+                               :success))
                             (progn
                               (when (probe-file kakolog-dat-filepath)
                                 (delete-file kakolog-dat-filepath))
@@ -748,7 +775,7 @@
                          (get-expired-thread-list (get-current-datetime (get-universal-time))
                                                   board-id)
                          nil))
-       (result nil))
+        (result nil))
     (unless thread-list
       (return-from convert-bunch-of-thread-to-kakolog nil))
     (dolist (x thread-list)
@@ -762,4 +789,71 @@
   (let ((board-data (get-a-board-name-from-name board-name)))
     (if board-data
         (put-thread-list board-name (getf board-data :name) web (format nil "~A/~A" *https-root-path* board-name) (csrf-token session))
-        (on-exception web 404))))
+        nil)))
+
+(defun try-update-restrict-time-info (ipaddr current-unixtime _parsed is-confirmed is-monazilla check-abuse-result)
+  (let ((check-status (cadr (member :status check-abuse-result)))
+        (penalty-count (cadr (member :penalty-count check-abuse-result)))
+        (post-count (cadr (member :post-count check-abuse-result))))
+    (cond ((eq check-status :ok)
+           (handler-case
+               (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
+                                                             :count 1
+                                                             :penalty-count penalty-count
+                                                             :last-unixtime current-unixtime)
+             (error (e)
+               (declare (ignore e))
+               (return-from try-update-restrict-time-info nil)))
+           (format t "sucess!~%")
+           check-status)
+          ((eq check-status :over-24)
+           (handler-case
+               (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
+                                                             :count 0
+                                                             :penalty-count (1+ penalty-count)
+                                                             :last-unixtime current-unixtime)
+             (error (e)
+               (declare (ignore e))
+               (return-from try-update-restrict-time-info nil)))
+           check-status)
+          ((eq check-status :restrict)
+           (let ((is-confirm-param-in-form (cdr (assoc "confirm" _parsed :test #'string=))))
+             (cond ((or is-monazilla is-confirmed)
+                    (handler-case
+                        (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
+                                                                      :count (1+ post-count)
+                                                                      :penalty-count penalty-count
+                                                                      :last-unixtime current-unixtime)
+                      (error (e)
+                        (declare (ignore e))
+                        (return-from try-update-restrict-time-info nil))))
+                   ((not (null is-confirm-param-in-form))
+                    (handler-case
+                        (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
+                                                                      :count 0
+                                                                      :penalty-count penalty-count
+                                                                      :last-unixtime current-unixtime)
+                      (error (e)
+                        (declare (ignore e))
+                        (return-from try-update-restrict-time-info nil)))
+                    (setf (gethash *confirmed-key* *session*) :confirmed)
+                    (setq check-status :ok))
+                   (t
+                    (handler-case
+                        (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
+                                                                      :count (1+ post-count)
+                                                                      :penalty-count penalty-count
+                                                                      :last-unixtime current-unixtime)
+                      (error (e)
+                        (declare (ignore e))
+                        (return-from try-update-restrict-time-info nil))))))
+           check-status)
+          ((eq check-status :first)
+           (handler-case
+               (insert-to-time-restrict-table :ipaddr ipaddr
+                                              :last-unixtime current-unixtime)
+             (error (e)
+               (declare (ignore e))
+               (return-from try-update-restrict-time-info nil)))
+           check-status)
+          (t nil))))

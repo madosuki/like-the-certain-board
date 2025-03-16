@@ -41,17 +41,29 @@
 ;; Routing rules
 
 (defroute ("/" :method :GET) ()
-  (let ((board-list-data (get-board-list)))
-    (index-view board-list-data)))
+  (let ((board-list-data (handler-case (get-board-list)
+                           (error (e)
+                             (declare (ignore e))
+                             nil)
+                           (:no-error (v) v))))
+    (if board-list-data
+        (index-view board-list-data)
+        (notfound-view))))
 
 (defroute ("/about" :method :GET) ()
   (about-page-view (format nil "~A/about" *https-root-path*)))
 
 (defroute ("/:board-name/" :method :GET) (&key board-name)
-  (process-on-root-of-board *web* *session* board-name))
+  (let ((view (process-on-root-of-board *web* *session* board-name)))
+    (if view
+        view
+        (notfound-view))))
 
 (defroute ("/:board-name" :method :GET) (&key board-name)
-  (process-on-root-of-board *web* *session* board-name))
+  (let ((view (process-on-root-of-board *web* *session* board-name)))
+    (if view
+        view
+        (notfound-view))))
 
 (defroute ("/:board-name/kakolog" :method :GET) (&key board-name)
   (let* ((board-data (get-a-board-name-from-name board-name))
@@ -163,95 +175,71 @@
          (board-data (if bbs
                          (get-a-board-name-from-name bbs)
                          nil))
-         (is-confirmed (gethash *confirmed-key* *session*)))
+         (is-confirmed (gethash *confirmed-key* *session*))
+         (is-error nil))
     (cond ((null user-agent)
-           (set-response-status 403)
+           (set-response-status 400)
            "")
           ((and (null board-data) (null key))
            (set-response-status 400)
            "")
           ((and user-agent *session* board-data)
-           (let* ((check-abuse-result (check-abuse-post :current-unixtime current-unixtime
-                                                        :user-agent user-agent
-                                                        :ipaddr ipaddr
-                                                        :session *session*))
-                  (check-status (cadr (member :status check-abuse-result)))
-                  (penalty-count (cadr (member :penalty-count check-abuse-result)))
-                  (post-count (cadr (member :post-count check-abuse-result))))
-             (cond ((eq check-status :ok)
-                    (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
-                                                                  :count 1
-                                                                  :penalty-count penalty-count
-                                                                  :last-unixtime current-unixtime))
-                   ((eq check-status :over-24)
-                    (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
-                                                                  :count 0
-                                                                  :penalty-count (1+ penalty-count)
-                                                                  :last-unixtime current-unixtime))
-                   ((eq check-status :restrict)
-                    (let ((is-confirm-param-in-form (cdr (assoc "confirm" _parsed :test #'string=))))
-                      (cond ((or is-monazilla is-confirmed)
-                             (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
-                                                                           :count (1+ post-count)
-                                                                           :penalty-count penalty-count
-                                                                           :last-unixtime current-unixtime))
-                            ((not (null is-confirm-param-in-form))
-                             (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
-                                                                           :count 0
-                                                                           :penalty-count penalty-count
-                                                                           :last-unixtime current-unixtime)
-                             (setf (gethash *confirmed-key* *session*) :confirmed)
-                             (setq check-status :ok))
+           (let ((check-abuse-result (check-abuse-post :current-unixtime current-unixtime
+                                                       :user-agent user-agent
+                                                       :ipaddr ipaddr
+                                                       :session *session*)))
+             (cond ((null check-abuse-result)
+                    (set-response-status 400)
+                    "")
+                   (t
+                    (let ((check-status (try-update-restrict-time-info ipaddr current-unixtime _parsed is-confirmed is-monazilla check-abuse-result)))
+                      (cond ((or (eq check-status :ok)
+                                 (eq check-status :over-24)
+                                 (eq check-status :first))
+                             (let* ((message (get-value-from-key "MESSAGE" _parsed))
+                                    (raw-body (request-raw-body *request*))
+                                    (content-length (request-content-length *request*))
+                                    (tmp-array (make-array content-length :adjustable t :fill-pointer content-length))
+                                    (is-e nil))
+                               (handler-case (read-sequence tmp-array raw-body)
+                                 (error (e)
+                                   (write-log :mode :error
+                                              :message (format nil "Error read squence in bbs.cgi: ~A" e))
+                                   (setq is-e t)))
+                               (if is-e
+                                   (write-result-view :error-type :something :message "bad parameter")
+                                   (handler-case  (bbs-cgi-function tmp-array ipaddr universal-time is-monazilla *session*)
+                                     (error (e)
+                                       (set-response-status 400)
+                                       (write-log :mode :error
+                                                  :message (format nil "Error in bbs-cgi-function: ~A" e))
+                                       (write-result-view :error-type :something :message "bad parameter"))))))
+                            ((null check-status)
+                             (set-response-status 400)
+                             (write-result-view :error-type :something :message "bad parameter"))
                             (t
-                             (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
-                                                                           :count (1+ post-count)
-                                                                           :penalty-count penalty-count
-                                                                           :last-unixtime current-unixtime)))))
-                   ((eq check-status :first)
-                    (insert-to-time-restrict-table :ipaddr ipaddr
-                                                   :last-unixtime current-unixtime)))
-             (if (or (eq check-status :ok)
-                     (eq check-status :over-24)
-                     (eq check-status :first))
-                 (let* ((message (get-value-from-key "MESSAGE" _parsed))
-                        (raw-body (request-raw-body *request*))
-                        (content-length (request-content-length *request*))
-                        (tmp-array (make-array content-length :adjustable t :fill-pointer content-length))
-                        (is-e nil))
-                   (handler-case (read-sequence tmp-array raw-body)
-                     (error (e)
-                       (write-log :mode :error
-                                  :message (format nil "Error read squence in bbs.cgi: ~A" e))
-                       (setq is-e t)))
-                   (if is-e
-                       (write-result-view :error-type :something :message "bad parameter")
-                       (handler-case  (bbs-cgi-function tmp-array ipaddr universal-time is-monazilla *session*)
-                         (error (e)
-                           (write-log :mode :error
-                                      :message (format nil "Error in bbs-cgi-function: ~A" e))
-                           (write-result-view :error-type :something :message "bad parameter")))))
-                 (let ((thread (if (eq (check-whether-integer key) :integer-string)
-                                   (get-a-thread key (getf board-data :id))
-                                   nil)))
-                   (if thread
-                       (progn (set-response-status 200)
-                              (if is-monazilla
-                                  (time-error-msg *time-error-10sec-msg*)
-                                  (time-restrict-view
-                                   :mode check-status
-                                   :bbs bbs
-                                   :key key
-                                   :mail *admin-mailaddr*)))
-                       (progn (set-response-status 200)
-                              (if is-monazilla
-                                  (time-error-msg *time-error-24h-msg*)
-                                  (time-restrict-view
-                                   :mode check-status
-                                   :bbs bbs
-                                   :mail *admin-mailaddr*))))))))
+                             (let ((thread (if (eq (check-whether-integer key) :integer-string)
+                                               (get-a-thread key (getf board-data :id))
+                                               nil)))
+                               (if thread
+                                   (progn (set-response-status 200)
+                                          (if is-monazilla
+                                              (time-error-msg *time-error-10sec-msg*)
+                                              (time-restrict-view
+                                               :mode check-status
+                                               :bbs bbs
+                                               :key key
+                                               :mail *admin-mailaddr*)))
+                                   (progn (set-response-status 200)
+                                          (if is-monazilla
+                                              (time-error-msg *time-error-24h-msg*)
+                                              (time-restrict-view
+                                               :mode check-status
+                                               :bbs bbs
+                                               :mail *admin-mailaddr*))))))))))))
           (t
-           (set-response-status 403)
-           "403 Forbidden"))))
+           (set-response-status 400)
+           (write-result-view :error-type :something :message "bad parameter")))))
 
 
 

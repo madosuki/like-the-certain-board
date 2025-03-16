@@ -68,7 +68,9 @@
   `(let ((*connection* ,conn))
      (unwind-protect
           ,@body
-       (dbi:disconnect *connection*))))
+       (progn
+         (dbi:disconnect *connection*)
+         (setf *connection* nil)))))
 
 (defstruct user-table-struct
   (board-id "" :type integer)
@@ -96,16 +98,26 @@
      (select :* (from :board-list)))))
 
 (defun get-a-board-name-from-id (id)
-  (with-connection (db)
-    (retrieve-one
-     (select :* (from :board-list)
-             (where (:= :id id))))))
+  (handler-case
+    (with-connection (db)
+      (retrieve-one
+       (select :* (from :board-list)
+               (where (:= :id id)))))
+    (error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) v)))
 
 (defun get-a-board-name-from-name (url-name)
-  (with-connection (db)
-    (retrieve-one
-     (select :* (from :board-list)
-             (where (:like :url-name url-name))))))
+  (handler-case
+      (with-connection (db)
+        (retrieve-one
+         (select :* (from :board-list)
+                 (where (:like :url-name url-name)))))
+    (error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) v)))
 
 (defun get-default-name-from-name (url-name)
   (with-connection (db)
@@ -138,26 +150,41 @@
                           (:= :board-id board-id)))))))
 
 (defun get-a-thread (unixtime board-id)
-  (with-connection (db)
-    (retrieve-one
-     (select :* (from :threads)
-             (where (:and (:= :unixtime unixtime)
-                          (:= :board-id board-id)))))))
+  (handler-case
+      (with-connection (db)
+        (retrieve-one
+         (select :* (from :threads)
+                 (where (:and (:= :unixtime unixtime)
+                              (:= :board-id board-id))))))
+    (error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) v)))
 
 (defun get-kakolog-thread-list (board-id)
-  (with-connection (db)
-    (retrieve-all
-     (select :* (from :kakolog)
-             (order-by (:desc :unixtime))
-             (where (:= :board-id board-id))
-             (limit *max-thread-list*)))))
+  (handler-case
+      (with-connection (db)
+        (retrieve-all
+         (select :* (from :kakolog)
+                 (order-by (:desc :unixtime))
+                 (where (:= :board-id board-id))
+                 (limit *max-thread-list*))))
+    (error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) v)))
 
 (defun get-a-kakolog-thread (unixtime board-id)
-  (with-connection (db)
-    (retrieve-one
-     (select :* (from :kakolog)
-             (where (:and (:= :unixtime unixtime)
-                          (:= :board-id board-id)))))))
+  (handler-case
+      (with-connection (db)
+        (retrieve-one
+         (select :* (from :kakolog)
+                 (where (:and (:= :unixtime unixtime)
+                              (:= :board-id board-id))))))
+    (error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) v)))
 
 
 (defun get-thread-list-when-create-subject-txt (board-id)
