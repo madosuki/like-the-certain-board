@@ -14,6 +14,8 @@
                 :check-whether-integer
                 :separate-numbers-from-key-for-kako
                 :detect-monazilla)
+  (:import-from :like-certain-board.config
+                :*confirmed-key*)
   (:import-from :lack.middleware.csrf
    :csrf-token)
   (:import-from :cl-ppcre
