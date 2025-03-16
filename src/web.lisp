@@ -160,7 +160,8 @@
          (key (cdr (assoc "key" _parsed :test #'string=)))
          (board-data (if bbs
                          (get-a-board-name-from-name bbs)
-                         nil)))
+                         nil))
+         (is-confirmed (gethash *confirmed-key* *session*))
     (cond ((null user-agent)
            (set-response-status 403)
            "")
@@ -177,7 +178,7 @@
                   (post-count (cadr (member :post-count check-abuse-result))))
              (cond ((eq check-status :ok)
                     (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
-                                                                  :count 0
+                                                                  :count 1
                                                                   :penalty-count penalty-count
                                                                   :last-unixtime current-unixtime))
                    ((eq check-status :over-24)
@@ -186,8 +187,7 @@
                                                                   :penalty-count (1+ penalty-count)
                                                                   :last-unixtime current-unixtime))
                    ((eq check-status :restrict)
-                    (let ((is-confirmed (gethash *confirmed-key* *session*))
-                          (is-confirm-param-in-form (cdr (assoc "confirm" _parsed :test #'string=))))
+                    (let ((is-confirm-param-in-form (cdr (assoc "confirm" _parsed :test #'string=))))
                       (cond ((or is-monazilla is-confirmed)
                              (update-time-restrict-count-and-last-unixtime :ipaddr ipaddr
                                                                            :count (1+ post-count)

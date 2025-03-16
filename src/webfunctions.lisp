@@ -38,7 +38,6 @@
 (defvar *mysql-true* 1)
 (defvar *mysql-false* 0)
 
-
 (defmacro caddddr (v)
   `(caddr (cddr ,v)))
 
@@ -118,7 +117,7 @@
 (defun check-abuse-post (&key current-unixtime user-agent ipaddr session)
   (unless user-agent
     (return-from check-abuse-post '(:status :restrict)))
-  (let* ((data (get-data-from-time-restrict :ipaddr ipaddr)))
+  (let ((data (get-data-from-time-restrict :ipaddr ipaddr)))
     (unless data
       (return-from check-abuse-post '(:status :first)))
     (let* ((count (cadr (member :count data)))
