@@ -161,7 +161,7 @@
          (board-data (if bbs
                          (get-a-board-name-from-name bbs)
                          nil))
-         (is-confirmed (gethash *confirmed-key* *session*))
+         (is-confirmed (gethash *confirmed-key* *session*)))
     (cond ((null user-agent)
            (set-response-status 403)
            "")
