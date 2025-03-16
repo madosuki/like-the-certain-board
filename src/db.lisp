@@ -10,9 +10,10 @@
                 :*connection*
                 :retrieve-all
                 :retrieve-one
-                :execute)
+                :execute)  
   (:import-from :cl-dbi
-                :connect-cached)
+   :connect
+   :connect-cached)
   (:export :connection-settings
            :db
            :with-connection
@@ -59,16 +60,14 @@
   (cdr (assoc db (config :databases))))
 
 (defun db (&optional (db :maindb))
+  (config :database))
+
+(defun db (&optional (db :maindb))
   (apply #'connect-cached (connection-settings db)))
 
-;; (defmacro with-connection (conn &body body)
-;;   `(let ((*connection* ,conn))
-;;      ,@body))
 (defmacro with-connection (conn &body body)
   `(let ((*connection* ,conn))
-     (unwind-protect
-          (progn ,@body)
-       (dbi:disconnect *connection*))))
+     ,@body))
 
 (defstruct user-table-struct
   (board-id "" :type integer)
