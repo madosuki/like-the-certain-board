@@ -188,12 +188,17 @@
 
 
 (defun get-thread-list-when-create-subject-txt (board-id)
-  (with-connection (db)
-    (retrieve-all
-     (select (fields :title :res-count :unixtime)
-             (from :threads)
-             (where (:= :board-id board-id))
-             (order-by (:desc :last-rise-date))))))
+  (handler-case
+      (with-connection (db)
+        (retrieve-all
+         (select (fields :title :res-count :unixtime)
+                 (from :threads)
+                 (where (:= :board-id board-id))
+                 (order-by (:desc :last-rise-date)))))
+    (error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) v)))
 
 (defun delete-thread (key board-id)
   (with-connection (db)
@@ -229,26 +234,41 @@
 
 
 (defun get-user-table (board-id user-name)
-  (with-connection (db)
-    (retrieve-one
-     (select :*
-             (from :user-table)
-             (where (:and (:like :user-name user-name) (:= :board-id board-id)))))))
+  (handler-case
+      (with-connection (db)
+        (retrieve-one
+         (select :*
+                 (from :user-table)
+                 (where (:and (:like :user-name user-name) (:= :board-id board-id))))))
+    (error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) )))
 
 (defun get-user-table-from-id (board-id user-id)
-  (with-connection (db)
-    (retrieve-one
-     (select :*
-             (from :user-table)
-             (where (:and (:like :id user-id) (:= :board-id board-id)))))))
+  (handler-case
+      (with-connection (db)
+        (retrieve-one
+         (select :*
+                 (from :user-table)
+                 (where (:and (:like :id user-id) (:= :board-id board-id))))))
+    (error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) v)))
 
 
 (defun get-user-list (board-id)
-  (with-connection (db)
-    (retrieve-all
-     (select (fields :user-name :cap-text :is-admin :salt)
-             (from :user-table)
-             (where (:= :board-id board-id))))))
+  (handler-case
+      (with-connection (db)
+        (retrieve-all
+         (select (fields :user-name :cap-text :is-admin :salt)
+                 (from :user-table)
+                 (where (:= :board-id board-id)))))
+    (error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) v)))
 
 
 (defun insert-user-table (user-data)

@@ -619,8 +619,11 @@
                  (setf (gethash *session-cap-text-key* session) cap-text)))
              (setf (gethash *session-login-key* session) t)
              (setf (gethash *session-user-id* session) (getf (cadr checked-v) :id))
-             (update-user-table board-id user-name date)
-             :success)
+             (handler-case (update-user-table board-id user-name date)
+               (error (e)
+                 (declare (ignore e))
+                 :failed)
+               (:no-error () :success)))
             (t
              :failed)))))
 
