@@ -30,10 +30,10 @@
 ;; Application
 
 (defclass <web> (<app>) ())
-;; (defmethod make-response ((app <web>) &optional status header body)
-;;   (let ((res (call-next-method)))
-;;     (setf (getf (response-headers res) :X-Content-Type-Options) "nosniff")
-;;     res))
+(defmethod make-response ((app <web>) &optional status header body)
+  (let ((res (call-next-method)))
+    (setf (getf (response-headers res) :X-Content-Type-Options) "nosniff")
+    res))
 (defvar *web* (make-instance '<web>))
 (clear-routing-rules *web*)
 
@@ -165,10 +165,10 @@
 
 
 (defroute ("/test/bbs.cgi" :method :POST) (&key _parsed)
-  (let* ((ipaddr (if caveman2:*request* (caveman2:request-remote-addr caveman2:*request*) nil))
+  (let* ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
          (universal-time (get-universal-time))
          (current-unixtime (get-unix-time universal-time))
-         (user-agent (if caveman2:*request* (gethash "user-agent" (caveman2:request-headers caveman2:*request*)) nil))
+         (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
          (is-monazilla (detect-monazilla user-agent))
          (bbs (cdr (assoc "bbs" _parsed :test #'string=)))
          (key (cdr (assoc "key" _parsed :test #'string=)))
@@ -176,7 +176,7 @@
                          (get-a-board-name-from-name bbs)
                          nil))
          (is-confirmed (gethash *confirmed-key* *session*)))
-    (cond ((or (null user-agent) (null ipaddr))
+    (cond ((or (null user-agent))
            (set-response-status 400)
            (write-result-view :mode :error :message "bad parameter"))
           ((and (null board-data) (null key))
@@ -200,6 +200,7 @@
                                     (content-length (request-content-length *request*))
                                     (tmp-array (make-array content-length :adjustable t :fill-pointer content-length))
                                     (is-e nil))
+                               (format t "content-length: ~A~%" content-length)
                                (handler-case (read-sequence tmp-array raw-body)
                                  (error (e)
                                    (write-log :mode :error
@@ -223,7 +224,9 @@
                                (if thread
                                    (progn (set-response-status 200)
                                           (if is-monazilla
-                                              (time-error-msg *time-error-10sec-msg*)
+                                              (time-error-msg (if (eq check-status :restrict-24)
+                                                                  *time-error-24h-msg*
+                                                                  *time-error-10sec-msg*))
                                               (time-restrict-view
                                                :mode check-status
                                                :bbs bbs
@@ -231,7 +234,9 @@
                                                :mail *admin-mailaddr*)))
                                    (progn (set-response-status 200)
                                           (if is-monazilla
-                                              (time-error-msg *time-error-24h-msg*)
+                                              (time-error-msg (if (eq check-status :restrict-24)
+                                                                  *time-error-24h-msg*
+                                                                  *time-error-10sec-msg*))
                                               (time-restrict-view
                                                :mode check-status
                                                :bbs bbs

@@ -51,13 +51,15 @@
   :one-time t
   :block-app (lambda (app env)
                (let ((user-agent (gethash "user-agent" (getf env :headers))))
+                 ;; this mean is non block if user agent is Monazilla.
                  (if (cl-ppcre:scan "^Monazilla/1.00" user-agent)
                      (funcall app env)
                      '(400
                        (:content-type "text/plain"
-                        :content-length 9)
+                        :content-length 11)
                        ("bad request"))
-                     ))))
+                     )))
+  )
  (if (productionp)
      nil
      (lambda (app)

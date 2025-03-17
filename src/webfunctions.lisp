@@ -807,7 +807,6 @@
              (error (e)
                (declare (ignore e))
                (return-from try-update-restrict-time-info nil)))
-           (format t "sucess!~%")
            check-status)
           ((eq check-status :over-24)
            (handler-case
@@ -858,5 +857,7 @@
              (error (e)
                (declare (ignore e))
                (return-from try-update-restrict-time-info nil)))
+           check-status)
+          ((eq check-status :restrict-24)
            check-status)
           (t nil))))
