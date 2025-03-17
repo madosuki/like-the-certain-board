@@ -163,7 +163,6 @@
               (on-exception *web* 404)))
         (on-exception *web* 404))))
 
-
 (defroute ("/test/bbs.cgi" :method :POST) (&key _parsed)
   (let* ((ipaddr (caveman2:request-remote-addr caveman2:*request*))
          (universal-time (get-universal-time))

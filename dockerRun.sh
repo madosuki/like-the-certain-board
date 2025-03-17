@@ -16,6 +16,4 @@ ros update git generate-like-certain-board-strings
 ros update git cl-markup
 ros update git cl-crypt
 
-ls /roswell
-
 cd /root/.roswell/local-projects/like-the-certain-board/ && APP_ENV=production clackup --server :woo --address 0.0.0.0 --port 8888 ./app.lisp

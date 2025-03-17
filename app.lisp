@@ -58,8 +58,7 @@
                        (:content-type "text/plain"
                         :content-length 11)
                        ("bad request"))
-                     )))
-  )
+                     ))))
  (if (productionp)
      nil
      (lambda (app)

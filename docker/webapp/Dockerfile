@@ -31,10 +31,13 @@ ENV PATH /root/.roswell/bin:${PATH}
 
 RUN yes | ros update quicklisp
 
+# install forked version lack
+RUN ros install madosuki/lack/change_block_app_for_add_control_from_user_agent
+
 RUN ros install fukamachi/caveman && \
     ros install fukamachi/ningle && \
     ros install fukamachi/quri && \
-    ros install fukamachi/lack && \
+    # ros install fukamachi/lack && \
     ros install fukamachi/clack && \
     ros install cl-dbi && \
     ros install envy & \
