@@ -14,12 +14,14 @@ This program is like 2ちゃん program.
 ## Run
 do before first run
 ```
-ros install madosuki/cl-markup
-ros install madosuki/cl-crypt
+ros install madosuki/cl-markup # for from cl-makrup
+ros install madosuki/cl-crypt # fork from cl-crypt
 ros install madosuki/generate-like-certain-board-strings
+ros install madosuki/lack/change_block_app_for_add_control_from_user_agent # forked from lack
 
 ros install clack
 ```
+if maybe failed, refer docker/webapp/Dockerfile.  
 
 and set path to your .roswell/bin
 
