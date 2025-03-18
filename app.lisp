@@ -38,9 +38,10 @@
      nil)
  (:session
   ;; fixme: need close connection per access when postgresql.
-  ;; :store (make-dbi-store :connector (lambda ()
-  ;;                                     (apply #'dbi:connect
-  ;;                                            (like-certain-board.db:connection-settings))))
+  :store (make-dbi-store :connector (lambda ()
+                                      (apply #'dbi:connect
+                                             (like-certain-board.db:connection-settings)))
+                         :disconnector #'dbi:disconnect)
   :state (make-cookie-state
           :httponly t
           :cookie-key "session" ;; default value is lack.session
