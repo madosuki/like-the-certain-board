@@ -49,7 +49,7 @@ Above process is need before run app.
 ./init_before_do_docker.sh
 cp settings_sample.json ../like_the_certain_board_dirs/settings/settings.json
 ```
-init_before_do_docker.sh is create dirs on current dir.:
+init_before_do_docker.sh is create dirs above current dir.:
 - ../like_the_certain_board_dirs/keys
 - ../like_the_certain_board_dirs/nginx_log
 - ../like_the_certain_board_dirs/dat
