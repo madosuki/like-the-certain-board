@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 mkdir -p ../like_the_certain_board_dirs/keys
 mkdir -p ../like_the_certain_board_dirs/nginx_log

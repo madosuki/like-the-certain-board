@@ -27,7 +27,7 @@ services:
       dockerfile: Dockerfile
     restart: "no"
     environment:
-      POSTGRES_USER: lain
+      POSTGRES_USER: user
       POSTGRES_PASSWORD: user_pass
       POSTGRES_DB: mysite
     expose:
