@@ -34,10 +34,6 @@
    :try-update-restrict-time-info))
 (in-package :like-certain-board.webfunctions)
 
-(deftype mysql-true-type (n) `(= n 1))
-(deftype mysql-false-type (n) `(= n 0))
-(defvar *mysql-true* 1)
-(defvar *mysql-false* 0)
 
 (defmacro caddddr (v)
   `(caddr (cddr ,v)))
