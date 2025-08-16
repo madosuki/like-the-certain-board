@@ -1,6 +1,5 @@
 services:
   webapp:
-    image: debian:bookworm-slim
     container_name: like_the_certain_board
     build:
       context: ./docker/webapp
