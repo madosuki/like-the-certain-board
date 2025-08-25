@@ -12,22 +12,26 @@ This program is like 2ちゃん program.
 - [generate-like-certain-board-strings](https://github.com/madosuki/generate-like-certain-board-strings)
 
 ## Run
-do before first run
-```
+Must setup [roswell](https://github.com/roswell/roswell) and postgresql then  
+```bash
 ros install madosuki/cl-markup # for from cl-makrup
 ros install madosuki/cl-crypt # fork from cl-crypt
 ros install madosuki/generate-like-certain-board-strings
 ros install madosuki/lack/change_block_app_for_add_control_from_user_agent # forked from lack
 
 ros install clack
-```
-if maybe failed, refer docker/webapp/Dockerfile.  
 
-and set path to your .roswell/bin
+```
+Then git clone this repo or download zip and extract.  
+And do place project dir to ${HOME}/.roswell/local-projects with copy or symbolic.
+
+If maybe failed, refer docker/webapp/Dockerfile .  
+
+And set path to your .roswell/bin .  
 
 then
-```
-./run.sh
+```bash
+./localRun.sh
 ```
 
 ## settings file path

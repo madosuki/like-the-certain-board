@@ -15,12 +15,12 @@ RUN apt-get clean && apt-get update
 RUN apt-get install -y tzdata
 ENV TZ=Asia/Tokyo
 
-RUN apt-get install -y git build-essential automake autoconf make gcc libcurl4-openssl-dev curl libglib2.0-dev postgresql-client libev-dev&& \
+RUN apt-get install -y git build-essential automake autoconf make gcc libcurl4-gnutls-dev curl libglib2.0-dev postgresql-client libev-dev&& \
     cd ${work_dir} && \
     git clone --depth=1 -b release https://github.com/roswell/roswell.git && \
     cd roswell && \
     sh bootstrap && \
-    ./configure --disable-manual-install && \
+    ./configure --disable-manual-install --enable-debug && \
     make && \
     make install && \
     cd .. && \
