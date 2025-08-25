@@ -28,12 +28,11 @@ And do place project dir to ${HOME}/.roswell/local-projects with copy or symboli
 If maybe failed, refer docker/webapp/Dockerfile .  
 
 And set path to your .roswell/bin .  
-
 then
-‘‘‘bash
+```bash
 ./init_before_do_docker.sh # this script is not only for docker.
 cp settings_sample.json ../like_the_certain_board_dirs/settings/settings.json
-‘‘‘
+```
 ```bash
 ./localRun.sh
 ```
