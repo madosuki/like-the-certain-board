@@ -1,7 +1,6 @@
 services:
   webapp:
     container_name: like_the_certain_board
-    privileged: true
     build:
       context: ./docker/webapp
       dockerfile: Dockerfile
