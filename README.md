@@ -1,5 +1,23 @@
 # What's this
-This program is like 2ちゃん program.
+This program is like 2ちゃん program
+
+# specification
+ref: [https://info.5ch.net/index.php/Monazilla/develop](https://info.5ch.net/index.php/Monazilla/develop)  
+ref: [https://web.archive.org/web/20160405035026/http://info.2ch.net/?curid=1](https://web.archive.org/web/20160405035026/http://info.2ch.net/?curid=1)  
+Supported api is old 2ちゃん api.  
+| api name | implement status |
+| ---- | ---- |
+| ${boardName}/subject.txt | done |
+| ${boardName}/SETTING.TXT | done |
+| /test/read.cgi/${boardName}/${unixTime} | done |
+| /test/bbs.cgi/${boardName} | done |
+| /${boardName}/dat/${unixTime} | done |
+| /${boardName}/kako/${4DigitNumbers}/${5digitNumbers}/${unixTime}.html | done |
+| /${boardName}/kako/${4DigitNumbers}/${5digitNumbers}/${unixTime}.dat | done |
+
+And other convenient api implemented; look at src/web.lisp.  
+#### Note
+Skip CSRF check when Browser Agent is the Monazilla and have charcode is shift-jis at /test/bbs.cgi. Because for some old 2ちゃん browsers.  
 
 
 ## Dependents
