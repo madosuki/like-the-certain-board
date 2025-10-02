@@ -7,7 +7,6 @@
   (:export :config
            :*application-root*
            :*static-directory*
-           :*template-directory*
            :*default-max-length*
            :*1001*
            :*default-penalty-time*
@@ -42,7 +41,6 @@
 
 (defparameter *application-root*   (asdf:system-source-directory :like-certain-board))
 (defparameter *static-directory*   (merge-pathnames #P"static/" *application-root*))
-(defparameter *template-directory* (merge-pathnames #P"templates/" *application-root*))
 
 (pushnew #P"/usr/lib" cffi:*foreign-library-directories*)
 

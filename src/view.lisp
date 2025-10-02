@@ -2,16 +2,12 @@
 (defpackage like-certain-board.view
   (:use :cl :cl-markup)
   (:import-from :like-certain-board.config
-                :*template-directory*
                 :*domain-name*
                 :*http-root-path*
                 :*https-root-path*)
   (:import-from :caveman2
                 :*response*
                 :response-headers)
-  ;; (:import-from :compile-template*
-  ;;               :render-template*
-  ;;               :*template-package*)
   (:import-from :datafly
    :encode-json)
   (:import-from :uiop
@@ -39,37 +35,9 @@
    :user-list-view))
 (in-package :like-certain-board.view)
 
-;; (djula:add-template-directory *template-directory*)
-
-;; (defparameter *template-registry* (make-hash-table :test 'equal))
-
-;; (defun render (template-path &optional env)
-;;   (let ((template (gethash template-path *template-registry*)))
-;;     (unless template
-;;       (setf template (djula:compile-template* (princ-to-string template-path)))
-;;       (setf (gethash template-path *template-registry*) template))
-;;     (apply #'djula:render-template*
-;;            template nil
-;;            env)))
-
 (defun render-json (object)
   (setf (getf (response-headers *response*) :content-type) "application/json")
   (encode-json object))
-
-;;
-;; Execute package definition
-
-;; (defpackage like-certain-board.djula
-;;   (:use :cl)
-;;   (:import-from :like-certain-board.config
-;;                 :config
-;;                 :appenv
-;;                 :developmentp
-;;                 :productionp)
-;;   (:import-from :caveman2
-;;                 :url-for))
-
-;; (setf djula:*template-package* (find-package :like-certain-board.djula))
 
 (defparameter *og-prefix* (format nil "og: ~A" *https-root-path*))
 (defparameter *default-ogp-image-name* "ogp_image_sample.png")

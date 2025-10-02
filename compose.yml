@@ -6,6 +6,11 @@ services:
       dockerfile: Dockerfile
       network: host
     restart: "no"
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
+      - SYS_PTRACE
     entrypoint: "/root/.roswell/local-projects/like-the-certain-board/dockerRun.sh"
     depends_on:
       - db

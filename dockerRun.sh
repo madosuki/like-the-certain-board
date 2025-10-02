@@ -16,6 +16,9 @@ export APP_ENV=production
 # ros update git cl-markup
 # ros update git cl-crypt
 
-# cd /root/.roswell/local-projects/like-the-certain-board/
-# APP_ENV=production clackup --server :woo --address 0.0.0.0 --port 8888 ./app.lisp
-ros run
+cd /root/.roswell/local-projects/like-the-certain-board/
+APP_ENV=production exec clackup --server :woo --address 0.0.0.0 --port 8888 ./app.lisp
+# ros run
+
+# apt install strace -y
+# strace -T -f -o settings/strace.log ros run
