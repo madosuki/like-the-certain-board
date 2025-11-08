@@ -28,7 +28,7 @@ RUN apt-get install -y git ca-certificates build-essential automake autoconf lib
     rm -rf roswell && \
     ros run -q
 
-ENV PATH /root/.roswell/bin:${PATH}
+ENV PATH=/root/.roswell/bin:${PATH}
 
 RUN yes | ros update quicklisp
 
