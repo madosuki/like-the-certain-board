@@ -2,7 +2,7 @@
 This program is like 2ちゃん program
 
 # specification
-ref: [https://info.5ch.net/index.php/Monazilla/develop](https://info.5ch.net/index.php/Monazilla/develop)  
+ref: [https://info.5ch.io/index.php/Monazilla/develop](https://info.5ch.net/index.php/Monazilla/develop)  
 ref: [https://web.archive.org/web/20160405035026/http://info.2ch.net/?curid=1](https://web.archive.org/web/20160405035026/http://info.2ch.net/?curid=1)  
 Supported api is old 2ちゃん api.  
 | api name | implement status |
