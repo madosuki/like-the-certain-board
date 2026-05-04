@@ -16,7 +16,6 @@
 
 (defun start (&rest args &key server port debug &allow-other-keys)
   (declare (ignore server port debug))
-  (print "Starrrrrrrrrrrrrrrrrrrrrrt")
   (when *handler*
     (restart-case (error "Server is already running.")
       (restart-server ()
