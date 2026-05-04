@@ -95,14 +95,15 @@
 (defun get-board-list ()
   (with-connection (db)
     (retrieve-all
-     (select :* (from :board-list)))))
+     (select :* (from :board-list)
+             (order-by (:asc :id))))))
 
 (defun get-a-board-name-from-id (id)
   (handler-case
-    (with-connection (db)
-      (retrieve-one
-       (select :* (from :board-list)
-               (where (:= :id id)))))
+      (with-connection (db)
+        (retrieve-one
+         (select :* (from :board-list)
+                 (where (:= :id id)))))
     (error (e)
       (declare (ignore e))
       nil)
@@ -154,6 +155,7 @@
       (with-connection (db)
         (retrieve-one
          (select :* (from :threads)
+                 (order-by (:asc :id))
                  (where (:and (:= :unixtime unixtime)
                               (:= :board-id board-id))))))
     (error (e)
@@ -179,6 +181,7 @@
       (with-connection (db)
         (retrieve-one
          (select :* (from :kakolog)
+                 (order-by (:asc :id))
                  (where (:and (:= :unixtime unixtime)
                               (:= :board-id board-id))))))
     (error (e)
