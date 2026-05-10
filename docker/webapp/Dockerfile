@@ -15,7 +15,8 @@ RUN apt-get clean && apt-get update
 RUN apt-get install -y tzdata
 ENV TZ=Asia/Tokyo
 
-RUN apt-get install -y git ca-certificates build-essential automake autoconf libcurl4-gnutls-dev curl libglib2.0-dev postgresql-client libev-dev && \
+# for roswell build and install
+RUN apt-get install -y git ca-certificates build-essential automake autoconf libcurl4-gnutls-dev curl libglib2.0-dev libev-dev && \
     cd ${work_dir} && \
     git clone --depth=1 -b release https://github.com/roswell/roswell.git && \
     cd roswell && \
@@ -27,6 +28,8 @@ RUN apt-get install -y git ca-certificates build-essential automake autoconf lib
     cd .. && \
     rm -rf roswell && \
     ros run -q
+
+RUN apt-get install -y postgresql-client libargon2-dev
 
 ENV PATH=/root/.roswell/bin:${PATH}
 
