@@ -28,6 +28,7 @@ Skip CSRF check when Browser Agent is the Monazilla and have charcode is shift-j
 - Ironclad
 - cl-markup
 - [generate-like-certain-board-strings](https://github.com/madosuki/generate-like-certain-board-strings)
+- [cl-argon2-cffi](https://github.com/madosuki/cl-argon2-cffi)
 
 ## Run
 Must setup [roswell](https://github.com/roswell/roswell) and postgresql then  

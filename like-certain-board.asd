@@ -40,8 +40,13 @@
                ;; utility
                "cl-fad"
 
-               ;; board string generator
+               ;; board string generator. ref: https://github.com/madosuki/generate-like-certain-board-strings
+               ;; this library expect installed to path. like ros install generate-like-certain-board-strings
                "generate-like-certain-board-strings"
+
+               ;; libargon2 wrapper. ref: https://github.com/madosuki/cl-argon2-cffi
+               ;; this library expect installed to path. like ros install cl-argon2-cffi
+               "cl-argon2-cffi"
 
                "trivial-shell"
 

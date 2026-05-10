@@ -49,6 +49,7 @@ RUN ros install fukamachi/caveman && \
     ros install sxql && \
     ros install trivial-utf-8 && \
     ros install madosuki/generate-like-certain-board-strings && \
+    ros install madosuki/cl-argon2-cffi && \
     ros install madosuki/cl-markup && \ 
     ros install madosuki/cl-crypt
 
