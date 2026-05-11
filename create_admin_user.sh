@@ -10,10 +10,10 @@ postgre_dbname=${3}
 postgre_username=${4}
 
 user_password=${5}
-salt=${6}
+salt=$(openssl rand -hex 16)
 
-board_id=${7}
+board_id=${6}
 
-hash=`echo -n ${user_password} | openssl dgst -sha256 -hmac ${salt} | awk '{print $2}'`
+password_hash=`echo -n ${user_password} | argon2 ${salt} -id -t 3 -m 16 -p 1 -l 32 -e  | awk '{print $2}'`
 
-psql -h "${postgre_host}" -p 5432 -U "${postgre_username}" "${postgre_dbname}" -c "insert into \"user-table\" (\"board-id\", \"user-name\", hash, \"create-date\", \"latest-date\", \"is-admin\", \"cap-text\", salt) values(${board_id}, '${user_name}', '${hash}', '1970-01-01', '1970-01-01', true, '${cap_text}', '${salt}')"
+psql -h "${postgre_host}" -p 5432 -U "${postgre_username}" "${postgre_dbname}" -c "insert into \"user-table\" (\"board-id\", \"user-name\", \"password-hash\", \"create-date\", \"latest-date\", \"is-admin\", \"cap-text\") values(${board_id}, '${user_name}', '${password_hash}', '1970-01-01', '1970-01-01', true, '${cap_text}')"
