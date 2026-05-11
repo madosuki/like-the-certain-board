@@ -19,7 +19,7 @@
 *.dat
 settings.json
 
-
-
-
 docker/mysql/Log
+
+.codex/
+.claude/
