@@ -75,12 +75,11 @@
 (defstruct user-table-struct
   (board-id "" :type integer)
   (user-name "" :type string)
-  (hash "" :type string)
+  (password-hash "" :type string)
   (create-date "" :type string)
   (latest-date "" :type string)
   (is-admin nil :type integer)
-  (cap-text "" :type string)
-  (salt "" :type string))
+  (cap-text "" :type string))
 
 (defstruct thread-table-struct
   (title "" :type string)
@@ -265,7 +264,7 @@
   (handler-case
       (with-connection (db)
         (retrieve-all
-         (select (fields :user-name :cap-text :is-admin :salt)
+         (select (fields :user-name :cap-text :is-admin)
                  (from :user-table)
                  (where (:= :board-id board-id)))))
     (error (e)
@@ -277,24 +276,22 @@
 (defun insert-user-table (user-data)
   (let ((user-name (user-table-struct-user-name user-data))
         (board-id (user-table-struct-board-id user-data))
-        (hash (user-table-struct-hash user-data))
+        (password-hash (user-table-struct-password-hash user-data))
         (create-date (user-table-struct-create-date user-data))
         (latest-date (user-table-struct-latest-date user-data))
         (is-admin (user-table-struct-is-admin user-data))
-        (cap-text (user-table-struct-cap-text user-data))
-        (salt (user-table-struct-salt user-data)))
+        (cap-text (user-table-struct-cap-text user-data)))
     (with-connection (db)
       (execute
        (insert-into :user-table
                     (set=
                      :board-id board-id
                      :user-name user-name
-                     :hash hash
+                     :password-hash password-hash
                      :create-date create-date
                      :latest-date latest-date
                      :is-admin is-admin
-                     :cap-text cap-text
-                     :salt salt))))))
+                     :cap-text cap-text))))))
 
 (defun update-user-table (board-id user-name date)
   (with-connection (db)

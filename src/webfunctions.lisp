@@ -2,17 +2,18 @@
 (defpackage like-certain-board.webfunctions
   (:use :cl
    :caveman2
-        :like-certain-board.config
+   :like-certain-board.config
    :like-certain-board.view
-        :like-certain-board.db
+   :like-certain-board.db
    :quri
-        :cl-fad
+   :cl-fad
    :generate-like-certain-board-strings)
   (:import-from :like-certain-board.utils
    :write-log
-                :separate-numbers-from-key-for-kako
+   :separate-numbers-from-key-for-kako
    :flatten
-                :check-whether-integer)
+   :check-whether-integer
+   :bytes-to-hex)
   (:import-from :cl-string-generator
    :generate)
   (:import-from :lack.middleware.csrf
@@ -575,12 +576,12 @@
           :time-over
           nil))))
 
-(defun check-login-possible (table-data session &optional (hash-string ""))
+(defun check-login-possible (table-data session &optional (password ""))
   (let ((is-logged-in (gethash *session-login-key* session)))
     (when is-logged-in
       (return-from check-login-possible (cons :logged-in table-data)))
-    (let ((db-hash-string (getf table-data :hash)))
-      (if (string= hash-string db-hash-string)
+    (let ((db-hash-string (getf table-data :password-hash)))
+      (if (cl-argon2-cffi:verify password db-hash-string)
           (cons :success data)
           (cons :failed :no-data)))))
 
@@ -594,13 +595,8 @@
                       (:no-error (v) v))))
     (unless data
       (return-from login :failed))
-    (let* ((salt (getf table-data :salt))
-           (hash (sha256-hmac :target password
-                              :key salt
-                              :key-char-code :UTF-8
-                              :char-code :UTF-8))
-           (is-login nil)
-           (checked-v (check-login-possible table-data session hash))
+    (let* ((is-login nil)
+           (checked-v (check-login-possible table-data session password))
            (date (get-current-datetime universal-time)))
       (cond ((eq (car checked-v) :logged-in)
              :logged-in)
@@ -629,24 +625,19 @@
   (when (get-user-table board-id user-name)
     (return-from create-user :exist-user))
   (let* ((salt (generate "[0-9A-Za-z]" :min-length 100 :max-length 100))
-         (hash (sha256-hmac
-                :target password
-                :key salt
-                :key-char-code :UTF-8
-                :char-code :UTF-8))
+         (password-hash (cl-argon2-cffi:hash-encoded password (bytes-to-hex (crypto:random-data 16))))
          (date (get-current-datetime date))
          (return-status :success)
          (user-data (make-user-table-struct
                      :user-name user-name
-                     :hash hash
+                     :password-hash password-hash
                      :board-id board-id
                      :create-date date
                      :latest-date date
                      :is-admin (if is-admin 1 0)
                      :cap-text (if cap-text
                                    (convert-html-special-chars (replace-not-available-char-when-cp932 (format nil "~A★" cap-text)))
-                                   "")
-                     :salt salt)))
+                                   ""))))
     (handler-case (insert-user-table user-data)
       (error (e)
         (write-log :mode :error

@@ -13,7 +13,8 @@
    :separate-numbers-from-key-for-kako
    :check-whether-integer
    :detect-monazilla
-   :flatten))
+   :flatten
+   :bytes-to-hex))
 (in-package :like-certain-board.utils)
 
 
@@ -88,3 +89,8 @@
           (push r result)
           (flatten (cdr a) result)))
       (cdr (reverse result))))
+
+(defun bytes-to-hex (bytes)
+  (with-output-to-string (out)
+    (loop for datum across bytes
+          do (format out "~2,'0x" datum))))
