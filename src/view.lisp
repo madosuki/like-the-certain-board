@@ -497,38 +497,46 @@
 
 
 ;; WIP add confirm of write page
-(defun confirm-page-view (&key board-name url mode data csrf-token)
+(defun confirm-page-view (&key board-url-name url mode form-data csrf-token)
   (let ((title (if (eq mode :write)
                    "書き込み確認"
                    "スレッド作成確認"))
         (key (if (eq mode :write)
-                 (cadr (member "key" data :test #'string=))
+                 (cadr (member "key" form-data :test #'string=))
                  nil))
         (subject (if (eq mode :create)
-                     (cadr (member "subject" data :test #'string=))
+                     (cadr (member "subject" form-data :test #'string=))
                      nil))
-        (FROM (cadr (member "FROM" data :test #'string=)))
-        (mail (cadr (member "mail" data :test #'string=)))
-        (MESSAGE (cadr (member "MESSAGE" data :test #'string=)))
-        (time (cadr (member "time" data :test #'string=))))
-    (main-content title board-name url nil (if (eq mode :write) t nil) key
+        (FROM (cadr (member "FROM" form-data :test #'string=)))
+        (mail (cadr (member "mail" form-data :test #'string=)))
+        (MESSAGE (cadr (member "MESSAGE" form-data :test #'string=)))
+        (time (cadr (member "time" form-data :test #'string=)))
+        (board-data (get-a-board-data-from-url-name board-url-name))
+        (term-of-use (get-term-of-use-of-board-from-url-name board-url-name)))
+    (main-content title board-url-name url nil (if (eq mode :write) t nil) key
                   (:h1 title)
                   (:div :id "check-terms-of-use"
                         (:h2 "本当に送信してよろしいですか？")
                         (:p "送信する前に規約をお読みください．")
-                        (:p "送信すれば規約を了解した上で書き込みしたと見做します．"))
+                        (:p "送信すれば規約を了解した上で書き込みしたと見做します．")
+                        (:div :id "term-of-use"
+                              (raw (if term-of-use
+                                       (getf term-of-use :body)
+                                       "Failed Get Error! Please Contact Admin."))))
                   (:div :id "confirm-data"
-                   (:p (format nil "板名: ~A" board-name))
-                   (when key
-                     (raw (markup (:p (format nil "スレッドキー: ~A" key)))))
-                   (when subject
-                     (raw (markup (:p (format nil "スレッド名: ~A" subject)))))
-                   (:p (format nil "名前: ~A" (convert-html-special-chars FROM)))
-                   (:p (format nil "メール: ~A" (if (eq mail :NO-DATA)
-                                                    ""
-                                                    (convert-html-special-chars mail))))
-                   (:p "本文：")
-                   (:div :class "thread_text" (raw (shape-text (convert-html-special-chars MESSAGE)))))
+                        (:p (format nil "板名: ~A" (if board-data
+                                                       (getf board-data :board-name)
+                                                       "Failed Get Error!")))
+                        (when key
+                          (raw (markup (:p (format nil "スレッドキー: ~A" key)))))
+                        (when subject
+                          (raw (markup (:p (format nil "スレッド名: ~A" subject)))))
+                        (:p (format nil "名前: ~A" (convert-html-special-chars FROM)))
+                        (:p (format nil "メール: ~A" (if (eq mail :NO-DATA)
+                                                         ""
+                                                         (convert-html-special-chars mail))))
+                        (:p "本文：")
+                        (:div :class "thread_text" (raw (shape-text (convert-html-special-chars MESSAGE)))))
                   (:form :action "/test/bbs.cgi"
                          :method "POST"
                          (:input :name "bbs"

@@ -373,7 +373,7 @@
     status))
 
 (defun put-thread-list (board-name board-title web url csrf-token)
-  (let ((board-list-data (get-a-board-name-from-name board-name)))
+  (let ((board-list-data (get-a-board-data-from-url-name board-name)))
     (if board-list-data
         (let ((is-exists (check-exists-threads-table)))
           (when (eq is-exists :not-exists)
@@ -421,29 +421,30 @@
          nil)))))
 
 
-(defun generate-confirme-page (bbs key is-utf8 form)
+;; for monazilla browsers
+(defun generate-confirm-page (bbs key is-utf8 form)
   (let* ((from (get-value-from-key-on-list "FROM" form))
          (message (get-value-from-key-on-list "MESSAGE" form))
          (mail (get-value-from-key-on-list "mail" form))
          (time (get-unix-time (get-universal-time)))
-         (confirme-first "<html><!-- 2ch_X:cookie --><head><title>書き込み確認</title>")
+         (confirm-first "<html><!-- 2ch_X:cookie --><head><title>書き込み確認</title>")
          (html-charset (if is-utf8 "<meta charset=\"utf-8\">" "<meta http-equive=\"Conent-Type\" content=\"text/html; charset=x-sjis\">"))
-         (confirme-body "</head><body>")
+         (confirm-body "</head><body>")
          (confirm-msg "<p>書き込みについて</p>")
-         (confirme-form (concatenate 'string 
-                                     "<form action=\"/test/bbs.cgi\" method=\"post\">"
-                                     "<input name=\"FROM\" type=\"hidden\" value=\"" from "\">"
-                                     "<input name=\"mail\" type=\"hidden\" value=\"" (if (null mail) "" mail) "\">"
-                                     "<input name=\"MESSAGE\" type=\"hidden\" value=\"" MESSAGE "\">"
-                                     "<input name=\"bbs\" type=\"hidden\" value=\"" bbs "\">"
-                                     "<input name=\"key\" type=\"hidden\" value=\"" key "\">"
-                                     "<input name=\"time\" type=\"hidden\" value=\"" (write-to-string time) "\">"
-                                     "<input name=\"submit\" type=\"hidden\" value=\"" "上記全てを承諾して書き込む\">"
-                                     "<button type=\"submit\">上記全てを承諾して書き込む</button>"
-                                     "</form>"
-                                     ))
+         (confirm-form (concatenate 'string 
+                                    "<form action=\"/test/bbs.cgi\" method=\"post\">"
+                                    "<input name=\"FROM\" type=\"hidden\" value=\"" from "\">"
+                                    "<input name=\"mail\" type=\"hidden\" value=\"" (if (null mail) "" mail) "\">"
+                                    "<input name=\"MESSAGE\" type=\"hidden\" value=\"" MESSAGE "\">"
+                                    "<input name=\"bbs\" type=\"hidden\" value=\"" bbs "\">"
+                                    "<input name=\"key\" type=\"hidden\" value=\"" key "\">"
+                                    "<input name=\"time\" type=\"hidden\" value=\"" (write-to-string time) "\">"
+                                    "<input name=\"submit\" type=\"hidden\" value=\"" "上記全てを承諾して書き込む\">"
+                                    "<button type=\"submit\">上記全てを承諾して書き込む</button>"
+                                    "</form>"
+                                    ))
          (confirme-end "</body></html>")
-         (confirm-html (concatenate 'string confirme-first html-charset confirme-body confirm-msg confirme-form confirme-end)))
+         (confirm-html (concatenate 'string confirm-first html-charset confirme-body confirm-msg confirm-form confirm-end)))
     (if is-utf8
         (sb-ext:string-to-octets confirm-html :external-format :UTF-8)
         (sb-ext:string-to-octets confirm-html :external-format :SJIS))))
@@ -461,7 +462,7 @@
                   (setq form (nconc (list key :no-data) form))
                   (setq form (nconc (list key (try-url-decode value)) form)))))
           (let* ((bbs (get-value-from-key-on-list "bbs" form))
-                 (board-id (let ((board-list-data (get-a-board-name-from-name bbs)))
+                 (board-id (let ((board-list-data (get-a-board-data-from-url-name bbs)))
                              (if board-list-data
                                  (getf board-list-data :id)
                                  nil)))
@@ -485,7 +486,7 @@
               (return-from bbs-cgi-function "bad parameter: unknown mode"))
             (when (and (null is-monazilla)
                        (null is-confirmed))
-              (return-from bbs-cgi-function (confirm-page-view :board-name bbs
+              (return-from bbs-cgi-function (confirm-page-view :board-url-name bbs
                                                                :url ""
                                                                :mode (if (equal submit "書き込む")
                                                                          :write
@@ -776,7 +777,7 @@
 
 
 (defun process-on-root-of-board (web session board-name)
-  (let ((board-data (get-a-board-name-from-name board-name)))
+  (let ((board-data (get-a-board-data-from-url-name board-name)))
     (if board-data
         (put-thread-list board-name (getf board-data :name) web (format nil "~A/~A" *https-root-path* board-name) (csrf-token session))
         nil)))

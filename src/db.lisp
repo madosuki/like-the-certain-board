@@ -18,8 +18,9 @@
            :db
            :with-connection
            :get-board-list
-           :get-a-board-name-from-id
-           :get-a-board-name-from-name
+           :get-a-board-data-from-id
+           :get-a-board-data-from-url-name
+           :get-term-of-use-of-board-from-url-name
            :get-thread-list
            :get-expired-thread-list
            :get-a-thread
@@ -97,7 +98,18 @@
      (select :* (from :board-list)
              (order-by (:asc :id))))))
 
-(defun get-a-board-name-from-id (id)
+(defun get-term-of-use-of-board-from-url-name (url-name)
+  (handler-case
+      (with-connection (db)
+        (retrieve-one
+         (select :body (from :board-terms)
+                 (where (:like :url-name url-name)))))
+    (error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) v)))
+
+(defun get-a-board-data-from-id (id)
   (handler-case
       (with-connection (db)
         (retrieve-one
@@ -108,7 +120,7 @@
       nil)
     (:no-error (v) v)))
 
-(defun get-a-board-name-from-name (url-name)
+(defun get-a-board-data-from-url-name (url-name)
   (handler-case
       (with-connection (db)
         (retrieve-one
