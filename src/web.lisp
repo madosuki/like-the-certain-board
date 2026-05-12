@@ -66,7 +66,7 @@
         (notfound-view))))
 
 (defroute ("/:board-name/kakolog" :method :GET) (&key board-name)
-  (let* ((board-data (get-board-data-from-url-name board-name))
+  (let* ((board-data (get-a-board-data-from-url-name board-name))
          (data (if board-data
                    (get-kakolog-thread-list (getf board-data :id))
                    nil))
@@ -76,7 +76,7 @@
         (kakolog-list-view board-name url))))
 
 (defroute ("/:board-name/subject.txt" :method :GET) (&key board-name)
-  (let ((board-data (get-board-data-from-url-name board-name)))
+  (let ((board-data (get-a-board-data-from-url-name board-name)))
     (if board-data
         (let* ((tmp (get-thread-list-when-create-subject-txt (getf board-data :id)))
                (result nil))
@@ -99,7 +99,7 @@
 (defroute ("/test/read.cgi/:board-name/:unixtime" :method :GET) (&key board-name unixtime)
   (let* ((dat-filepath (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime))
          (is-login (gethash *session-login-key* *session*))
-         (board-data (get-board-data-from-url-name board-name))
+         (board-data (get-a-board-data-from-url-name board-name))
          (is-number (check-whether-integer unixtime)))
     (if (and board-data (eq is-number :integer-string))
         (if (probe-file dat-filepath)
@@ -136,7 +136,7 @@
 
 (defroute ("/:board-name/kako/:four-digit-numbers/:five-digit-numbers/:unixtime.html" :method :GET) (&key board-name four-digit-numbers five-digit-numbers unixtime)
   (let ((path (format nil "~A/~A/~A/~A/~A.html" *kakolog-html-path* board-name four-digit-numbers five-digit-numbers unixtime))
-        (board-data (get-board-data-from-url-name board-name))
+        (board-data (get-a-board-data-from-url-name board-name))
         (is-number-for-unixtime (check-whether-integer unixtime))
         (is-number-for-four-digit-numbers (check-whether-integer four-digit-numbers))
         (is-number-for-five-digit-numbers (check-whether-integer five-digit-numbers)))
@@ -172,7 +172,7 @@
          (bbs (cdr (assoc "bbs" _parsed :test #'string=)))
          (key (cdr (assoc "key" _parsed :test #'string=)))
          (board-data (if bbs
-                         (get-board-data-from-url-name bbs)
+                         (get-a-board-data-from-url-name bbs)
                          nil))
          (is-confirmed (gethash *confirmed-key* *session*)))
     (cond ((or (null user-agent))
@@ -247,7 +247,7 @@
 
 (defroute ("/:board-name/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
   (let ((path (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime))
-        (board-data (get-board-data-from-url-name board-name))
+        (board-data (get-a-board-data-from-url-name board-name))
         (is-number (check-whether-integer unixtime)))
     (if (and (not (null board-data))
              (eq is-number :integer-string))
@@ -270,7 +270,7 @@
 
 (defroute ("/:board-name/kako/:four-digit-numbers/:five-digit-numbers/:unixtime.dat" :method :GET) (&key board-name four-digit-numbers five-digit-numbers unixtime)
   (let ((path (format nil "~A/~A/~A/~A/~A.dat" *kakolog-dat-path* board-name four-digit-numbers five-digit-numbers unixtime))
-        (board-data (get-board-data-from-url-name board-name))
+        (board-data (get-a-board-data-from-url-name board-name))
         (is-number-for-unixtime (check-whether-integer unixtime))
         (is-number-for-four-digit-numbers (check-whether-integer four-digit-numbers))
         (is-number-for-five-digit-numbers (check-whether-integer five-digit-numbers)))
@@ -286,7 +286,7 @@
         (on-exception *web* 404))))
 
 (defroute ("/:board-name/SETTING.TXT" :method :GET) (&key board-name)
-  (let ((board-data (get-board-data-from-url-name board-name)))
+  (let ((board-data (get-a-board-data-from-url-name board-name)))
     (if board-data
         (let ((pathname (format nil "~A/~A/SETTING.txt" *settings-path* board-name)))
           (setf (getf (response-headers *response*) :content-type) "text/plain; charset=Shift_jis")
@@ -294,7 +294,7 @@
         (on-exception *web* 404))))
 
 (defroute ("/:board-name/login" :method :GET) (&key board-name _parsed)
-  (let ((board-data (get-board-data-from-url-name board-name))
+  (let ((board-data (get-a-board-data-from-url-name board-name))
         (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
         (condition (get-value-from-key "condition" _parsed)))
     (cond ((null board-data)
@@ -317,7 +317,7 @@
                                           nil))))))))
 
 (defroute ("/:board-name/create-user" :method :GET) (&key board-name)
-  (let* ((board-data (get-board-data-from-url-name board-name))
+  (let* ((board-data (get-a-board-data-from-url-name board-name))
          (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
          (is-monazilla (detect-monazilla user-agent))
          (is-login (gethash *session-login-key* *session*))
@@ -336,7 +336,7 @@
                              :csrf-token (csrf-token *session*))))))
 
 (defroute ("/:board-name/user-list" :method :GET) (&key board-name)
-  (let* ((board-data (get-board-data-from-url-name board-name))
+  (let* ((board-data (get-a-board-data-from-url-name board-name))
          (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
          (is-monazilla (detect-monazilla user-agent))
          (is-login (gethash *session-login-key* *session*))
@@ -363,7 +363,7 @@
          (is-admin (get-value-from-key "is_admin" _parsed))
          (cap-text (get-value-from-key "cap_text" _parsed))
          (date (get-universal-time))
-         (board-data (get-board-data-from-url-name board-name))
+         (board-data (get-a-board-data-from-url-name board-name))
          (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*))))
     (when user-name
       (setq user-name (replace-not-available-char-when-cp932 (convert-html-special-chars user-name))))
@@ -490,7 +490,7 @@
                           nil))
          (is-login (gethash *session-login-key* *session*))
          (is-admin (gethash *session-admin-key* *session*))
-         (board-data (get-board-data-from-url-name board-name))
+         (board-data (get-a-board-data-from-url-name board-name))
          (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*))))
     (cond ((null board-data)
            (on-exception *web* 404))
@@ -530,7 +530,7 @@
         (mode (get-value-from-key "mode" _parsed))
         (is-login (gethash *session-login-key* *session*))
         (is-admin (gethash *session-admin-key* *session*))
-        (board-data (get-board-data-from-url-name board-name))
+        (board-data (get-a-board-data-from-url-name board-name))
         (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*))))
     (cond ((or (null mode)
                (null board-data)
@@ -562,7 +562,7 @@
                 (set-response-status 403)
                 "invalid params")))
           ((string= mode "log")
-           (let* ((board-id (let ((board-data (get-board-data-from-url-name board-name)))
+           (let* ((board-id (let ((board-data (get-a-board-data-from-url-name board-name)))
                               (if board-data
                                   (getf board-data :id)
                                   nil)))

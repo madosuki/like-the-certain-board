@@ -491,7 +491,7 @@
                                                                :mode (if (equal submit "書き込む")
                                                                          :write
                                                                          :create)
-                                                               :data form
+                                                               :form-data form
                                                                :csrf-token (csrf-token session))))
             (cond
               ((string= submit "書き込む")

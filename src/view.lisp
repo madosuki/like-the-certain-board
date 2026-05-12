@@ -13,6 +13,8 @@
   (:import-from :uiop
    :read-file-string)
   (:import-from :like-certain-board.db
+   :get-a-board-data-from-url-name
+   :get-term-of-use-of-board-from-url-name
    :get-default-name-from-name)
   (:import-from :like-certain-board.utils
                 :separate-numbers-from-key-for-kako)
@@ -498,21 +500,23 @@
 
 ;; WIP add confirm of write page
 (defun confirm-page-view (&key board-url-name url mode form-data csrf-token)
-  (let ((title (if (eq mode :write)
-                   "書き込み確認"
-                   "スレッド作成確認"))
-        (key (if (eq mode :write)
-                 (cadr (member "key" form-data :test #'string=))
-                 nil))
-        (subject (if (eq mode :create)
-                     (cadr (member "subject" form-data :test #'string=))
-                     nil))
-        (FROM (cadr (member "FROM" form-data :test #'string=)))
-        (mail (cadr (member "mail" form-data :test #'string=)))
-        (MESSAGE (cadr (member "MESSAGE" form-data :test #'string=)))
-        (time (cadr (member "time" form-data :test #'string=)))
-        (board-data (get-a-board-data-from-url-name board-url-name))
-        (term-of-use (get-term-of-use-of-board-from-url-name board-url-name)))
+  (let* ((title (if (eq mode :write)
+                    "書き込み確認"
+                    "スレッド作成確認"))
+         (key (if (eq mode :write)
+                  (cadr (member "key" form-data :test #'string=))
+                  nil))
+         (subject (if (eq mode :create)
+                      (cadr (member "subject" form-data :test #'string=))
+                      nil))
+         (FROM (cadr (member "FROM" form-data :test #'string=)))
+         (mail (cadr (member "mail" form-data :test #'string=)))
+         (MESSAGE (cadr (member "MESSAGE" form-data :test #'string=)))
+         (time (cadr (member "time" form-data :test #'string=)))
+         (board-data (get-a-board-data-from-url-name board-url-name))
+         (term-of-use (if board-data
+                          (get-term-of-use-of-board-from-url-name (getf board-data :id))
+                          nil)))
     (main-content title board-url-name url nil (if (eq mode :write) t nil) key
                   (:h1 title)
                   (:div :id "check-terms-of-use"
@@ -525,7 +529,7 @@
                                        "Failed Get Error! Please Contact Admin."))))
                   (:div :id "confirm-data"
                         (:p (format nil "板名: ~A" (if board-data
-                                                       (getf board-data :board-name)
+                                                       (getf board-data :name)
                                                        "Failed Get Error!")))
                         (when key
                           (raw (markup (:p (format nil "スレッドキー: ~A" key)))))
@@ -540,7 +544,7 @@
                   (:form :action "/test/bbs.cgi"
                          :method "POST"
                          (:input :name "bbs"
-                                 :value board-name
+                                 :value board-url-name
                                  :type "hidden")
                          (when key
                            (raw (markup (:input :name "key"

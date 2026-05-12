@@ -98,12 +98,12 @@
      (select :* (from :board-list)
              (order-by (:asc :id))))))
 
-(defun get-term-of-use-of-board-from-url-name (url-name)
+(defun get-term-of-use-of-board-from-url-name (board-id)
   (handler-case
       (with-connection (db)
         (retrieve-one
-         (select :body (from :board-terms)
-                 (where (:like :url-name url-name)))))
+         (select :* (from :board-terms)
+                 (where (:= :board-id board-id)))))
     (error (e)
       (declare (ignore e))
       nil)
