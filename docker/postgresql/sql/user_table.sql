@@ -1,1 +1,9 @@
-create table if not exists "user-table" (id serial, "board-id" integer, "user-name" text not null, "password-hash" varchar(255) not null, "create-date" timestamp not null, "latest-date" timestamp null, "is-admin" bool default false not null, "cap-text" text, primary key (id));
+create table if not exists "user-table" (
+id serial primary key,
+"board-id" integer,
+"user-name" text not null,
+mail varchar(255) not null,
+"password-hash" varchar(255) not null,
+"create-date" timestamp not null,
+"latest-date" timestamp null
+);
