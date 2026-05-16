@@ -15,6 +15,7 @@
            :*delete-message*
            :*session-login-key*
            :*session-admin-key*
+           :*session-moderator-key*
            :*session-cap-text-key*
            :*session-last-post-seconds*
            :*max-thread-list*
@@ -66,6 +67,7 @@
 (defvar *session-login-key* "logged-in")
 (defvar *session-last-post-seconds* "last-post-seconds")
 (defvar *session-admin-key* "is-admin")
+(defvar *session-moderator-key* "is-moderator")
 (defvar *session-cap-text-key* "cap-text")
 (defvar *session-post-count-key* "post-count")
 (defvar *max-thread-list* 10000)

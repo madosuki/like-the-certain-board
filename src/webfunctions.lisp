@@ -603,11 +603,13 @@
              :logged-in)
             ((eq (car checked-v) :success)
              (let* ((db-data (cdr checked-v))
-                    (is-admin (getf db-data :is-admin))
-                    (cap-text (getf db-data :cap-text)))
+                    (role (get-role-from-user-id (getf db-data :id)))
+                    (cap-text (get-cap-text-from-user-id (getf db-data :id))))
                (setf (getf (getf (request-env *request*) :lack.session.options) :change-id) t)
-               (when is-admin
-                 (setf (gethash *session-admin-key* session) t))
+               (cond ((string= role "admin")
+                      (setf (gethash *session-admin-key* session) t))
+                     ((string= role "moderator")
+                      (setf (gethash **session-moderator-key* session) t)))
                (when (and (not (null cap-text)) (string/= cap-text ""))
                  (setf (gethash *session-cap-text-key* session) cap-text)))
              (setf (gethash *session-login-key* session) t)
@@ -620,7 +622,7 @@
             (t
              :failed)))))
 
-(defun create-user (board-id user-name password date &optional (is-admin nil) (cap-text nil))
+(defun create-user (board-id user-name password date &optional (role-name nil) (cap-text nil))
   (unless (or user-name password)
     (return-from create-user nil))
   (when (get-user-table board-id user-name)
@@ -634,16 +636,18 @@
                      :password-hash password-hash
                      :board-id board-id
                      :create-date date
-                     :latest-date date
-                     :is-admin (if is-admin 1 0)
-                     :cap-text (if cap-text
-                                   (convert-html-special-chars (replace-not-available-char-when-cp932 (format nil "~A★" cap-text)))
-                                   ""))))
+                     :latest-date date)))
     (handler-case (insert-user-table user-data)
       (error (e)
         (write-log :mode :error
                    :message (format nil "~%Error in create-user : ~A~%" e))
         (setq return-status :create-failed)))
+    (when (and (string= role-name "moderator") cap-text)
+      (let ((role-id (get-role-id-from-role-name role-name))
+            (user (get-user-table board-id user-name)))
+        (when (and user role-id)
+          (insert-user-roles (getf user :id) role-id)
+          (insert-cap-text (getf user :id) (convert-html-special-chars (replace-not-available-char-when-cp932 (format nil "~A★" cap-text)))))))
     return-status))
 
 

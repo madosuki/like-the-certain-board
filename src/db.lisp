@@ -36,6 +36,11 @@
            :delete-user
            :get-user-list
            :update-user-table
+           :get-role-from-user-id
+           :get-role-id-from-role-name
+           :get-cap-text-from-user-id
+           :insert-cap-text
+           :insert-user-roles
            :insert-kakolog-table
            :change-max-of-thread-in-db
            :create-thread-in-db
@@ -78,9 +83,7 @@
   (user-name "" :type string)
   (password-hash "" :type string)
   (create-date "" :type string)
-  (latest-date "" :type string)
-  (is-admin nil :type integer)
-  (cap-text "" :type string))
+  (latest-date "" :type string))
 
 (defstruct thread-table-struct
   (title "" :type string)
@@ -276,7 +279,7 @@
   (handler-case
       (with-connection (db)
         (retrieve-all
-         (select (fields :user-name :cap-text :is-admin)
+         (select (fields :user-name)
                  (from :user-table)
                  (where (:= :board-id board-id)))))
     (error (e)
@@ -290,9 +293,7 @@
         (board-id (user-table-struct-board-id user-data))
         (password-hash (user-table-struct-password-hash user-data))
         (create-date (user-table-struct-create-date user-data))
-        (latest-date (user-table-struct-latest-date user-data))
-        (is-admin (user-table-struct-is-admin user-data))
-        (cap-text (user-table-struct-cap-text user-data)))
+        (latest-date (user-table-struct-latest-date user-data)))
     (with-connection (db)
       (execute
        (insert-into :user-table
@@ -301,15 +302,66 @@
                      :user-name user-name
                      :password-hash password-hash
                      :create-date create-date
-                     :latest-date latest-date
-                     :is-admin is-admin
-                     :cap-text cap-text))))))
+                     :latest-date latest-date))))))
+
+(defun get-cap-text-from-user-id (user-id)
+  (handler-case
+      (with-connection (db)
+        (retrieve-one
+         (select :cap-text
+                 (from :cap-text)
+                 (where (:= :user-id user-id)))))
+    (:error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) v)))
+
+(defun insert-cap-text (user-id cap-text)
+  (with-connection (db)
+    (execute
+     (insert-into :cap-text
+                  (set=
+                   :user-id user-id
+                   :cap-text cap-text)))))
+
+(defun get-role-from-user-id (user-id)
+  (handler-case
+      (with-connection (db)
+        (retrieve-one
+         (select :name
+                 (from :user-roles)
+                 (where (:= :user-id user-id)))))
+    (:error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) v)))
+
+(defun get-role-id-from-role-name (role-name)
+  (handler-case
+      (with-connection (db)
+        (retrieve-one
+         (select :role-id
+                 (from :roles)
+                 (where (:like :name role-name)))))
+    (:error (e)
+      (declare (ignore e))
+      nil)
+    (:no-error (v) v)))
+
+(defun insert-user-roles (user-id roles-id)
+  (with-connection (db)
+    (execute
+     (insert-into :user-rols
+                  (set=
+                   :user-id user-id
+                   :roles-id roles-id)))))
 
 (defun update-user-table (board-id user-name date)
   (with-connection (db)
     (execute
      (update :user-table
              (set= :latest-date date)
+             (set= :user-name user-name)
              (where (:and (:like :user-name user-name) (:like :board-id board-id)))))))
 
 (defun delete-user (board-id user-name)
