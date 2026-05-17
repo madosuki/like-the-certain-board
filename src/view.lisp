@@ -70,6 +70,7 @@
      (:title ,title))
     ,@body))
 
+;; this url arg is for ogp
 (defmacro main-content (title board-url-name url ogp-image-name is-thread thread-key &body body)
   `(base-html ,title ,url ,ogp-image-name
               (:body
@@ -368,8 +369,8 @@
                               "板に戻る")))))
 
 
-(defun login-view (&key board-name board-url-name csrf-token is-login url)
-  (main-content board-name board-url-name url nil t nil
+(defun login-view (&key csrf-token is-login url)
+  (main-content nil nil url nil t nil
                 (:h1 "ログインページ")
                 (raw (cond ((eq is-login :logged-in)
                             (markup (:h2 "ログイン済みです")))
@@ -407,8 +408,8 @@
                          (:nav
                           (:ul
                            (:li
-                            (:a :href (format nil "/~A" board-url-name)
-                                "板に戻る")))))))
+                            (:a :href (format nil "~A/" *https-root-path*)
+                                "トップに戻る")))))))
 
 (defun write-result-view (&key board-url-name key error-type message url)
   (main-content (cond ((eq error-type :write-error)
@@ -581,12 +582,11 @@
                                              "書き込む"
                                              "新規スレッド作成"))))))
 
-(defun create-user-view (&key board-url-name board-name csrf-token)
-  (main-content "ユーザー作成ページ"  board-url-name (format nil "~A/~A/create-user" *https-root-path* board-url-name) nil t nil
+(defun create-user-view (&key csrf-token)
+  (main-content "ユーザー作成ページ"  nil (format nil "~A/create-user" *https-root-path*) nil t nil
                 (:h1  :style "text-align: center"
-                      (format nil "~A: ユーザー作成ページ"
-                              board-name))
-                (:form :action (format nil "~A/~A/api/user" *https-root-path* board-url-name)
+                      "ユーザー作成ページ")
+                (:form :action (format nil "~A/api/user" *https-root-path*)
                        :method "POST"
                        (:ul :class "form"
                             (:li :class "form"
@@ -631,14 +631,14 @@
                                :type "hidden"))))
 
 
-(defun user-list-view (&key board-name board-url-name user-list csrf-token)
-  (main-content "ユーザーリスト" board-url-name (format nil "~A/~A/user-list" *https-root-path* board-url-name) nil t nil
+(defun user-list-view (&key user-list csrf-token)
+  (main-content "ユーザーリスト" nil (format nil "~A/user-list" *https-root-path*) nil t nil
                 (:div :style "margin-left: 1rem"
                  (:ul
                   (loop for i in user-list
                         collect (markup (:li
                                          (:p (getf i :user-name))
-                                         (:form :action (format nil "~A/~A/api/user" *https-root-path* board-url-name)
+                                         (:form :action (format nil "~A/api/user" *https-root-path*)
                                                 :method "POST"
                                                 (:input :name "mode"
                                                         :type "hidden"

@@ -49,9 +49,6 @@
                "cl-argon2-cffi"
 
                "trivial-shell"
-
-               "cl-string-generator"
-
                )
   :components ((:module "src"
                 :components

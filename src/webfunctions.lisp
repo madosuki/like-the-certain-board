@@ -14,8 +14,6 @@
    :flatten
    :check-whether-integer
    :bytes-to-hex)
-  (:import-from :cl-string-generator
-   :generate)
   (:import-from :lack.middleware.csrf
    :csrf-token)
   (:export
@@ -562,8 +560,8 @@
         (flexi-streams:octets-to-string tmp)))))
 
 
-(defun check-time-over-logged-in (board-id user-name universal-time)
-  (let ((db-data (handler-case (get-user-table board-id user-name)
+(defun check-time-over-logged-in (user-name universal-time)
+  (let ((db-data (handler-case (get-user-table user-name)
                    (error (e)
                      (declare (ignore e))
                      nil)
@@ -586,10 +584,10 @@
           (cons :success data)
           (cons :failed :no-data)))))
 
-(defun login (board-id user-name password universal-time session)
+(defun login (user-name password universal-time session)
   (when (or (null user-name) (null password))
     (return-from login :failed))
-  (let ((table-data (handler-case (get-user-table board-id user-name)
+  (let ((table-data (handler-case (get-a-user-table-from-name user-name)
                       (error (e)
                         (declare (ignore e))
                         nil)
@@ -614,7 +612,7 @@
                  (setf (gethash *session-cap-text-key* session) cap-text)))
              (setf (gethash *session-login-key* session) t)
              (setf (gethash *session-user-id* session) (getf (cadr checked-v) :id))
-             (handler-case (update-user-table board-id user-name date)
+             (handler-case (update-user-table user-name date)
                (error (e)
                  (declare (ignore e))
                  :failed)
@@ -622,19 +620,18 @@
             (t
              :failed)))))
 
-(defun create-user (board-id user-name password date &optional (role-name nil) (cap-text nil))
+(defun create-user (user-name password date &optional (role-name nil) (cap-text nil))
   (unless (or user-name password)
     (return-from create-user nil))
-  (when (get-user-table board-id user-name)
+  (when (get-a-user-table-from-name user-name)
     (return-from create-user :exist-user))
-  (let* ((salt (generate "[0-9A-Za-z]" :min-length 100 :max-length 100))
-         (password-hash (cl-argon2-cffi:hash-encoded password (bytes-to-hex (crypto:random-data 16))))
+  (let* ((salt (bytes-to-hex (crypto:random-data 16)))
+         (password-hash (cl-argon2-cffi:hash-encoded password salt))
          (date (get-current-datetime date))
          (return-status :success)
          (user-data (make-user-table-struct
                      :user-name user-name
                      :password-hash password-hash
-                     :board-id board-id
                      :create-date date
                      :latest-date date)))
     (handler-case (insert-user-table user-data)
@@ -644,7 +641,7 @@
         (setq return-status :create-failed)))
     (when (and (string= role-name "moderator") cap-text)
       (let ((role-id (get-role-id-from-role-name role-name))
-            (user (get-user-table board-id user-name)))
+            (user (get-a-user-table-from-name user-name)))
         (when (and user role-id)
           (insert-user-roles (getf user :id) role-id)
           (insert-cap-text (getf user :id) (convert-html-special-chars (replace-not-available-char-when-cp932 (format nil "~A★" cap-text)))))))

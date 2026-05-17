@@ -32,8 +32,9 @@
            :check-exists-table
            :check-exists-row
            :insert-user-table
-           :get-user-table
-           :delete-user
+           :get-a-user-table-from-name
+           :delete-user-from-user-name
+           :delete-user-from-user-id
            :get-user-list
            :update-user-table
            :get-role-from-user-id
@@ -79,7 +80,6 @@
          (setf *connection* nil)))))
 
 (defstruct user-table-struct
-  (board-id "" :type integer)
   (user-name "" :type string)
   (password-hash "" :type string)
   (create-date "" :type string)
@@ -250,38 +250,37 @@
         nil)))
 
 
-(defun get-user-table (board-id user-name)
+(defun get-a-user-table-from-user-name (user-name)
   (handler-case
       (with-connection (db)
         (retrieve-one
          (select :*
                  (from :user-table)
-                 (where (:and (:like :user-name user-name) (:= :board-id board-id))))))
+                 (where (:like :user-name user-name)))))
     (error (e)
       (declare (ignore e))
       nil)
     (:no-error (v) )))
 
-(defun get-user-table-from-id (board-id user-id)
+(defun get-user-table-from-user-id (user-id)
   (handler-case
       (with-connection (db)
         (retrieve-one
          (select :*
                  (from :user-table)
-                 (where (:and (:like :id user-id) (:= :board-id board-id))))))
+                 (where (:like :id user-id)))))
     (error (e)
       (declare (ignore e))
       nil)
     (:no-error (v) v)))
 
 
-(defun get-user-list (board-id)
+(defun get-user-list ()
   (handler-case
       (with-connection (db)
         (retrieve-all
          (select (fields :user-name)
-                 (from :user-table)
-                 (where (:= :board-id board-id)))))
+                 (from :user-table))))
     (error (e)
       (declare (ignore e))
       nil)
@@ -290,7 +289,6 @@
 
 (defun insert-user-table (user-data)
   (let ((user-name (user-table-struct-user-name user-data))
-        (board-id (user-table-struct-board-id user-data))
         (password-hash (user-table-struct-password-hash user-data))
         (create-date (user-table-struct-create-date user-data))
         (latest-date (user-table-struct-latest-date user-data)))
@@ -298,7 +296,6 @@
       (execute
        (insert-into :user-table
                     (set=
-                     :board-id board-id
                      :user-name user-name
                      :password-hash password-hash
                      :create-date create-date
@@ -356,25 +353,25 @@
                    :user-id user-id
                    :roles-id roles-id)))))
 
-(defun update-user-table (board-id user-name date)
+(defun update-user-table (user-name date)
   (with-connection (db)
     (execute
      (update :user-table
              (set= :latest-date date)
              (set= :user-name user-name)
-             (where (:and (:like :user-name user-name) (:like :board-id board-id)))))))
+             (where (:like :user-name user-name))))))
 
-(defun delete-user (board-id user-name)
+(defun delete-user-from-user-name (user-name)
   (with-connection (db)
     (execute
      (delete-from :user-table
-                  (where (:and (:like :user-name user-name) (:like :board-id board-id)))))))
+                  (where (:like :user-name user-name))))))
 
-(defun delete-user-from-id (board-id user-id)
+(defun delete-user-from-user-id (user-id)
   (with-connection (db)
     (execute
      (delete-from :user-table
-                  (where (:and (:like :id user-id) (:like :board-id board-id)))))))
+                  (where (:like :id user-id))))))
 
 
 

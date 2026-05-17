@@ -293,9 +293,8 @@
           (setf (response-body *response*) (probe-file pathname)))
         (on-exception *web* 404))))
 
-(defroute ("/:board-name/login" :method :GET) (&key board-name _parsed)
-  (let ((board-data (get-a-board-data-from-url-name board-name))
-        (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
+(defroute ("/login" :method :GET) (_parsed)
+  (let ((user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
         (condition (get-value-from-key "condition" _parsed)))
     (cond ((null board-data)
            (on-exception *web* 404))
@@ -305,9 +304,7 @@
            (set-response-status 403)
            "Forbidden")
           (t
-           (login-view :board-url-name board-name
-                       :board-name (getf board-data :name)
-                       :csrf-token (csrf-token *session*)
+           (login-view :csrf-token (csrf-token *session*)
                        :is-login (let ((hash (gethash *session-login-key* *session*)))
                                    (cond ((and condition (null hash))
                                           :failed)
@@ -316,14 +313,12 @@
                                          (t
                                           nil))))))))
 
-(defroute ("/:board-name/create-user" :method :GET) (&key board-name)
-  (let* ((board-data (get-a-board-data-from-url-name board-name))
-         (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
+(defroute ("/api/create-user" :method :GET) ()
+  (let* ((user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
          (is-monazilla (detect-monazilla user-agent))
          (is-login (gethash *session-login-key* *session*))
          (is-admin (gethash *session-admin-key* *session*)))
     (cond ((or (null user-agent)
-               (null board-data)
                is-monazilla
                (/= 443 (request-server-port *request*))
                (null is-login)
@@ -331,39 +326,32 @@
            (set-response-status 403)
            "Forbidden")
           (t
-           (create-user-view :board-url-name board-name
-                             :board-name (getf board-data :name)
-                             :csrf-token (csrf-token *session*))))))
+           (create-user-view :csrf-token (csrf-token *session*))))))
 
 ;; current only permit admin user.
-(defroute ("/:board-name/user-list" :method :GET) (&key board-name)
-  (let* ((board-data (get-a-board-data-from-url-name board-name))
-         (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
+(defroute ("/api/user-list" :method :GET) ()
+  (let* ((user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*)))
          (is-monazilla (detect-monazilla user-agent))
          (is-login (gethash *session-login-key* *session*))
          (is-admin (gethash *session-admin-key* *session*)))
     (if (or (null user-agent)
-            (null board-data)
             is-monazilla
             (/= 443 (request-server-port *request*))
             (null is-login)
             (null is-admin))
         (progn (set-response-status 403)
                "Forbidden")
-        (let ((user-list (get-user-list (getf board-data :id))))
-          (user-list-view :board-name (getf board-data :name)
-                          :board-url-name board-name
-                          :user-list user-list
+        (let ((user-list (get-user-list)))
+          (user-list-view :user-list user-list
                           :csrf-token (csrf-token *session*))))))
 
 
-(defroute ("/:board-name/api/user" :method :POST) (&key board-name _parsed)
+(defroute ("/api/user" :method :POST) (_parsed)
   (let* ((mode (get-value-from-key "mode" _parsed))
          (user-name (get-value-from-key "user_name" _parsed))
          (password (get-value-from-key "password" _parsed))
          (cap-text (get-value-from-key "cap_text" _parsed))
          (date (get-universal-time))
-         (board-data (get-a-board-data-from-url-name board-name))
          (user-agent (gethash "user-agent" (caveman2:request-headers caveman2:*request*))))
      (when user-name
        (setq user-name (replace-not-available-char-when-cp932 (convert-html-special-chars user-name))))
@@ -382,22 +370,20 @@
                   (set-response-status 400)
                   "invalid parameter")
                 (progn
-                  (let ((login-check (login (getf board-data :id) user-name password date *session*)))
+                  (let ((login-check (login user-name password date *session*)))
                     (cond ((eq login-check :logged-in)
-                           (login-view :board-name (getf board-data :name)
-                                       :board-url-name board-name
-                                       :is-login :logged-in))
+                           (login-view :is-login :logged-in))
                           ((eq login-check :success)
                            (setf (getf (response-headers *response*) :location)
-                                 (concatenate 'string "/" board-name))
+                                 (format nil "~A/"
+                                         *https-root-path*))
                            (set-response-status 302)
                            "success!")
                           (t
-                           (login-view :board-name (getf board-data :name)
-                                       :board-url-name board-name
-                                       :is-login :failed)
+                           (login-view :is-login :failed)
                            (setf (getf (response-headers *response*) :location)
-                                 (format nil "/~A/login?condition=failed" board-name))
+                                 (format nil "~A/login?condition=failed"
+                                         *https-root-path*))
                            (set-response-status 302)
                            "failed login"))))))
            ((equal mode "logout")
@@ -406,14 +392,15 @@
                 (clrhash *session*)
                 (setf (getf (getf (request-env *request*) :lack.session.options) :expire) t))
               (setf (getf (response-headers *response*) :location)
-                    (concatenate 'string "/" board-name))
+                    (format nil "~A/"
+                            *https-root-path*))
               (set-response-status 302)
               (next-route)))
            ((equal mode "create")
             ;; current implement, create account feat is only permit admin.
             ;; and can only create moderator currently.
             (if (and (gethash *session-login-key* *session*) (gethash *session-admin-key* *session*))
-                (let ((create-result (create-user (getf board-data :id) user-name password date "moderator" cap-text)))
+                (let ((create-result (create-user user-name password date "moderator" cap-text)))
                   (set-response-status 400)
                   (cond ((eq create-result :exist-user)
                          "This user name is existed.")
@@ -429,10 +416,9 @@
                   "Forbidden")))
            ((equal mode "delete_self")
             (if (and (gethash *session-login-key* *session*) (gethash *session-user-id* *session*))
-                (let* ((board-id (getf board-data :id))
-                       (is-exists-of-target-user (get-user-table-from-id board-id user-id)))
+                (let* ((is-exists-of-target-user (get-a-user-table-from-name-from-user-id user-id)))
                  (if is-exists-user
-                     (let ((is-success (handler-case (progn (delete-user-from-id board-id (getf is-exists-of-target-user :id))
+                     (let ((is-success (handler-case (progn (delete-user-from-id (getf is-exists-of-target-user :id))
                                                             :success)
                                          (error (e)
                                            (declare (ignore e))
@@ -441,9 +427,8 @@
                            (progn
                              (set-response-status 302)
                              (setf (getf (response-headers *response*) :location)
-                                   (format nil "~A/~A/user-list"
-                                           *https-root-path*
-                                           board-name))
+                                   (format nil "~A/user-list"
+                                           *https-root-path*))
                              "Success")
                            "Failed"))
                      "Failed"))
@@ -452,14 +437,13 @@
                  "Forbidden")))
           ((equal mode "delete_other")
            (if (and (gethash *session-login-key* *session*) (gethash *session-admin-key* *session*) (gethash *session-user-id*))
-               (let* ((board-id (getf board-data :id))
-                      (is-exists-of-target-user (get-user-table board-id user-name))
-                      (execution-user (get-user-table-from-id board-id (gethash *session-user-id*)))
+               (let* ((is-exists-of-target-user (get-a-user-table-from-name user-name))
+                      (execution-user (get-a-user-table-from-name-from-id (gethash *session-user-id*)))
                       (execution-user-user-role (if execution-user (get-role-from-user-id (getf execution-user :id)) nil)))
                  (if (and is-exists-of-target-user
                           (or (string= role "admin")
                               (string= role "moderator")))
-                     (let ((is-success (handler-case (progn (delete-user-from-id board-id (getf is-exists-of-target-user :id))
+                     (let ((is-success (handler-case (progn (delete-user-from-user-id (getf is-exists-of-target-user :id))
                                                             :success)
                                          (error (e)
                                            (declare (ignore e))
@@ -468,9 +452,8 @@
                            (progn
                              (set-response-status 302)
                              (setf (getf (response-headers *response*) :location)
-                                   (format nil "~A/~A/user-list"
-                                           *https-root-path*
-                                           board-name))
+                                   (format nil "~A/user-list"
+                                           *https-root-path*))
                              "Success")
                            "Failed"))
                      "Failed"))
