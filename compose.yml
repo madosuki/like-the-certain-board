@@ -8,7 +8,7 @@ services:
     restart: "no"
     # cap_add:
     #   - SYS_PTRACE
-    entrypoint: "/root/.roswell/local-projects/like-the-certain-board/dockerRun.sh"
+    entrypoint: "/root/.roswell/local-projects/like-the-certain-board/scripts/dockerRun.sh"
     depends_on:
       - db
     expose:

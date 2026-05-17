@@ -49,7 +49,7 @@ If maybe failed, refer docker/webapp/Dockerfile .
 And set path to your .roswell/bin .  
 then
 ```bash
-./init_before_do_docker.sh # this script is not only for docker.
+./scripts/init_before_do_docker.sh # this script is not only for docker.
 cp settings_sample.json ../like_the_certain_board_dirs/settings/settings.json
 ```
 ```bash
@@ -74,7 +74,7 @@ Above process is need before run app.
 
 ## Docker
 ```bash
-./init_before_do_docker.sh
+./scripts/init_before_do_docker.sh
 cp settings_sample.json ../like_the_certain_board_dirs/settings/settings.json
 ```
 init_before_do_docker.sh is create dirs above current dir.:
@@ -94,7 +94,7 @@ docker compose build && docker compose up -d
 
 and do that after db started.
 ```bash
-./create_board.sh db_user_name db_name # example: ./create_board.sh user mysite
+./scripts/create_board.sh db_user_name db_name # example: ./scripts/create_board.sh user mysite
 ```
 Note: that script is example of create board process.  
 
