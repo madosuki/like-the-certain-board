@@ -55,6 +55,8 @@ cp settings_sample.json ../like_the_certain_board_dirs/settings/settings.json
 ```bash
 ./localRun.sh
 ```
+## Scripts file location
+scripts/
 
 ## settings file path
 The setting file path is according to BOARD_SETTING_PATH shell variable.   
