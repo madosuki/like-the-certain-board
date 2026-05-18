@@ -174,7 +174,7 @@
       (ensure-directories-exist *dat-path*))
     (unless (cl-fad:directory-exists-p dat-dir)
       (ensure-directories-exist dat-dir))
-    (format t "exists dat path: ~A~%" (cl-fad:directory-exists-p dat-dir))
+    ;; (format t "exists dat path: ~A~%" (cl-fad:directory-exists-p dat-dir))
     (with-open-file (i path
                        :direction :output
                        :if-does-not-exist :create
@@ -184,11 +184,10 @@
 
 ;; sec-key is secret key for generate id. That is WIP.
 (defun create-res (&key name trip-key email date text ipaddr (first nil) (title "") (sec-key ""))
-  (format t "~%trip key: ~A~%" trip-key)
   (let* ((datetime (replace-hyphen-to-slash date))
          (id (generate-id :ipaddr ipaddr :date datetime :sec-key sec-key))
          (trip (if (and (stringp trip-key) (string/= trip-key ""))
-                   (generate-trip (subseq trip-key 1) "utf8")
+                   (generate-trip (convert-html-special-chars (subseq trip-key 1)) "utf8")
                    ""))
          (final-text (replace-not-available-char-when-cp932 (shape-text (replace-other-line-to-lf text)))) ;; did convert-html-special-chars in shape-text function
          (mail (replace-not-available-char-when-cp932 (convert-html-special-chars email)))
