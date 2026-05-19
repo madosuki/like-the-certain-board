@@ -7,13 +7,13 @@ ref: [https://web.archive.org/web/20160405035026/http://info.2ch.net/?curid=1](h
 Supported api is old 2ちゃん api.  
 | api name | implement status |
 | ---- | ---- |
-| ${boardName}/subject.txt | done |
-| ${boardName}/SETTING.TXT | done |
+| /board/${boardName}/subject.txt | done |
+| /board/${boardName}/SETTING.TXT | done |
 | /test/read.cgi/${boardName}/${unixTime} | done |
 | /test/bbs.cgi/${boardName} | done |
-| /${boardName}/dat/${unixTime} | done |
-| /${boardName}/kako/${4DigitNumbers}/${5digitNumbers}/${unixTime}.html | done |
-| /${boardName}/kako/${4DigitNumbers}/${5digitNumbers}/${unixTime}.dat | done |
+| /board/${boardName}/dat/${unixTime} | done |
+| /board/${boardName}/kako/${4DigitNumbers}/${5digitNumbers}/${unixTime}.html | done |
+| /board/${boardName}/kako/${4DigitNumbers}/${5digitNumbers}/${unixTime}.dat | done |
 
 And other convenient api implemented; look at src/web.lisp.  
 #### Note

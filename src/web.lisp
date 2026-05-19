@@ -53,29 +53,29 @@
 (defroute ("/about" :method :GET) ()
   (about-page-view (format nil "~A/about" *https-root-path*)))
 
-(defroute ("/:board-name/" :method :GET) (&key board-name)
+(defroute ("/board/:board-name/" :method :GET) (&key board-name)
   (let ((view (process-on-root-of-board *web* *session* board-name)))
     (if view
         view
         (notfound-view))))
 
-(defroute ("/:board-name" :method :GET) (&key board-name)
+(defroute ("/board/:board-name" :method :GET) (&key board-name)
   (let ((view (process-on-root-of-board *web* *session* board-name)))
     (if view
         view
         (notfound-view))))
 
-(defroute ("/:board-name/kakolog" :method :GET) (&key board-name)
+(defroute ("/board/:board-name/kakolog" :method :GET) (&key board-name)
   (let* ((board-data (get-a-board-data-from-url-name board-name))
          (data (if board-data
                    (get-kakolog-thread-list (getf board-data :id))
                    nil))
-         (url (format nil "~A/~A/kakolog" *https-root-path* board-name)))
+         (url (format nil "~A/board/~A/kakolog" *https-root-path* board-name)))
     (if data
         (kakolog-list-view board-name url data)
         (kakolog-list-view board-name url))))
 
-(defroute ("/:board-name/subject.txt" :method :GET) (&key board-name)
+(defroute ("/board/:board-name/subject.txt" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-data-from-url-name board-name)))
     (if board-data
         (let* ((tmp (get-thread-list-when-create-subject-txt (getf board-data :id)))
@@ -134,7 +134,7 @@
                   (on-exception *web* 404))))
         (on-exception *web* 404))))
 
-(defroute ("/:board-name/kako/:four-digit-numbers/:five-digit-numbers/:unixtime.html" :method :GET) (&key board-name four-digit-numbers five-digit-numbers unixtime)
+(defroute ("/board/:board-name/kako/:four-digit-numbers/:five-digit-numbers/:unixtime.html" :method :GET) (&key board-name four-digit-numbers five-digit-numbers unixtime)
   (let ((path (format nil "~A/~A/~A/~A/~A.html" *kakolog-html-path* board-name four-digit-numbers five-digit-numbers unixtime))
         (board-data (get-a-board-data-from-url-name board-name))
         (is-number-for-unixtime (check-whether-integer unixtime))
@@ -245,7 +245,7 @@
 
 
 
-(defroute ("/:board-name/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
+(defroute ("/board/:board-name/dat/:unixtime.dat" :method :GET) (&key board-name unixtime)
   (let ((path (format nil "~A/~A/~A.dat" *dat-path* board-name unixtime))
         (board-data (get-a-board-data-from-url-name board-name))
         (is-number (check-whether-integer unixtime)))
@@ -268,7 +268,7 @@
           (set-response-status 404)
           ""))))
 
-(defroute ("/:board-name/kako/:four-digit-numbers/:five-digit-numbers/:unixtime.dat" :method :GET) (&key board-name four-digit-numbers five-digit-numbers unixtime)
+(defroute ("/board/:board-name/kako/:four-digit-numbers/:five-digit-numbers/:unixtime.dat" :method :GET) (&key board-name four-digit-numbers five-digit-numbers unixtime)
   (let ((path (format nil "~A/~A/~A/~A/~A.dat" *kakolog-dat-path* board-name four-digit-numbers five-digit-numbers unixtime))
         (board-data (get-a-board-data-from-url-name board-name))
         (is-number-for-unixtime (check-whether-integer unixtime))
@@ -285,7 +285,7 @@
           (next-route))
         (on-exception *web* 404))))
 
-(defroute ("/:board-name/SETTING.TXT" :method :GET) (&key board-name)
+(defroute ("/board/:board-name/SETTING.TXT" :method :GET) (&key board-name)
   (let ((board-data (get-a-board-data-from-url-name board-name)))
     (if board-data
         (let ((pathname (format nil "~A/~A/SETTING.txt" *settings-path* board-name)))
@@ -465,7 +465,7 @@
            "invalid parameter"))))
 
 
-(defroute ("/:board-name/api/line" :method :POST) (&key board-name _parsed)
+(defroute ("/board/:board-name/api/line" :method :POST) (&key board-name _parsed)
   (let* ((key (get-value-from-key "key" _parsed))
          (check-key (check-whether-integer key))
          (line (get-value-from-key "line" _parsed))
@@ -511,7 +511,7 @@
           (t
            (on-exception *web* 404)))))
 
-(defroute ("/:board-name/api/thread" :method :POST) (&key board-name _parsed)
+(defroute ("/board/:board-name/api/thread" :method :POST) (&key board-name _parsed)
   (let ((key (get-value-from-key "key" _parsed))
         (mode (get-value-from-key "mode" _parsed))
         (is-login (gethash *session-login-key* *session*))
