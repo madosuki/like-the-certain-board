@@ -21,19 +21,20 @@
   (:import-from :generate-like-certain-board-strings
                 :convert-html-special-chars
                 :shape-text)
-  (:export :render-json
+  (:export
+   :render-json
    :index-view
-           :board-view
+   :board-view
    :thread-view
-           :time-restrict-view
+   :time-restrict-view
    :login-view
-           :write-result-view
+   :write-result-view
    :notfound-view
-           :kakolog-view
+   :kakolog-view
    :kakolog-list-view
-           :about-page-view
+   :about-page-view
    :confirm-page-view
-           :create-user-view
+   :create-user-view
    :user-list-view))
 (in-package :like-certain-board.view)
 
@@ -99,7 +100,7 @@
                       (:h1 "板一覧")
                       (:ul
                        (loop for i in board-list
-                             collect (markup (:li (:a :href (format nil "/~A" (getf i :url-name))
+                             collect (markup (:li (:a :href (format nil "/board/~A" (getf i :url-name))
                                                       (getf i :name)))))))))
 
 (defun set-thread-table-row (item bbs is-login csrf-token)
