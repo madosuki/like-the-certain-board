@@ -21,19 +21,20 @@
   (:import-from :generate-like-certain-board-strings
                 :convert-html-special-chars
                 :shape-text)
-  (:export :render-json
+  (:export
+   :render-json
    :index-view
-           :board-view
+   :board-view
    :thread-view
-           :time-restrict-view
+   :time-restrict-view
    :login-view
-           :write-result-view
+   :write-result-view
    :notfound-view
-           :kakolog-view
+   :kakolog-view
    :kakolog-list-view
-           :about-page-view
+   :about-page-view
    :confirm-page-view
-           :create-user-view
+   :create-user-view
    :user-list-view))
 (in-package :like-certain-board.view)
 
@@ -81,13 +82,13 @@
                        (:li (:a :href "/about"
                                 "このサイトについて"))
                        (raw (when ,is-thread
-                              (markup (:li (:a :href (format nil "/~A" ,board-url-name)
+                              (markup (:li (:a :href (format nil "/board/~A" ,board-url-name)
                                                "板に戻る")))))
                        (raw (when ,thread-key
                               (markup (:li (:a :href (format nil "/test/read.cgi/~A/~A" ,board-url-name ,thread-key)
                                                "スレッドに戻る")))))
                        (raw (when ,board-url-name
-                              (markup (:li (:a :href (format nil "/~A/kakolog" ,board-url-name)
+                              (markup (:li (:a :href (format nil "/board/~A/kakolog" ,board-url-name)
                                                "過去ログ倉庫"))))))))
                (:div :id "main"
                      ,@body))))
@@ -99,7 +100,7 @@
                       (:h1 "板一覧")
                       (:ul
                        (loop for i in board-list
-                             collect (markup (:li (:a :href (format nil "/~A" (getf i :url-name))
+                             collect (markup (:li (:a :href (format nil "/board/~A" (getf i :url-name))
                                                       (getf i :name)))))))))
 
 (defun set-thread-table-row (item bbs is-login csrf-token)
@@ -246,7 +247,7 @@
   (markup
    (:dl :id (format nil "~A" count)
         (when is-login
-          (raw (markup (:form :action (format nil "/~A/api/line" bbs)
+          (raw (markup (:form :action (format nil "/board/~A/api/line" bbs)
                               :method "POST"
                               (:input :name "line"
                                       :type "hidden"
@@ -340,7 +341,7 @@
                            (:nav
                             (:ul
                              (:li
-                              (:a :href (format nil "/~A" bbs)
+                              (:a :href (format nil "/board/~A" bbs)
                                   "板に戻る"))))))))
 
 
@@ -364,7 +365,7 @@
                                  (markup (:a :href (format nil "/test/read.cgi/~A/~A" bbs key)
                                              :class "nav-item-in-footer"
                                              "スレッドに戻る"))))
-                          (:a :href (format nil "/~A" bbs)
+                          (:a :href (format nil "/board/~A" bbs)
                               :class "nav-item-in-footer"
                               "板に戻る")))))
 
@@ -376,7 +377,7 @@
                             (markup (:h2 "ログイン済みです")))
                            ((eq is-login :failed)
                             (markup (:h2 "ログインに失敗しました")))))
-                (:form :action (format nil "/~A/api/user" board-url-name)
+                (:form :action "/api/user"
                        :method "POST"
                        (:ul :class "form"
                             (:li :class "form"
@@ -426,11 +427,11 @@
                       :style "text-align: center"
                       (:p message)
                       (raw (when board-url-name
-                             (markup (:a :href (format nil "/~A" board-url-name)
+                             (markup (:a :href (format nil "/board/~A" board-url-name)
                                          "板に戻る"))))
                       (raw (when key
                              (markup
-                              (:a :href (format nil "/~A/~A" board-url-name key)
+                              (:a :href (format nil "/board/~A/~A" board-url-name key)
                                   "スレッドに戻る")))))))
 
 (defun notfound-view ()
@@ -452,11 +453,11 @@
                                               (:nav
                                                (:ul
                                                 (:li
-                                                 (:a :href (format nil "/~A" board-url-name)
+                                                 (:a :href (format nil "/board/~A" board-url-name)
                                                      "板に戻る")
-                                                 (:a :href (format nil "/~A/kakolog" board-url-name)
+                                                 (:a :href (format nil "/board/~A/kakolog" board-url-name)
                                                      "過去ログ倉庫に戻る")
-                                                 (:a :href (format nil "/~A/kako/~A/~A/~A.dat"
+                                                 (:a :href (format nil "/board/~A/kako/~A/~A/~A.dat"
                                                                    board-url-name first second key)
                                                      :download (format nil "~A.dat" key)
                                                      "datをダウンロードする場合はこちら")))))))))))
@@ -470,7 +471,7 @@
              (markup
               (:tr
                (:td :class "cell-spacing"
-                    (:a :href (format nil "/~A/kako/~A/~A/~A.html"
+                    (:a :href (format nil "/board/~A/kako/~A/~A/~A.html"
                                       board-name (car separated) (cdr separated) unixtime)
                         title))
                (:td :class "cell-spacing"
@@ -491,7 +492,7 @@
                             (:nav
                              (:ul
                               (:li
-                               (:a :href (format nil "/~A" board-name)
+                               (:a :href (format nil "/board/~A" board-name)
                                    "板に戻る")))))))))
 
 (defun about-page-view (url)
