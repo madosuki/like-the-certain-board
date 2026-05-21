@@ -427,7 +427,7 @@
                            (progn
                              (set-response-status 302)
                              (setf (getf (response-headers *response*) :location)
-                                   (format nil "~A/user-list"
+                                   (format nil "~A/api/user-list"
                                            *https-root-path*))
                              "Success")
                            "Failed"))
@@ -452,7 +452,7 @@
                            (progn
                              (set-response-status 302)
                              (setf (getf (response-headers *response*) :location)
-                                   (format nil "~A/user-list"
+                                   (format nil "~A/api/user-list"
                                            *https-root-path*))
                              "Success")
                            "Failed"))
