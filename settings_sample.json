@@ -8,6 +8,5 @@
   "user-name-in-db": "user",
   "user-password-in-db": "user_pass",
   "db-hostname": "db",
-  "salt": "a",
   "log-path": ""
 }
